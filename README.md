@@ -81,3 +81,9 @@ Changes take effect immediately.
 - Right-click (context menu) cannot be used with Selectize dropdowns, that’s why current implementation was chosen instead
 - Canvas-rendered or virtualized dropdowns are not supported
 - Cross-origin iframes cannot be accessed
+
+---
+
+## License
+
+MIT. See `LICENSE`.

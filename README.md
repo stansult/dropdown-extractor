@@ -5,7 +5,7 @@
 It supports:
 - native HTML `<select>` dropdowns
 - Selectize-based dropdowns
-- ARIA listbox dropdowns (role="listbox" / role="option")
+- ARIA listbox dropdowns (`role="listbox"` / `role="option"`)
 
 The extracted items are copied as plain text, one per line.
 

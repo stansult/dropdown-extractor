@@ -40,9 +40,6 @@ You can choose what to copy via **Extension Options**:
 | Native `<select>` | Yes |
 | Selectize | Yes |
 | ARIA listbox | Yes |
-| Right-click / context menu on Selectize | No |
-
-Note: Right-click does not work on Selectize dropdowns because they close immediately on right-mouse events. This is a framework limitation.
 
 ---
 
@@ -78,7 +75,7 @@ Changes take effect immediately.
 
 ## Limitations
 
-- Right-click (context menu) cannot be used with Selectize dropdowns, that’s why current implementation was chosen instead
+- Right-click (context menu) cannot be used with Selectize dropdowns because they close immediately on right-mouse events. This is a framework limitation.
 - Canvas-rendered or virtualized dropdowns are not supported
 - Cross-origin iframes cannot be accessed
 

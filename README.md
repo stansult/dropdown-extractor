@@ -3,7 +3,7 @@
 **Dropdown Extractor** is a Chrome extension that copies items from dropdown lists into your clipboard.
 
 It supports:
-- native HTML <select> dropdowns
+- native HTML `<select>` dropdowns
 - Selectize-based dropdowns
 - ARIA listbox dropdowns (role="listbox" / role="option")
 
@@ -29,7 +29,7 @@ You can choose what to copy via **Extension Options**:
 
 - **Item text** — what you see on screen  
 - **Item value** — the underlying value  
-- **Both** — copied as text<TAB>value (paste-friendly)
+- **Both** — copied as `text<TAB>value` (paste-friendly)
 
 ---
 
@@ -37,7 +37,7 @@ You can choose what to copy via **Extension Options**:
 
 | Dropdown type | Supported |
 |--------------|-----------|
-| Native <select> | Yes |
+| Native `<select>` | Yes |
 | Selectize | Yes |
 | ARIA listbox | Yes |
 | Right-click / context menu on Selectize | No |

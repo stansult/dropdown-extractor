@@ -75,7 +75,7 @@ Changes take effect immediately.
 
 ## Limitations
 
-- Right-click (context menu) cannot be used with Selectize dropdowns because they close immediately on right-mouse events. This is a framework limitation.
+- Right-click (context menu) cannot be used with Selectize dropdowns because they close immediately on right-mouse events. That’s why right-click wasn’t implemented
 - Canvas-rendered or virtualized dropdowns are not supported
 - Cross-origin iframes cannot be accessed
 

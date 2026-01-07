@@ -5,6 +5,7 @@
 It supports:
 - native HTML `<select>` dropdowns
 - Selectize-based dropdowns
+- React Select dropdowns
 - ARIA listbox dropdowns (`role="listbox"` / `role="option"`)
 
 The extracted items are copied as plain text, one per line.
@@ -39,6 +40,7 @@ You can choose what to copy via **Extension Options**:
 |--------------|-----------|
 | Native `<select>` | Yes |
 | Selectize | Yes |
+| React Select | Yes |
 | ARIA listbox | Yes |
 
 ---

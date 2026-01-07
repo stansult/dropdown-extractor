@@ -1,4 +1,12 @@
 (function () {
+  function notifyBackground(action) {
+    try {
+      chrome.runtime.sendMessage({ action });
+    } catch (e) {
+      // Ignore messaging failures (e.g., if extension context is unavailable).
+    }
+  }
+
   // ===== TOAST =====
   function showToast(message, options = {}) {
     const {
@@ -58,6 +66,7 @@
       clearTimeout(window.__dropdownExtractorCancelTimer);
     }
     window.__dropdownExtractorCancelTimer = setTimeout(() => {
+      notifyBackground('canceled');
       cleanup();
       showToast('Dropdown extractor canceled', { duration: 1500, position: 'top-right' });
     }, 10000);
@@ -66,6 +75,7 @@
   if (window.__dropdownExtractorActive) {
     showToast('Dropdown extractor armed', { position: 'top-right' });
     armTimer();
+    notifyBackground('armed');
     return;
   }
 
@@ -115,6 +125,7 @@
         if (items.length) {
           navigator.clipboard.writeText(items.join('\n'));
           showToast(`Extracted ${items.length} items`, { position: 'cursor', event: e });
+          notifyBackground('done');
           cleanup();
         }
       });
@@ -144,6 +155,7 @@
         if (items.length) {
           navigator.clipboard.writeText(items.join('\n'));
           showToast(`Extracted ${items.length} items`, { position: 'cursor', event: e });
+          notifyBackground('done');
           cleanup();
         }
       });
@@ -174,6 +186,7 @@
         if (items.length) {
           navigator.clipboard.writeText(items.join('\n'));
           showToast(`Extracted ${items.length} items`, { position: 'cursor', event: e });
+          notifyBackground('done');
           cleanup();
         }
       });
@@ -186,6 +199,7 @@
   document.addEventListener('mousedown', onMouseDown, true);
 
   showToast('Dropdown extractor armed', { position: 'top-right' });
+  notifyBackground('armed');
 
   armTimer();
 })();

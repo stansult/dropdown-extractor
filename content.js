@@ -1,17 +1,4 @@
 (function () {
-  if (window.__dropdownExtractorActive) return;
-  window.__dropdownExtractorActive = true;
-
-  let cancelTimer = null;
-
-  // ===== OPTIONS (EXACT PLACE: here, after active flag) =====
-  function getPrefs(callback) {
-    chrome.storage.sync.get(
-      { extractText: true, extractValue: false },
-      callback
-    );
-  }
-
   // ===== TOAST =====
   function showToast(message, options = {}) {
     const {
@@ -66,6 +53,32 @@
     }, duration);
   }
 
+  function armTimer() {
+    if (window.__dropdownExtractorCancelTimer) {
+      clearTimeout(window.__dropdownExtractorCancelTimer);
+    }
+    window.__dropdownExtractorCancelTimer = setTimeout(() => {
+      cleanup();
+      showToast('Dropdown extractor canceled', { duration: 1500, position: 'top-right' });
+    }, 10000);
+  }
+
+  if (window.__dropdownExtractorActive) {
+    showToast('Dropdown extractor armed', { position: 'top-right' });
+    armTimer();
+    return;
+  }
+
+  window.__dropdownExtractorActive = true;
+
+  // ===== OPTIONS (EXACT PLACE: here, after active flag) =====
+  function getPrefs(callback) {
+    chrome.storage.sync.get(
+      { extractText: true, extractValue: false },
+      callback
+    );
+  }
+
   // ===== HELPERS =====
   function getVisibleSelectizeContent() {
     return [...document.querySelectorAll('.selectize-dropdown-content')]
@@ -76,9 +89,9 @@
     document.removeEventListener('mousedown', onMouseDown, true);
     window.__dropdownExtractorActive = false;
 
-    if (cancelTimer) {
-      clearTimeout(cancelTimer);
-      cancelTimer = null;
+    if (window.__dropdownExtractorCancelTimer) {
+      clearTimeout(window.__dropdownExtractorCancelTimer);
+      window.__dropdownExtractorCancelTimer = null;
     }
   }
 
@@ -174,8 +187,5 @@
 
   showToast('Dropdown extractor armed', { position: 'top-right' });
 
-  cancelTimer = setTimeout(() => {
-    cleanup();
-    showToast('Dropdown extractor canceled', { duration: 1500, position: 'top-right' });
-  }, 10000);
+  armTimer();
 })();

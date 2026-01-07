@@ -1,0 +1,8 @@
+{
+  "name": "dropdown-extractor",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "package": "zip -r dropdown-extractor.zip . -x \"*.git*\" -x \"node_modules/*\" -x \"*.DS_Store\""
+  }
+}

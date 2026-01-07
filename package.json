@@ -4,6 +4,6 @@
   "private": true,
   "scripts": {
     "clean": "rm -rf dist",
-    "package": "rm -rf dist && mkdir -p dist && VERSION=$(node -p \"require('./manifest.json').version\") && zip -r \"dist/dropdown-extractor-${VERSION}.zip\" . -x \"dist/*\" -x \"*.git*\" -x \"node_modules/*\" -x \"*.DS_Store\" -x \"screenshots/*\" -x \"README.md\" -x \"LICENSE\" -x \"package.json\" -x \"icon.svg\""
+    "package": "rm -rf dist && rm -f *.zip && mkdir -p dist && VERSION=$(node -p \"require('./manifest.json').version\") && zip -r \"dist/dropdown-extractor-${VERSION}.zip\" . -x \"dist/*\" -x \"*.git*\" -x \"*.zip\" -x \"node_modules/*\" -x \"*.DS_Store\" -x \"screenshots/*\" -x \"README.md\" -x \"LICENSE\" -x \"package.json\" -x \"icon.svg\""
   }
 }

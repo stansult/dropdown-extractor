@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- checkmark row (moved a bit further up & left) -->
+  <path d="M3.2 5.7 L4.9 7.5 L8.0 4.4"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+  <rect x="10" y="5.5" width="11" height="1.5" rx="0.75" fill="currentColor"/>
+
+  <!-- dot row (lighter dots) -->
+  <circle cx="5" cy="12" r="1.6" fill="currentColor"/>
+  <rect x="10" y="11.25" width="11" height="1.5" rx="0.75" fill="currentColor"/>
+
+  <!-- dot row (lighter dots) -->
+  <circle cx="5" cy="18" r="1.6" fill="currentColor"/>
+  <rect x="10" y="17.25" width="11" height="1.5" rx="0.75" fill="currentColor"/>
+</svg>

@@ -9,6 +9,7 @@
 
   const ARM_DURATION_MS = 10000; // Keep in sync with background.js.
   const EXTRACTED_PREVIEW_COUNT = 3;
+  const EXTRACTED_PREVIEW_MAX_CHARS = 60;
   const EXTRACTED_TOAST_MS = 5000;
   const ARMED_TOAST_TEXT = 'Click a dropdown, then click any item to copy the full list.';
   const TOAST_INFO_BG = 'rgba(20, 40, 70, 0.75)';
@@ -110,8 +111,12 @@
   }
 
   function buildExtractedMessage(items) {
+    const truncateItem = (text) => {
+      if (text.length <= EXTRACTED_PREVIEW_MAX_CHARS) return text;
+      return `${text.slice(0, EXTRACTED_PREVIEW_MAX_CHARS - 1)}…`;
+    };
     const preview = items.slice(0, EXTRACTED_PREVIEW_COUNT);
-    const lines = preview.map(item => `– ${item}`);
+    const lines = preview.map(item => `– ${truncateItem(item)}`);
     if (items.length > EXTRACTED_PREVIEW_COUNT) {
       lines.push('…');
     }

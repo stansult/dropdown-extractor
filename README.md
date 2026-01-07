@@ -66,7 +66,7 @@ To create a ZIP for upload:
 npm run package
 ```
 
-This generates `dropdown-extractor.zip` in the project root.
+This runs a clean step and generates `dist/dropdown-extractor-<version>.zip`.
 
 ---
 

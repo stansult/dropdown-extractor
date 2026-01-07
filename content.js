@@ -7,12 +7,21 @@
     }
   }
 
+  const ARM_DURATION_MS = 10000; // Keep in sync with background.js.
+  const EXTRACTED_PREVIEW_COUNT = 3;
+  const EXTRACTED_TOAST_MS = 5000;
+  const ARMED_TOAST_TEXT = 'Click a dropdown, then click any item to copy the full list.';
+  const TOAST_INFO_BG = 'rgba(20, 40, 70, 0.75)';
+  const TOAST_SUCCESS_BG = 'rgba(20, 70, 40, 0.75)';
+  const TOAST_EXPIRED_BG = 'rgba(60, 60, 60, 0.75)';
+
   // ===== TOAST =====
   function showToast(message, options = {}) {
     const {
       duration = 2000,
       position = 'bottom-right',
-      event = null
+      event = null,
+      background = TOAST_INFO_BG
     } = options;
     const toast = document.createElement('div');
     toast.textContent = message;
@@ -20,9 +29,11 @@
     const baseStyle = {
       position: 'fixed',
       padding: '8px 12px',
-      background: 'rgba(0,0,0,0.8)',
+      background,
       color: '#fff',
       fontSize: '13px',
+      lineHeight: '1.3',
+      whiteSpace: 'pre-line',
       borderRadius: '4px',
       zIndex: 999999,
       opacity: '0',
@@ -59,6 +70,52 @@
       toast.style.opacity = '0';
       setTimeout(() => toast.remove(), 200);
     }, duration);
+
+    return toast;
+  }
+
+  function closeToast(toast) {
+    if (!toast) return;
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 200);
+  }
+
+  function replaceActiveToast(toast) {
+    if (window.__dropdownExtractorActiveToast) {
+      closeToast(window.__dropdownExtractorActiveToast);
+    }
+    window.__dropdownExtractorActiveToast = toast;
+    return toast;
+  }
+
+  function clearArmedToast() {
+    if (window.__dropdownExtractorArmedToast) {
+      closeToast(window.__dropdownExtractorArmedToast);
+      window.__dropdownExtractorArmedToast = null;
+    }
+  }
+
+  function showArmedToast() {
+    clearArmedToast();
+    window.__dropdownExtractorArmedToast = replaceActiveToast(showToast(ARMED_TOAST_TEXT, {
+      position: 'top-right',
+      duration: ARM_DURATION_MS,
+      background: TOAST_INFO_BG
+    }));
+  }
+
+  function handleContextInvalid() {
+    clearArmedToast();
+    cleanup();
+  }
+
+  function buildExtractedMessage(items) {
+    const preview = items.slice(0, EXTRACTED_PREVIEW_COUNT);
+    const lines = preview.map(item => `– ${item}`);
+    if (items.length > EXTRACTED_PREVIEW_COUNT) {
+      lines.push('…');
+    }
+    return `Extracted ${items.length} items to clipboard:\n\n${lines.join('\n')}`;
   }
 
   function armTimer() {
@@ -66,14 +123,19 @@
       clearTimeout(window.__dropdownExtractorCancelTimer);
     }
     window.__dropdownExtractorCancelTimer = setTimeout(() => {
+      clearArmedToast();
       notifyBackground('canceled');
       cleanup();
-      showToast('Dropdown extractor canceled', { duration: 1500, position: 'top-right' });
-    }, 10000);
+      replaceActiveToast(showToast('Dropdown extractor canceled', {
+        duration: 1500,
+        position: 'top-right',
+        background: TOAST_EXPIRED_BG
+      }));
+    }, ARM_DURATION_MS);
   }
 
   if (window.__dropdownExtractorActive) {
-    showToast('Dropdown extractor armed', { position: 'top-right' });
+    showArmedToast();
     armTimer();
     notifyBackground('armed');
     return;
@@ -83,10 +145,18 @@
 
   // ===== OPTIONS (EXACT PLACE: here, after active flag) =====
   function getPrefs(callback) {
-    chrome.storage.sync.get(
-      { extractText: true, extractValue: false },
-      callback
-    );
+    if (!chrome || !chrome.runtime || !chrome.runtime.id) {
+      handleContextInvalid();
+      return;
+    }
+    try {
+      chrome.storage.sync.get(
+        { extractText: true, extractValue: false },
+        callback
+      );
+    } catch (e) {
+      handleContextInvalid();
+    }
   }
 
   // ===== HELPERS =====
@@ -124,7 +194,12 @@
 
         if (items.length) {
           navigator.clipboard.writeText(items.join('\n'));
-          showToast(`Extracted ${items.length} items`, { position: 'cursor', event: e });
+          clearArmedToast();
+          replaceActiveToast(showToast(buildExtractedMessage(items), {
+            position: 'top-right',
+            duration: EXTRACTED_TOAST_MS,
+            background: TOAST_SUCCESS_BG
+          }));
           notifyBackground('done');
           cleanup();
         }
@@ -154,7 +229,12 @@
 
         if (items.length) {
           navigator.clipboard.writeText(items.join('\n'));
-          showToast(`Extracted ${items.length} items`, { position: 'cursor', event: e });
+          clearArmedToast();
+          replaceActiveToast(showToast(buildExtractedMessage(items), {
+            position: 'top-right',
+            duration: EXTRACTED_TOAST_MS,
+            background: TOAST_SUCCESS_BG
+          }));
           notifyBackground('done');
           cleanup();
         }
@@ -185,7 +265,12 @@
 
         if (items.length) {
           navigator.clipboard.writeText(items.join('\n'));
-          showToast(`Extracted ${items.length} items`, { position: 'cursor', event: e });
+          clearArmedToast();
+          replaceActiveToast(showToast(buildExtractedMessage(items), {
+            position: 'top-right',
+            duration: EXTRACTED_TOAST_MS,
+            background: TOAST_SUCCESS_BG
+          }));
           notifyBackground('done');
           cleanup();
         }
@@ -198,7 +283,7 @@
 
   document.addEventListener('mousedown', onMouseDown, true);
 
-  showToast('Dropdown extractor armed', { position: 'top-right' });
+  showArmedToast();
   notifyBackground('armed');
 
   armTimer();

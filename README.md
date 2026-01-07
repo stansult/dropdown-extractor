@@ -56,6 +56,18 @@ The extension is now installed and ready to use.
 
 ---
 
+## Packaging for Chrome Web Store
+
+To create a ZIP for upload:
+
+```bash
+npm run package
+```
+
+This generates `dropdown-extractor.zip` in the project root.
+
+---
+
 ## Extension options
 
 To configure what gets extracted:

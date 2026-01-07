@@ -170,6 +170,11 @@
       .find(el => el.offsetParent !== null) || null;
   }
 
+  function getVisibleReactSelectMenuList() {
+    return [...document.querySelectorAll('[class*="react-select__menu-list"]')]
+      .find(el => el.offsetParent !== null) || null;
+  }
+
   function cleanup() {
     document.removeEventListener('mousedown', onMouseDown, true);
     window.__dropdownExtractorActive = false;
@@ -228,6 +233,48 @@
               return `${text}\t${value}`;
             if (prefs.extractValue)
               return value;
+            return text;
+          })
+          .filter(Boolean);
+
+        if (items.length) {
+          navigator.clipboard.writeText(items.join('\n'));
+          clearArmedToast();
+          replaceActiveToast(showToast(buildExtractedMessage(items), {
+            position: 'top-right',
+            duration: EXTRACTED_TOAST_MS,
+            background: TOAST_SUCCESS_BG
+          }));
+          notifyBackground('done');
+          cleanup();
+        }
+      });
+      return;
+    }
+
+    // --- 3) React Select support ---
+    const reactSelectMenuList = getVisibleReactSelectMenuList();
+    if (reactSelectMenuList) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      getPrefs(prefs => {
+        const options = [
+          ...reactSelectMenuList.querySelectorAll('[class*="react-select__option"]'),
+          ...reactSelectMenuList.querySelectorAll('[id^="react-select-"][id*="-option-"]'),
+          ...reactSelectMenuList.querySelectorAll('[aria-disabled],[aria-selected]')
+        ];
+        const uniqueOptions = [...new Set(options)]
+          .filter(el => !el.className.includes('react-select__group-heading'));
+        const items = uniqueOptions
+          .map(o => {
+            const text = o.textContent.trim();
+            const value = o.dataset.value;
+
+            if (prefs.extractText && prefs.extractValue)
+              return `${text}\t${value ?? ''}`.trim();
+            if (prefs.extractValue)
+              return value || '';
             return text;
           })
           .filter(Boolean);

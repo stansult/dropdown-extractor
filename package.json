@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "package": "zip -r dropdown-extractor.zip . -x \"*.git*\" -x \"node_modules/*\" -x \"*.DS_Store\""
+    "package": "zip -r dropdown-extractor.zip . -x \"*.git*\" -x \"node_modules/*\" -x \"*.DS_Store\" -x \"screenshots/*\" -x \"README.md\" -x \"LICENSE\" -x \"package.json\" -x \"icon.svg\""
   }
 }

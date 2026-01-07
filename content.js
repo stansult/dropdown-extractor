@@ -13,14 +13,17 @@
   }
 
   // ===== TOAST =====
-  function showToast(message, duration = 2000) {
+  function showToast(message, options = {}) {
+    const {
+      duration = 2000,
+      position = 'bottom-right',
+      event = null
+    } = options;
     const toast = document.createElement('div');
     toast.textContent = message;
 
-    Object.assign(toast.style, {
+    const baseStyle = {
       position: 'fixed',
-      bottom: '16px',
-      right: '16px',
       padding: '8px 12px',
       background: 'rgba(0,0,0,0.8)',
       color: '#fff',
@@ -29,7 +32,27 @@
       zIndex: 999999,
       opacity: '0',
       transition: 'opacity 0.2s ease'
-    });
+    };
+
+    if (position === 'top-right') {
+      Object.assign(baseStyle, { top: '16px', right: '16px' });
+    } else if (position === 'cursor' && event) {
+      const offset = 12;
+      const toastMaxWidth = 240;
+      const x = Math.min(
+        Math.max(event.clientX + offset, 8),
+        window.innerWidth - toastMaxWidth - 8
+      );
+      const y = Math.min(
+        Math.max(event.clientY + offset, 8),
+        window.innerHeight - 40
+      );
+      Object.assign(baseStyle, { left: `${x}px`, top: `${y}px`, maxWidth: `${toastMaxWidth}px` });
+    } else {
+      Object.assign(baseStyle, { bottom: '16px', right: '16px' });
+    }
+
+    Object.assign(toast.style, baseStyle);
 
     document.body.appendChild(toast);
 
@@ -78,7 +101,7 @@
 
         if (items.length) {
           navigator.clipboard.writeText(items.join('\n'));
-          showToast(`Extracted ${items.length} items`);
+          showToast(`Extracted ${items.length} items`, { position: 'cursor', event: e });
           cleanup();
         }
       });
@@ -107,7 +130,7 @@
 
         if (items.length) {
           navigator.clipboard.writeText(items.join('\n'));
-          showToast(`Extracted ${items.length} items`);
+          showToast(`Extracted ${items.length} items`, { position: 'cursor', event: e });
           cleanup();
         }
       });
@@ -137,7 +160,7 @@
 
         if (items.length) {
           navigator.clipboard.writeText(items.join('\n'));
-          showToast(`Extracted ${items.length} items`);
+          showToast(`Extracted ${items.length} items`, { position: 'cursor', event: e });
           cleanup();
         }
       });
@@ -149,10 +172,10 @@
 
   document.addEventListener('mousedown', onMouseDown, true);
 
-  showToast('Dropdown extractor armed');
+  showToast('Dropdown extractor armed', { position: 'top-right' });
 
   cancelTimer = setTimeout(() => {
     cleanup();
-    showToast('Dropdown extractor canceled', 1500);
+    showToast('Dropdown extractor canceled', { duration: 1500, position: 'top-right' });
   }, 10000);
 })();

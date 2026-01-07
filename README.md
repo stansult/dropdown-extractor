@@ -68,6 +68,12 @@ npm run package
 
 This runs a clean step and generates `dist/dropdown-extractor-<version>.zip`.
 
+To bump the patch version and package in one step:
+
+```bash
+npm run package:patch
+```
+
 ---
 
 ## Extension options

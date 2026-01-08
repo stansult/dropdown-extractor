@@ -36,7 +36,7 @@ You can choose what to copy via **Extension Options**:
 
 ---
 
-## Supported dropdown types
+## Dropdown types
 
 | Dropdown type | Supported |
 |--------------|-----------|
@@ -44,6 +44,8 @@ You can choose what to copy via **Extension Options**:
 | Selectize | Yes |
 | React Select | Yes |
 | ARIA listbox | Yes |
+| Canvas-rendered / virtualized | No |
+| Cross-origin iframes | No |
 
 ---
 

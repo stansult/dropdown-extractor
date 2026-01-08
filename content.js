@@ -15,6 +15,7 @@
   const TOAST_INFO_BG = 'rgba(20, 40, 70, 0.75)';
   const TOAST_SUCCESS_BG = 'rgba(20, 70, 40, 0.75)';
   const TOAST_EXPIRED_BG = 'rgba(60, 60, 60, 0.75)';
+  const TOAST_ERROR_BG = 'rgba(120, 30, 30, 0.85)';
 
   // ===== TOAST =====
   function showToast(message, options = {}) {
@@ -110,7 +111,7 @@
     cleanup();
   }
 
-  function buildExtractedMessage(items) {
+  function buildExtractedMessage(items, note) {
     const truncateItem = (text) => {
       if (text.length <= EXTRACTED_PREVIEW_MAX_CHARS) return text;
       return `${text.slice(0, EXTRACTED_PREVIEW_MAX_CHARS - 1)}…`;
@@ -120,7 +121,128 @@
     if (items.length > EXTRACTED_PREVIEW_COUNT) {
       lines.push('…');
     }
-    return `Extracted ${items.length} items to clipboard:\n\n${lines.join('\n')}`;
+    const message = `Extracted ${items.length} items to clipboard:\n\n${lines.join('\n')}`;
+    return note ? `${message}\n\n${note}` : message;
+  }
+
+  function formatTextValue(text, value, format) {
+    const safeText = text ?? '';
+    const safeValue = value ?? '';
+    switch (format) {
+      case 'text-space-value':
+        return `${safeText} ${safeValue}`.trim();
+      case 'text-dash-value':
+        return `${safeText} - ${safeValue}`.trim();
+      case 'text-pipe-value':
+        return `${safeText} | ${safeValue}`.trim();
+      case 'text-linebreak-value':
+        return `${safeText}\n${safeValue}`.trim();
+      case 'text-parens-value':
+        return safeValue ? `${safeText} (${safeValue})` : safeText;
+      case 'text-brackets-value':
+        return safeValue ? `${safeText} [${safeValue}]` : safeText;
+      case 'text-tab-value':
+      default:
+        return `${safeText}\t${safeValue}`.trim();
+    }
+  }
+
+  function normalizeField(value) {
+    return value == null ? '' : String(value).trim();
+  }
+
+  function getOptionLabelText(optionEl) {
+    if (!optionEl || optionEl.nodeType !== Node.ELEMENT_NODE) return '';
+    const clone = optionEl.cloneNode(true);
+    clone.querySelectorAll('svg, title').forEach(el => el.remove());
+    return clone.textContent;
+  }
+
+  function resolveFields(items, getText, valueGetters) {
+    const texts = items.map(item => normalizeField(getText(item)));
+    let values = [];
+    let valuesFound = false;
+
+    for (const getter of valueGetters) {
+      const candidate = items.map(item => normalizeField(getter(item)));
+      if (candidate.some(Boolean)) {
+        values = candidate;
+        valuesFound = true;
+        break;
+      }
+    }
+
+    if (!valuesFound) {
+      values = items.map(() => '');
+    }
+
+    const textsFound = texts.some(Boolean);
+    return { texts, values, textsFound, valuesFound };
+  }
+
+  function buildOutput(fields, prefs) {
+    const { texts, values, textsFound, valuesFound } = fields;
+    const wantsBoth = prefs.extractText && prefs.extractValue;
+
+    if (wantsBoth) {
+      if (!textsFound && !valuesFound) {
+        return { items: [], note: null, error: 'No text or values found.' };
+      }
+      if (!valuesFound && textsFound) {
+        return {
+          items: texts.filter(Boolean),
+          note: 'Only text extracted, no values found.',
+          error: null
+        };
+      }
+      if (!textsFound && valuesFound) {
+        return {
+          items: values.filter(Boolean),
+          note: 'Only values extracted, no text found.',
+          error: null
+        };
+      }
+      return {
+        items: texts.map((text, i) => formatTextValue(text, values[i], prefs.format)).filter(Boolean),
+        note: null,
+        error: null
+      };
+    }
+
+    if (prefs.extractText) {
+      return { items: texts.filter(Boolean), note: null, error: null };
+    }
+
+    if (prefs.extractValue) {
+      return { items: values.filter(Boolean), note: null, error: null };
+    }
+
+    return { items: [], note: null, error: 'No extract option selected.' };
+  }
+
+  function showErrorToast(message) {
+    clearArmedToast();
+    replaceActiveToast(showToast(message, {
+      position: 'top-right',
+      duration: 2000,
+      background: TOAST_ERROR_BG
+    }));
+  }
+
+  function copyDebugHtml(element) {
+    if (!element) return false;
+    const html = element.outerHTML;
+    if (!html || !html.trim()) return false;
+    navigator.clipboard.writeText(html);
+    clearArmedToast();
+    replaceActiveToast(showToast('Debug: copied dropdown HTML', {
+      position: 'top-right',
+      duration: EXTRACTED_TOAST_MS,
+      background: TOAST_SUCCESS_BG
+    }));
+    notifyBackground('done');
+    cleanup();
+    return true;
   }
 
   function armTimer() {
@@ -156,7 +278,7 @@
     }
     try {
       chrome.storage.sync.get(
-        { extractText: true, extractValue: false },
+        { extractText: true, extractValue: false, format: 'text-tab-value', debug: false },
         callback
       );
     } catch (e) {
@@ -192,27 +314,33 @@
     const selectEl = e.target.closest('select');
     if (selectEl) {
       getPrefs(prefs => {
-        const items = [...selectEl.options]
-          .map(o => {
-            if (prefs.extractText && prefs.extractValue)
-              return `${o.text.trim()}\t${o.value}`;
-            if (prefs.extractValue)
-              return o.value;
-            return o.text.trim();
-          })
-          .filter(Boolean);
+        if (prefs.debug && copyDebugHtml(selectEl)) return;
+        const options = [...selectEl.options];
+        const fields = resolveFields(
+          options,
+          o => getOptionLabelText(o),
+          [
+            o => o.value,
+            o => o.dataset.value
+          ]
+        );
+        const { items, note, error } = buildOutput(fields, prefs);
 
         if (items.length) {
           navigator.clipboard.writeText(items.join('\n'));
           clearArmedToast();
-          replaceActiveToast(showToast(buildExtractedMessage(items), {
+          replaceActiveToast(showToast(buildExtractedMessage(items, note), {
             position: 'top-right',
             duration: EXTRACTED_TOAST_MS,
             background: TOAST_SUCCESS_BG
           }));
           notifyBackground('done');
           cleanup();
+          return;
         }
+
+        showErrorToast(error || 'No items found to extract.');
+        cleanup();
       });
       return;
     }
@@ -224,30 +352,33 @@
       e.stopPropagation();
 
       getPrefs(prefs => {
-        const items = [...selectizeContent.querySelectorAll('.option')]
-          .map(o => {
-            const text = o.textContent.trim();
-            const value = o.dataset.value;
-
-            if (prefs.extractText && prefs.extractValue)
-              return `${text}\t${value}`;
-            if (prefs.extractValue)
-              return value;
-            return text;
-          })
-          .filter(Boolean);
+        if (prefs.debug && copyDebugHtml(selectizeContent)) return;
+        const options = [...selectizeContent.querySelectorAll('.option')];
+        const fields = resolveFields(
+          options,
+          o => getOptionLabelText(o),
+          [
+            o => o.value,
+            o => o.dataset.value
+          ]
+        );
+        const { items, note, error } = buildOutput(fields, prefs);
 
         if (items.length) {
           navigator.clipboard.writeText(items.join('\n'));
           clearArmedToast();
-          replaceActiveToast(showToast(buildExtractedMessage(items), {
+          replaceActiveToast(showToast(buildExtractedMessage(items, note), {
             position: 'top-right',
             duration: EXTRACTED_TOAST_MS,
             background: TOAST_SUCCESS_BG
           }));
           notifyBackground('done');
           cleanup();
+          return;
         }
+
+        showErrorToast(error || 'No items found to extract.');
+        cleanup();
       });
       return;
     }
@@ -259,6 +390,7 @@
       e.stopPropagation();
 
       getPrefs(prefs => {
+        if (prefs.debug && copyDebugHtml(reactSelectMenuList)) return;
         const options = [
           ...reactSelectMenuList.querySelectorAll('[class*="react-select__option"]'),
           ...reactSelectMenuList.querySelectorAll('[id^="react-select-"][id*="-option-"]'),
@@ -266,30 +398,31 @@
         ];
         const uniqueOptions = [...new Set(options)]
           .filter(el => !el.className.includes('react-select__group-heading'));
-        const items = uniqueOptions
-          .map(o => {
-            const text = o.textContent.trim();
-            const value = o.dataset.value;
-
-            if (prefs.extractText && prefs.extractValue)
-              return `${text}\t${value ?? ''}`.trim();
-            if (prefs.extractValue)
-              return value || '';
-            return text;
-          })
-          .filter(Boolean);
+        const fields = resolveFields(
+          uniqueOptions,
+          o => getOptionLabelText(o),
+          [
+            o => o.value,
+            o => o.dataset.value
+          ]
+        );
+        const { items, note, error } = buildOutput(fields, prefs);
 
         if (items.length) {
           navigator.clipboard.writeText(items.join('\n'));
           clearArmedToast();
-          replaceActiveToast(showToast(buildExtractedMessage(items), {
+          replaceActiveToast(showToast(buildExtractedMessage(items, note), {
             position: 'top-right',
             duration: EXTRACTED_TOAST_MS,
             background: TOAST_SUCCESS_BG
           }));
           notifyBackground('done');
           cleanup();
+          return;
         }
+
+        showErrorToast(error || 'No items found to extract.');
+        cleanup();
       });
       return;
     }
@@ -302,30 +435,33 @@
       e.stopPropagation();
 
       getPrefs(prefs => {
-        const items = [...listbox.querySelectorAll('[role="option"]')]
-          .map(o => {
-            const text = o.textContent.trim();
-            const value = o.dataset.value;
-
-            if (prefs.extractText && prefs.extractValue)
-              return `${text}\t${value}`;
-            if (prefs.extractValue)
-              return value;
-            return text;
-          })
-          .filter(Boolean);
+        if (prefs.debug && copyDebugHtml(listbox)) return;
+        const options = [...listbox.querySelectorAll('[role="option"]')];
+        const fields = resolveFields(
+          options,
+          o => getOptionLabelText(o),
+          [
+            o => o.value,
+            o => o.dataset.value
+          ]
+        );
+        const { items, note, error } = buildOutput(fields, prefs);
 
         if (items.length) {
           navigator.clipboard.writeText(items.join('\n'));
           clearArmedToast();
-          replaceActiveToast(showToast(buildExtractedMessage(items), {
+          replaceActiveToast(showToast(buildExtractedMessage(items, note), {
             position: 'top-right',
             duration: EXTRACTED_TOAST_MS,
             background: TOAST_SUCCESS_BG
           }));
           notifyBackground('done');
           cleanup();
+          return;
         }
+
+        showErrorToast(error || 'No items found to extract.');
+        cleanup();
       });
       return;
     }

@@ -1,6 +1,18 @@
 const ARM_DURATION_MS = 10000;
 let armIntervalId = null;
 
+function resetDebugFlag() {
+  chrome.storage.sync.set({ debug: false });
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  resetDebugFlag();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  resetDebugFlag();
+});
+
 function clearArmBadge() {
   if (armIntervalId) {
     clearInterval(armIntervalId);

@@ -1,0 +1,77 @@
+body {
+  font-family: sans-serif;
+  padding: 16px;
+  line-height: 1.5;
+  max-width: 800px;
+  font-size: 16px;
+}
+
+h1 {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+}
+
+p {
+  margin: 0 0 12px 0;
+}
+
+label {
+  display: block;
+}
+
+.option-label {
+  margin: 0 0 8px 0;
+}
+
+.debug-row {
+  margin-top: 16px;
+}
+
+.format-row {
+  margin: 12px 0 0 26px;
+  display: none;
+}
+
+.format-title {
+  margin: 0 0 6px 0;
+}
+
+.format-label {
+  display: block;
+  margin: 0 0 6px 0;
+}
+
+.format-select {
+  font-size: 14px;
+  padding: 4px 6px;
+}
+
+.format-option {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  display: grid;
+  grid-template-columns: 10px 100px max-content;
+  align-items: left;
+  column-gap: 5px;
+}
+
+.format-option input[type="radio"] {
+  margin: 0;
+}
+
+.format-name {
+  color: #333;
+}
+
+.example {
+  font-family: Courier, monospace;
+  font-size: 13px;
+  color: #0f5b21;
+  background-color:rgb(240, 240, 240);
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+
+.example-delim {
+  color: #763513;
+}

@@ -1,24 +1,87 @@
 <!DOCTYPE html>
 <html>
-  <body style="font-family:sans-serif; padding:12px; line-height:1.4; max-width:360px;">
+  <head>
+    <title>Dropdown Extractor – Options</title>
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <h1>Dropdown Extractor</h1>
     <p>
-      <strong>Dropdown Extractor</strong> copies items from dropdown lists
-      into your clipboard.
+      Copies items from dropdown lists into your clipboard.
     </p>
 
     <p>
       Choose what to extract for each dropdown item:
     </p>
 
-    <label>
+    <label class="option-label">
       <input type="checkbox" id="text" checked>
       Item text (what you see)
     </label>
-    <br>
 
     <label>
       <input type="checkbox" id="value">
       Item value (underlying value)
+    </label>
+
+    <div id="format-row" class="format-row">
+      <!-- Format options: radio buttons (active) -->
+      <div class="format-title">Format when both are selected:</div>
+
+      <label class="format-option">
+        <input type="radio" name="format" value="text-space-value">
+        <span class="format-name">space:</span>
+        <span class="example">text value</span>
+      </label>
+      <label class="format-option">
+        <input type="radio" name="format" value="text-dash-value">
+        <span class="format-name">dash:</span>
+        <span class="example">text <span class="example-delim">-</span> value</span>
+      </label>
+      <label class="format-option">
+        <input type="radio" name="format" value="text-pipe-value">
+        <span class="format-name">pipe:</span>
+        <span class="example">text <span class="example-delim">|</span> value</span>
+      </label>
+      <label class="format-option">
+        <input type="radio" name="format" value="text-tab-value">
+        <span class="format-name">tab:</span>
+        <span class="example">text <span class="example-delim">&lt;tab&gt;</span> value</span>
+      </label>
+      <label class="format-option">
+        <input type="radio" name="format" value="text-linebreak-value">
+        <span class="format-name">line break:</span>
+        <span class="example">text <span class="example-delim">&lt;line break&gt;</span> value</span>
+      </label>
+      <label class="format-option">
+        <input type="radio" name="format" value="text-parens-value">
+        <span class="format-name">parentheses:</span>
+        <span class="example">text <span class="example-delim">(</span>value<span class="example-delim">)</span></span>
+      </label>
+      <label class="format-option">
+        <input type="radio" name="format" value="text-brackets-value">
+        <span class="format-name">brackets:</span>
+        <span class="example">text <span class="example-delim">[</span>value<span class="example-delim">]</span></span>
+      </label>
+
+      <!-- Format options: dropdown (commented out) -->
+      <!--
+      <label for="format" class="format-label">Format when both are selected:</label>
+      <select id="format" class="format-select">
+        <option value="text-space-value">text value</option>
+        <option value="text-dash-value">text - value</option>
+        <option value="text-pipe-value">text | value</option>
+        <option value="text-tab-value">text &lt;tab&gt; value</option>
+        <option value="text-linebreak-value">text &lt;line break&gt; value</option>
+        <option value="text-parens-value">text (value)</option>
+        <option value="text-brackets-value">text [value]</option>
+      </select>
+      -->
+    </div>
+
+    <label class="option-label debug-row">
+      <input type="checkbox" id="debug">
+      Debug: copy raw dropdown HTML
     </label>
 
     <script src="options.js"></script>

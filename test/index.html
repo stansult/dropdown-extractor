@@ -50,8 +50,14 @@
       <h2>Configure test dropdown</h2>
       <div class="controls">
         <div class="control">
-          <label for="type">Type</label>
-          <select id="type">
+          <label for="type">Type <span id="type-support-config" class="type-support supported">Supported</span></label>
+          <div class="type-picker">
+            <button id="type-trigger" type="button" class="type-trigger" aria-haspopup="listbox" aria-expanded="false">
+              <span id="type-label">Native &lt;select&gt;</span>
+            </button>
+            <div id="type-menu" class="type-menu" role="listbox"></div>
+          </div>
+          <select id="type" class="type-select">
             <option value="native">Native &lt;select&gt;</option>
             <option value="aria">ARIA listbox</option>
             <option value="selectize">Selectize-style</option>

@@ -165,6 +165,11 @@ p {
   outline: none;
 }
 
+.control.changed .type-trigger {
+  border-color: #e6a23c;
+  box-shadow: 0 0 0 1px rgba(230, 162, 60, 0.3);
+}
+
 .control label {
   font-size: 12px;
   color: #444;
@@ -174,6 +179,109 @@ p {
 .control select {
   padding: 6px 8px;
   font-size: 14px;
+}
+
+.type-picker {
+  position: relative;
+}
+
+.type-select {
+  display: none;
+}
+
+.type-trigger {
+  width: 320px;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: left;
+}
+
+.type-trigger::after {
+  content: "▾";
+  float: right;
+  color: #666;
+}
+
+.type-trigger:focus-visible {
+  outline: 2px solid #8bb7e3;
+  outline-offset: 2px;
+}
+
+.type-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 320px;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+  padding: 6px;
+  display: none;
+  z-index: 5;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.type-menu.open {
+  display: block;
+}
+
+.type-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: left;
+}
+
+.type-option:hover,
+.type-option[aria-selected="true"] {
+  background: #f2f6fb;
+}
+
+.type-pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  line-height: 1;
+}
+
+.type-option.supported .type-pill,
+.type-support.supported {
+  color: #1f6f3a;
+  background: #e8f5ee;
+  border-color: #cfe9da;
+}
+
+.type-option.unsupported .type-pill,
+.type-support.unsupported {
+  color: #8a3a3a;
+  background: #fdeaea;
+  border-color: #f3c3c3;
+}
+
+.type-support {
+  margin-left: 8px;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .control.buttons {
@@ -327,6 +435,13 @@ button:focus-visible {
   border-radius: 6px;
   padding: 6px;
   text-align: left;
+}
+
+.select2-results__options,
+.chosen-results,
+.downshift-listbox {
+  list-style: none;
+  margin: 0;
 }
 
 .mock-option,

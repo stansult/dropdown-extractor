@@ -1,4 +1,8 @@
 const typeSelect = document.getElementById('type');
+const typeTrigger = document.getElementById('type-trigger');
+const typeLabel = document.getElementById('type-label');
+const typeMenu = document.getElementById('type-menu');
+const typeSupportConfig = document.getElementById('type-support-config');
 const countInput = document.getElementById('count');
 const renderButton = document.getElementById('render');
 const snapshotTextButton = document.getElementById('snapshot-text');
@@ -11,6 +15,84 @@ const dropdownPanel = document.querySelector('.dropdown-panel');
 const valueModeSelect = document.getElementById('value-mode');
 
 let lastRenderSnapshot = null;
+
+const supportedTypes = new Set([
+  'native',
+  'aria',
+  'selectize',
+  'react',
+  'react-variant',
+  'downshift',
+  'mui'
+]);
+
+function isTypeSupported(type) {
+  return supportedTypes.has(type);
+}
+
+function updateTypeDisplay() {
+  const option = typeSelect.options[typeSelect.selectedIndex];
+  const label = option ? option.textContent.trim() : '';
+  if (typeLabel) {
+    typeLabel.textContent = label;
+  }
+  if (typeSupportConfig) {
+    typeSupportConfig.className = `type-support ${isTypeSupported(typeSelect.value) ? 'supported' : 'unsupported'}`;
+    typeSupportConfig.textContent = isTypeSupported(typeSelect.value) ? 'Supported' : 'Not supported';
+  }
+}
+
+function updateRenderedTypeDisplay() {
+  if (!lastRenderSnapshot) return;
+  const label = lastRenderSnapshot.typeLabel || typeSelect.options[typeSelect.selectedIndex].textContent.trim();
+  dropdownType.textContent = '';
+  dropdownType.appendChild(document.createTextNode(`Type: ${label}`));
+  const pill = document.createElement('span');
+  pill.className = `type-support ${isTypeSupported(lastRenderSnapshot.type) ? 'supported' : 'unsupported'}`;
+  pill.textContent = isTypeSupported(lastRenderSnapshot.type) ? 'Supported' : 'Not supported';
+  dropdownType.appendChild(pill);
+}
+
+function setTypeMenuOpen(open) {
+  if (!typeMenu || !typeTrigger) return;
+  typeMenu.classList.toggle('open', open);
+  typeTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function updateTypeMenuSelection() {
+  if (!typeMenu) return;
+  typeMenu.querySelectorAll('.type-option').forEach(option => {
+    option.setAttribute('aria-selected', option.dataset.value === typeSelect.value ? 'true' : 'false');
+  });
+}
+
+function buildTypeMenu() {
+  if (!typeMenu) return;
+  typeMenu.innerHTML = '';
+  [...typeSelect.options].forEach(option => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = `type-option ${isTypeSupported(option.value) ? 'supported' : 'unsupported'}`;
+    item.setAttribute('role', 'option');
+    item.dataset.value = option.value;
+
+    const label = document.createElement('span');
+    label.textContent = option.textContent.trim();
+    const pill = document.createElement('span');
+    pill.className = 'type-pill';
+    pill.textContent = isTypeSupported(option.value) ? '✓' : '✕';
+
+    item.appendChild(label);
+    item.appendChild(pill);
+    item.addEventListener('click', () => {
+      typeSelect.value = option.value;
+      typeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      setTypeMenuOpen(false);
+    });
+    typeMenu.appendChild(item);
+  });
+  updateTypeMenuSelection();
+}
 
 function pulsePanel() {
   dropdownPanel.classList.remove('pulse');
@@ -294,8 +376,8 @@ function renderDropdown() {
   dropdownContainer.innerHTML = '';
   const items = readItems();
   const type = typeSelect.value;
-  dropdownType.textContent = `Type: ${typeSelect.options[typeSelect.selectedIndex].textContent}`;
   lastRenderSnapshot = buildSnapshot();
+  updateRenderedTypeDisplay();
   updateChangedState();
 
   if (type === 'native') {
@@ -560,7 +642,11 @@ countInput.addEventListener('change', () => {
   bindHeaderActions();
   updateChangedState();
 });
-typeSelect.addEventListener('change', updateChangedState);
+typeSelect.addEventListener('change', () => {
+  updateTypeDisplay();
+  updateTypeMenuSelection();
+  updateChangedState();
+});
 valueModeSelect.addEventListener('change', updateChangedState);
 renderButton.addEventListener('click', renderDropdown);
 randomizeButton.addEventListener('click', fillRandomValues);
@@ -577,5 +663,19 @@ snapshotJsonButton.addEventListener('click', () => {
 rebuildRows();
 bindHeaderActions();
 fillRandomValues();
+buildTypeMenu();
+updateTypeDisplay();
 renderDropdown();
 enablePressedState();
+
+if (typeTrigger && typeMenu) {
+  typeTrigger.addEventListener('click', () => {
+    setTypeMenuOpen(!typeMenu.classList.contains('open'));
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!typeTrigger.contains(event.target) && !typeMenu.contains(event.target)) {
+      setTypeMenuOpen(false);
+    }
+  });
+}

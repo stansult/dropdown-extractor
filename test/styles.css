@@ -1,0 +1,218 @@
+body {
+  font-family: sans-serif;
+  padding: 16px;
+  line-height: 1.4;
+}
+
+h1 {
+  margin: 0 0 8px 0;
+}
+
+h2 {
+  margin: 0 0 8px 0;
+  color: #1f4d7a;
+  text-align: left;
+}
+
+p {
+  margin: 0 0 12px 0;
+}
+
+.intro {
+  max-width: 720px;
+  color: #333;
+}
+
+.howto {
+  margin: 8px 0 0 0;
+  max-width: 720px;
+}
+
+.howto summary {
+  cursor: pointer;
+  color: #1f4d7a;
+  font-weight: 600;
+}
+
+.howto ol {
+  margin: 8px 0 0 18px;
+}
+
+.configure-section {
+  margin-top: 12px;
+}
+
+.render-section {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 16px 0 24px 0;
+}
+
+.dropdown-panel {
+  min-width: 360px;
+  padding: 16px;
+  border: 2px dashed #22f;
+  border-radius: 8px;
+  text-align: right;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.dropdown-panel.pulse {
+  border-color: #7fb0e1;
+  box-shadow: 0 0 0 4px rgba(127, 176, 225, 0.45);
+  background-color: rgba(127, 176, 225, 0.12);
+}
+
+.dropdown-type {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+  text-align: left;
+}
+
+.dropdown-panel #dropdown {
+  text-align: left;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0 16px 0;
+  align-items: end;
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.control label {
+  font-size: 12px;
+  color: #444;
+}
+
+.control input[type="number"],
+.control select {
+  padding: 6px 8px;
+  font-size: 14px;
+}
+
+.control.buttons {
+  justify-content: flex-end;
+}
+
+button {
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.items-table th,
+.items-table td {
+  border-bottom: 1px solid #e6e6e6;
+  padding: 8px;
+  vertical-align: top;
+}
+
+.th-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.icon-button {
+  border: 1px solid #ddd;
+  background: #f7f7f7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.icon-button.danger {
+  color: #9b2c2c;
+  border-color: #f3c3c3;
+  background: #fdeaea;
+}
+
+.item-cell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.item-cell input[type="text"] {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  font-size: 14px;
+}
+
+.item-cell input[disabled] {
+  background: #f3f3f3;
+  color: #777;
+}
+
+.cell-button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 2px;
+}
+
+.cell-button.danger {
+  color: #c53030;
+}
+
+.mock-listbox,
+.selectize-dropdown-content,
+.react-select__menu-list,
+.mui-listbox,
+.ant-select-dropdown,
+.select2-results__options,
+.chosen-results,
+.downshift-listbox {
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  padding: 6px;
+  text-align: left;
+}
+
+.mock-option,
+.selectize-dropdown-content .option,
+.react-select__option,
+.mui-option,
+.ant-option,
+.select2-results__option,
+.chosen-option,
+.downshift-option {
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.mock-option:hover,
+.selectize-dropdown-content .option:hover,
+.react-select__option:hover,
+.mui-option:hover,
+.ant-option:hover,
+.select2-results__option:hover,
+.chosen-option:hover,
+.downshift-option:hover {
+  background: #f2f2f2;
+}

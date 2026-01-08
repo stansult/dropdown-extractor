@@ -169,6 +169,15 @@ function randomPhrase() {
   return words.join(' ');
 }
 
+function randomDashPhrase() {
+  const count = Math.floor(Math.random() * 2) + 1;
+  const words = [];
+  for (let i = 0; i < count; i += 1) {
+    words.push(randomWord());
+  }
+  return words.join('-');
+}
+
 function createCell(field, index, initial) {
   const cell = document.createElement('td');
   const wrapper = document.createElement('div');
@@ -279,7 +288,8 @@ function clearColumn(field) {
 
 function numberColumn(field) {
   const inputs = [...document.querySelectorAll(`input[id^="${field}-"]`)];
-  const prefixRe = /^(\d+)(?:\.\s*)?/;
+  const separator = field === 'text' ? '. ' : '-';
+  const prefixRe = field === 'text' ? /^(\d+)(?:\.\s*)?/ : /^(\d+)(?:-)?/;
   const hasPrefix = inputs.some(input => !input.disabled && prefixRe.test((input.value || '').trim()));
   let count = 1;
   inputs.forEach(input => {
@@ -294,7 +304,7 @@ function numberColumn(field) {
       count += 1;
       return;
     }
-    input.value = `${count}. ${current}`.trim();
+    input.value = `${count}${separator}${current}`.trim();
     count += 1;
   });
   updateChangedState();
@@ -604,7 +614,11 @@ function fillRandomValues() {
   inputs.forEach(input => {
     if (input.disabled) return;
     if (input.value) return;
-    input.value = randomPhrase();
+    if (input.id.startsWith('text-')) {
+      input.value = randomPhrase();
+    } else {
+      input.value = randomDashPhrase();
+    }
   });
   updateChangedState();
 }

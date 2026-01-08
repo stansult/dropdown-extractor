@@ -59,7 +59,7 @@ function createDropdownShell(selectedText) {
 
 function wireSelection(menuWrapper, listEl, trigger) {
   listEl.addEventListener('click', (event) => {
-    const option = event.target.closest('[role="option"], .option, .react-select__option, .mui-option, .ant-option, .select2-results__option, .chosen-option, .downshift-option, .mock-option');
+    const option = event.target.closest('[role="option"], [role="listitem"], .option, .react-select__option, .react-select-variant-option, .mui-option, .ant-option, .select2-results__option, .chosen-option, .downshift-option, .mock-option');
     if (!option) return;
     listEl.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
     option.classList.add('selected');
@@ -368,6 +368,49 @@ function renderDropdown() {
     });
     menu.appendChild(reactMenu);
     wireSelection(menu, reactMenu, trigger);
+    dropdownContainer.appendChild(shell);
+    pulsePanel();
+    return;
+  }
+
+  if (type === 'react-variant') {
+    const { shell, trigger, menu } = createDropdownShell(items[0]?.text);
+    const listbox = document.createElement('div');
+    listbox.className = 'react-select-variant-MenuList';
+    listbox.id = 'react-select-mock-listbox';
+    listbox.setAttribute('role', 'dialog');
+    listbox.setAttribute('aria-labelledby', 'react-select-mock-input');
+    const list = document.createElement('div');
+    list.setAttribute('role', 'list');
+    items.forEach((item, index) => {
+      const option = document.createElement('div');
+      option.className = 'react-select-variant-option -option';
+      option.id = `react-select-mock-option-${index}`;
+      option.setAttribute('role', 'listitem');
+      applyValueTarget(option, item.value);
+      if (item.dataValue) option.dataset.value = item.dataValue;
+
+      const group = document.createElement('div');
+      group.className = 'react-select-variant-group';
+      group.setAttribute('role', 'group');
+      if (item.text) group.setAttribute('aria-describedby', item.text);
+
+      const button = document.createElement('button');
+      button.className = 'react-select-variant-button';
+      button.type = 'button';
+
+      const label = document.createElement('div');
+      label.className = 'react-select-variant-label';
+      label.textContent = item.text;
+
+      button.appendChild(label);
+      group.appendChild(button);
+      option.appendChild(group);
+      list.appendChild(option);
+    });
+    listbox.appendChild(list);
+    menu.appendChild(listbox);
+    wireSelection(menu, list, trigger);
     dropdownContainer.appendChild(shell);
     pulsePanel();
     return;

@@ -415,8 +415,16 @@
   }
 
   function getVisibleReactSelectMenuList() {
-    return [...document.querySelectorAll('[class*="react-select__menu-list"]')]
-      .find(el => el.offsetParent !== null) || null;
+    const candidates = [
+      ...document.querySelectorAll('[class*="react-select__menu-list"]'),
+      ...document.querySelectorAll('[id^="react-select-"][id$="-listbox"]'),
+      ...document.querySelectorAll('[class*="-MenuList"]')
+    ];
+    return candidates.find(el => {
+      if (!el || el.offsetParent === null) return false;
+      if (el.querySelector('[class*="react-select__option"], [role="listitem"]')) return true;
+      return false;
+    }) || null;
   }
 
   function cleanup() {
@@ -515,13 +523,14 @@
       e.stopPropagation();
 
       if (shouldDebugSupported(prefs) && copyDebugHtml(reactSelectMenuList, 'supported dropdown')) return;
-      const options = [
-        ...reactSelectMenuList.querySelectorAll('[class*="react-select__option"]'),
-        ...reactSelectMenuList.querySelectorAll('[id^="react-select-"][id*="-option-"]'),
-        ...reactSelectMenuList.querySelectorAll('[aria-disabled],[aria-selected]')
-      ];
-      const uniqueOptions = [...new Set(options)]
-        .filter(el => !el.className.includes('react-select__group-heading'));
+        const options = [
+          ...reactSelectMenuList.querySelectorAll('[class*="react-select__option"]'),
+          ...reactSelectMenuList.querySelectorAll('[id^="react-select-"][id*="-option-"]'),
+          ...reactSelectMenuList.querySelectorAll('[role="listitem"]'),
+          ...reactSelectMenuList.querySelectorAll('[aria-disabled],[aria-selected]')
+        ];
+        const uniqueOptions = [...new Set(options)]
+          .filter(el => !el.className.includes('react-select__group-heading'));
       const fields = resolveFields(
         uniqueOptions,
         o => getOptionLabelText(o),

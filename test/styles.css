@@ -34,8 +34,17 @@ p {
   font-weight: 600;
 }
 
+.howto summary::-webkit-details-marker {
+  color: #1f4d7a;
+}
+
 .howto ol {
   margin: 8px 0 0 18px;
+  padding: 8px 12px;
+  background: #f7f9fc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  list-style-position: inside;
 }
 
 .configure-section {
@@ -76,6 +85,57 @@ p {
   text-align: left;
 }
 
+.render-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  margin-bottom: 6px;
+}
+
+.snapshot-summary {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #555;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dropdown-shell {
+  position: relative;
+}
+
+.dropdown-trigger {
+  width: 100%;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: left;
+}
+
+.dropdown-trigger::after {
+  content: "▾";
+  float: right;
+  color: #666;
+}
+
+.dropdown-menu {
+  margin-top: 6px;
+  display: none;
+}
+
+.dropdown-menu.open {
+  display: block;
+}
+
+.selected {
+  background: #e8f0fe;
+}
+
 .controls {
   display: flex;
   flex-wrap: wrap;
@@ -88,6 +148,21 @@ p {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.control.changed select,
+.control.changed input[type="number"] {
+  border-color: #e6a23c;
+  box-shadow: 0 0 0 1px rgba(230, 162, 60, 0.3);
+}
+
+.control.changed select:focus,
+.control.changed select:focus-visible,
+.control.changed input[type="number"]:focus,
+.control.changed input[type="number"]:focus-visible {
+  border-color: #e6a23c;
+  box-shadow: 0 0 0 2px rgba(230, 162, 60, 0.35);
+  outline: none;
 }
 
 .control label {
@@ -111,6 +186,32 @@ button {
   cursor: pointer;
   border: 1px solid #ccc;
   border-radius: 6px;
+  background: #fafafa;
+  transition: transform 0.06s ease, box-shadow 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+button:hover {
+  background: #f2f6fb;
+  border-color: #bcd0e6;
+}
+
+button:active {
+  transform: translateY(1px);
+  background: #dbe9f8;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+button.is-pressed,
+.icon-button.is-pressed,
+.cell-button.is-pressed {
+  transform: translateY(1px);
+  background: #cfe0f5;
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.18);
+}
+
+button:focus-visible {
+  outline: 2px solid #8bb7e3;
+  outline-offset: 2px;
 }
 
 .items-table {
@@ -139,12 +240,36 @@ button {
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
+  transition: transform 0.06s ease, box-shadow 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .icon-button.danger {
   color: #9b2c2c;
   border-color: #f3c3c3;
   background: #fdeaea;
+}
+
+.icon-button:hover {
+  background: #eef3f9;
+  border-color: #c7d8ee;
+}
+
+.icon-button.danger:hover {
+  background: #f9d7d7;
+  border-color: #efb3b3;
+}
+
+.icon-button:active,
+.cell-button:active {
+  transform: translateY(1px);
+  background: #e3edf9;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.icon-button:focus-visible,
+.cell-button:focus-visible {
+  outline: 2px solid #8bb7e3;
+  outline-offset: 2px;
 }
 
 .item-cell {
@@ -162,9 +287,19 @@ button {
   font-size: 14px;
 }
 
+.item-cell.changed input[type="text"] {
+  border-color: #e6a23c;
+  box-shadow: 0 0 0 1px rgba(230, 162, 60, 0.3);
+}
+
 .item-cell input[disabled] {
   background: #f3f3f3;
   color: #777;
+}
+
+.item-cell.changed input[disabled] {
+  border-color: #e6a23c;
+  box-shadow: 0 0 0 1px rgba(230, 162, 60, 0.3);
 }
 
 .cell-button {
@@ -173,6 +308,7 @@ button {
   cursor: pointer;
   font-size: 14px;
   padding: 0 2px;
+  transition: transform 0.06s ease, color 0.15s ease;
 }
 
 .cell-button.danger {

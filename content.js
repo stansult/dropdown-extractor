@@ -151,6 +151,15 @@
     return value == null ? '' : String(value).trim();
   }
 
+  function getValueField(el) {
+    if (!el || !el.getAttribute) return '';
+    const attr = el.getAttribute('value');
+    if (el.tagName === 'OPTION' && attr === null) {
+      return '';
+    }
+    return el.value || attr;
+  }
+
   function getOptionLabelText(optionEl) {
     if (!optionEl || optionEl.nodeType !== Node.ELEMENT_NODE) return '';
     const clone = optionEl.cloneNode(true);
@@ -320,7 +329,7 @@
           options,
           o => getOptionLabelText(o),
           [
-            o => o.value,
+            o => getValueField(o),
             o => o.dataset.value
           ]
         );
@@ -354,11 +363,11 @@
       getPrefs(prefs => {
         if (prefs.debug && copyDebugHtml(selectizeContent)) return;
         const options = [...selectizeContent.querySelectorAll('.option')];
-        const fields = resolveFields(
+    const fields = resolveFields(
           options,
           o => getOptionLabelText(o),
           [
-            o => o.value,
+            o => o.value || o.getAttribute('value'),
             o => o.dataset.value
           ]
         );
@@ -398,11 +407,11 @@
         ];
         const uniqueOptions = [...new Set(options)]
           .filter(el => !el.className.includes('react-select__group-heading'));
-        const fields = resolveFields(
+    const fields = resolveFields(
           uniqueOptions,
           o => getOptionLabelText(o),
           [
-            o => o.value,
+            o => o.value || o.getAttribute('value'),
             o => o.dataset.value
           ]
         );
@@ -437,11 +446,11 @@
       getPrefs(prefs => {
         if (prefs.debug && copyDebugHtml(listbox)) return;
         const options = [...listbox.querySelectorAll('[role="option"]')];
-        const fields = resolveFields(
+    const fields = resolveFields(
           options,
           o => getOptionLabelText(o),
           [
-            o => o.value,
+            o => o.value || o.getAttribute('value'),
             o => o.dataset.value
           ]
         );

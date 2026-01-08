@@ -22,27 +22,27 @@
         <details class="howto">
           <summary>How?</summary>
           <ol>
-            <li>Configure test dropdown using the controls below.
-              <ul>
-                <li>Choose the type of dropdown from the "Type" selector.</li>
-                <li>Set the number of items to generate.</li>
-                <li>Optionally, edit item text/value/data-value in the table below.</li>
-                <li>Buttons in the table header can clear or toggle missing values for each column.</li>
-                <li>"Fill with random values" button populates the table with random data.</li>
-              </ul>
-            </li>
-            <li>Select the type of dropdown.</li>
-            <li>Set the number of items and their text/value/data-value.</li>
-            <li>Click "Render dropdown" to build the dropdown.</li>
-            <li>Use the extension to extract items from the rendered dropdown.</li>
+            <li>Pick a dropdown type and value source.</li>
+            <li>Set the number of items to generate.</li>
+            <li>Edit text/value/data-value cells, or mark them missing.</li>
+            <li>Use header tools to clear, toggle missing, or number a column.</li>
+            <li>Click “Render dropdown” and test extraction on the right.</li>
+            <li>Use Snapshot buttons to copy the current setup.</li>
           </ol>
         </details>
       </div>
       <div class="dropdown-panel">
         <h2>Test dropdown</h2>
-        <button id="render">Render dropdown</button>
+        <div class="render-actions">
+          <button id="render">Render dropdown</button>
+        </div>
         <div id="dropdown-type" class="dropdown-type">Type: Native &lt;select&gt;</div>
         <div id="dropdown"></div>
+        <div class="snapshot-summary">
+          <span>Snapshot:</span>
+          <button id="snapshot-text" class="icon-button" title="Copy snapshot (text)" aria-label="Copy snapshot (text)">📝</button>
+          <button id="snapshot-json" class="icon-button" title="Copy snapshot (JSON)" aria-label="Copy snapshot (JSON)">{ }</button>
+        </div>
       </div>
     </section>
 
@@ -69,6 +69,15 @@
           <input id="count" type="number" min="1" max="20" value="5">
         </div>
 
+        <div class="control">
+          <label for="value-mode">Value source</label>
+          <select id="value-mode">
+            <option value="attribute">attribute</option>
+            <option value="property">property</option>
+            <option value="both">both</option>
+          </select>
+        </div>
+
         <div class="control buttons">
           <button id="randomize">Fill with random values</button>
         </div>
@@ -82,6 +91,7 @@
                 <span>Text</span>
                 <button class="icon-button" data-action="clear" data-field="text" title="Clear text" aria-label="Clear text">🗑</button>
                 <button class="icon-button danger" data-action="missing" data-field="text" title="Toggle missing text" aria-label="Toggle missing text">✕</button>
+                <button class="icon-button" data-action="number" data-field="text" title="Prefix numbers" aria-label="Prefix numbers">#</button>
               </div>
             </th>
             <th>
@@ -89,6 +99,7 @@
                 <span>Value</span>
                 <button class="icon-button" data-action="clear" data-field="value" title="Clear value" aria-label="Clear value">🗑</button>
                 <button class="icon-button danger" data-action="missing" data-field="value" title="Toggle missing value" aria-label="Toggle missing value">✕</button>
+                <button class="icon-button" data-action="number" data-field="value" title="Prefix numbers" aria-label="Prefix numbers">#</button>
               </div>
             </th>
             <th>
@@ -96,6 +107,7 @@
                 <span>Data-value</span>
                 <button class="icon-button" data-action="clear" data-field="data" title="Clear data-value" aria-label="Clear data-value">🗑</button>
                 <button class="icon-button danger" data-action="missing" data-field="data" title="Toggle missing data-value" aria-label="Toggle missing data-value">✕</button>
+                <button class="icon-button" data-action="number" data-field="data" title="Prefix numbers" aria-label="Prefix numbers">#</button>
               </div>
             </th>
           </tr>

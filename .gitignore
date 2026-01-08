@@ -1,3 +1,6 @@
 *.zip
 screenshots/
 dist/
+
+# Local Netlify folder
+.netlify

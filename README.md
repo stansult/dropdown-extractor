@@ -39,7 +39,7 @@ You can choose what to copy via **Extension Options**:
 ## Dropdown types
 
 | Dropdown type | Supported |
-|--------------|-----------|
+|--------------|:---------:|
 | Native `<select>` | Yes |
 | Selectize | Yes |
 | React Select | Yes |

@@ -79,10 +79,26 @@
       -->
     </div>
 
+    <p class="playground-link">
+      You can test this extension on the
+      <a href="https://dropdown-extractor.stansult.com" target="_blank" rel="noopener noreferrer">Dropdown Playground page</a>.
+    </p>
+
     <label class="option-label debug-row">
       <input type="checkbox" id="debug">
-      Debug: copy raw dropdown HTML
+      Debug mode
     </label>
+    <div id="debug-options" class="debug-options">
+      <div class="debug-title">Copy raw HTML:</div>
+      <label class="debug-option">
+        <input type="radio" name="debug-mode" value="supported">
+        Supported dropdown
+      </label>
+      <label class="debug-option">
+        <input type="radio" name="debug-mode" value="any-two">
+        Any two elements (open + select)
+      </label>
+    </div>
 
     <script src="options.js"></script>
   </body>

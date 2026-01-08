@@ -3,14 +3,27 @@ const value = document.getElementById('value');
 const formatRow = document.getElementById('format-row');
 const formatOptions = document.querySelectorAll('input[name="format"]');
 const debug = document.getElementById('debug');
+const debugOptions = document.getElementById('debug-options');
+const debugModeOptions = document.querySelectorAll('input[name="debug-mode"]');
 const TOAST_ERROR_BG = 'rgba(120, 30, 30, 0.85)';
 
 chrome.storage.sync.get(
-  { extractText: true, extractValue: false, format: 'text-tab-value', debug: false },
+  {
+    extractText: true,
+    extractValue: false,
+    format: 'text-tab-value',
+    debug: false,
+    debugMode: false,
+    debugModeTarget: 'supported'
+  },
   prefs => {
     text.checked = prefs.extractText;
     value.checked = prefs.extractValue;
-    debug.checked = prefs.debug;
+    debug.checked = prefs.debugMode ?? prefs.debug ?? false;
+    const debugTarget = prefs.debugModeTarget || 'supported';
+    debugModeOptions.forEach(option => {
+      option.checked = option.value === debugTarget;
+    });
     const selected = prefs.format || 'text-tab-value';
     formatOptions.forEach(option => {
       option.checked = option.value === selected;
@@ -32,6 +45,10 @@ function updateDebugVisibility() {
   formatOptions.forEach(option => {
     option.disabled = disabled;
   });
+  debugModeOptions.forEach(option => {
+    option.disabled = !debug.checked;
+  });
+  debugOptions.style.display = debug.checked ? 'block' : 'none';
 }
 
 function showInlineToast(target, message) {
@@ -66,11 +83,14 @@ function showInlineToast(target, message) {
 
 function save() {
   const selectedFormat = [...formatOptions].find(option => option.checked)?.value || 'text-tab-value';
+  const selectedDebugMode = [...debugModeOptions].find(option => option.checked)?.value || 'supported';
   chrome.storage.sync.set({
     extractText: text.checked,
     extractValue: value.checked,
     format: selectedFormat,
-    debug: debug.checked
+    debug: debug.checked,
+    debugMode: debug.checked,
+    debugModeTarget: selectedDebugMode
   });
 }
 
@@ -100,3 +120,6 @@ debug.onchange = () => {
   updateFormatVisibility();
   save();
 };
+debugModeOptions.forEach(option => {
+  option.onchange = save;
+});

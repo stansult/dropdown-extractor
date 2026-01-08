@@ -238,13 +238,105 @@
     }));
   }
 
-  function copyDebugHtml(element) {
-    if (!element) return false;
+  function formatDebugText(value) {
+    return value ? value.replace(/\s+/g, ' ').trim() : '';
+  }
+
+  function getElementClassName(element) {
+    if (!element) return '';
+    if (typeof element.className === 'string') return element.className.trim();
+    return (element.getAttribute('class') || '').trim();
+  }
+
+  function getAttributesByPrefix(element, prefix) {
+    const attrs = {};
+    if (!element || !element.attributes) return attrs;
+    for (const attr of element.attributes) {
+      if (attr.name.startsWith(prefix)) {
+        attrs[attr.name.slice(prefix.length)] = attr.value;
+      }
+    }
+    return attrs;
+  }
+
+  function getDataAttributes(element) {
+    if (!element || !element.dataset) return {};
+    return Object.keys(element.dataset).reduce((acc, key) => {
+      acc[key] = element.dataset[key];
+      return acc;
+    }, {});
+  }
+
+  function buildDebugBlock(element, label) {
+    if (!element) return '';
     const html = element.outerHTML;
-    if (!html || !html.trim()) return false;
-    navigator.clipboard.writeText(html);
+    if (!html || !html.trim()) return '';
+    const tag = element.tagName || '';
+    const id = element.id || '';
+    const className = getElementClassName(element);
+    const role = element.getAttribute?.('role') || '';
+    const valueProp = 'value' in element ? element.value : '';
+    const valueAttr = element.getAttribute?.('value') || '';
+    const aria = getAttributesByPrefix(element, 'aria-');
+    const data = getDataAttributes(element);
+    const text = formatDebugText(element.textContent || '');
+    return [
+      `--- dropdown-extractor: ${label} ---`,
+      `tag: ${tag}`,
+      `id: ${id}`,
+      `class: ${className}`,
+      `role: ${role}`,
+      `valueProp: ${JSON.stringify(valueProp)}`,
+      `valueAttr: ${JSON.stringify(valueAttr)}`,
+      `aria: ${JSON.stringify(aria)}`,
+      `data: ${JSON.stringify(data)}`,
+      `text: ${JSON.stringify(text)}`,
+      'outerHTML:',
+      html
+    ].join('\n');
+  }
+
+  function copyDebugHtml(element, label) {
+    const block = buildDebugBlock(element, label);
+    if (!block) return false;
+    navigator.clipboard.writeText(block);
     clearArmedToast();
     replaceActiveToast(showToast('Debug: copied dropdown HTML', {
+      position: 'top-right',
+      duration: EXTRACTED_TOAST_MS,
+      background: TOAST_SUCCESS_BG
+    }));
+    notifyBackground('done');
+    cleanup();
+    return true;
+  }
+
+  function resetDebugCapture() {
+    window.__dropdownExtractorDebugBlocks = null;
+  }
+
+  function captureDebugElement(target) {
+    if (!target) return false;
+    const element = target.nodeType === 1 ? target : target.parentElement;
+    if (!element) return false;
+    const blocks = window.__dropdownExtractorDebugBlocks || [];
+    const block = buildDebugBlock(element, `element ${blocks.length + 1}`);
+    if (!block) return false;
+    blocks.push(block);
+    window.__dropdownExtractorDebugBlocks = blocks;
+    clearArmedToast();
+
+    if (blocks.length === 1) {
+      replaceActiveToast(showToast('Debug: copied HTML (1/2)', {
+        position: 'top-right',
+        duration: EXTRACTED_TOAST_MS,
+        background: TOAST_SUCCESS_BG
+      }));
+      return true;
+    }
+
+    navigator.clipboard.writeText(blocks.join('\n\n'));
+    replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
       position: 'top-right',
       duration: EXTRACTED_TOAST_MS,
       background: TOAST_SUCCESS_BG
@@ -278,8 +370,22 @@
   }
 
   window.__dropdownExtractorActive = true;
+  getPrefs(prefs => {
+    window.__dropdownExtractorPrefs = prefs;
+  });
 
   // ===== OPTIONS (EXACT PLACE: here, after active flag) =====
+  function normalizePrefs(prefs) {
+    const normalized = { ...prefs };
+    if (normalized.debugMode === undefined) {
+      normalized.debugMode = !!normalized.debug;
+    }
+    if (!normalized.debugModeTarget) {
+      normalized.debugModeTarget = 'supported';
+    }
+    return normalized;
+  }
+
   function getPrefs(callback) {
     if (!chrome || !chrome.runtime || !chrome.runtime.id) {
       handleContextInvalid();
@@ -287,8 +393,15 @@
     }
     try {
       chrome.storage.sync.get(
-        { extractText: true, extractValue: false, format: 'text-tab-value', debug: false },
-        callback
+        {
+          extractText: true,
+          extractValue: false,
+          format: 'text-tab-value',
+          debug: false,
+          debugMode: false,
+          debugModeTarget: 'supported'
+        },
+        prefs => callback(normalizePrefs(prefs))
       );
     } catch (e) {
       handleContextInvalid();
@@ -309,6 +422,7 @@
   function cleanup() {
     document.removeEventListener('mousedown', onMouseDown, true);
     window.__dropdownExtractorActive = false;
+    resetDebugCapture();
 
     if (window.__dropdownExtractorCancelTimer) {
       clearTimeout(window.__dropdownExtractorCancelTimer);
@@ -316,41 +430,45 @@
     }
   }
 
-  // ===== MAIN HANDLER =====
-  function onMouseDown(e) {
+  function shouldDebugSupported(prefs) {
+    return prefs.debugMode && prefs.debugModeTarget === 'supported';
+  }
 
+  function shouldDebugAnyTwo(prefs) {
+    return prefs.debugMode && prefs.debugModeTarget === 'any-two';
+  }
+
+  function handleSupportedClick(e, prefs) {
     // --- 1) Native <select> support ---
     const selectEl = e.target.closest('select');
     if (selectEl) {
-      getPrefs(prefs => {
-        if (prefs.debug && copyDebugHtml(selectEl)) return;
-        const options = [...selectEl.options];
-        const fields = resolveFields(
-          options,
-          o => getOptionLabelText(o),
-          [
-            o => getValueField(o),
-            o => o.dataset.value
-          ]
-        );
-        const { items, note, error } = buildOutput(fields, prefs);
+      if (shouldDebugSupported(prefs) && copyDebugHtml(selectEl, 'supported dropdown')) return;
+      const options = [...selectEl.options];
+      const fields = resolveFields(
+        options,
+        o => getOptionLabelText(o),
+        [
+          o => getValueField(o),
+          o => o.dataset.value
+        ]
+      );
+      const { items, note, error } = buildOutput(fields, prefs);
 
-        if (items.length) {
-          navigator.clipboard.writeText(items.join('\n'));
-          clearArmedToast();
-          replaceActiveToast(showToast(buildExtractedMessage(items, note), {
-            position: 'top-right',
-            duration: EXTRACTED_TOAST_MS,
-            background: TOAST_SUCCESS_BG
-          }));
-          notifyBackground('done');
-          cleanup();
-          return;
-        }
-
-        showErrorToast(error || 'No items found to extract.');
+      if (items.length) {
+        navigator.clipboard.writeText(items.join('\n'));
+        clearArmedToast();
+        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
+          position: 'top-right',
+          duration: EXTRACTED_TOAST_MS,
+          background: TOAST_SUCCESS_BG
+        }));
+        notifyBackground('done');
         cleanup();
-      });
+        return;
+      }
+
+      showErrorToast(error || 'No items found to extract.');
+      cleanup();
       return;
     }
 
@@ -360,35 +478,33 @@
       e.preventDefault();
       e.stopPropagation();
 
-      getPrefs(prefs => {
-        if (prefs.debug && copyDebugHtml(selectizeContent)) return;
-        const options = [...selectizeContent.querySelectorAll('.option')];
-    const fields = resolveFields(
-          options,
-          o => getOptionLabelText(o),
-          [
-            o => o.value || o.getAttribute('value'),
-            o => o.dataset.value
-          ]
-        );
-        const { items, note, error } = buildOutput(fields, prefs);
+      if (shouldDebugSupported(prefs) && copyDebugHtml(selectizeContent, 'supported dropdown')) return;
+      const options = [...selectizeContent.querySelectorAll('.option')];
+      const fields = resolveFields(
+        options,
+        o => getOptionLabelText(o),
+        [
+          o => o.value || o.getAttribute('value'),
+          o => o.dataset.value
+        ]
+      );
+      const { items, note, error } = buildOutput(fields, prefs);
 
-        if (items.length) {
-          navigator.clipboard.writeText(items.join('\n'));
-          clearArmedToast();
-          replaceActiveToast(showToast(buildExtractedMessage(items, note), {
-            position: 'top-right',
-            duration: EXTRACTED_TOAST_MS,
-            background: TOAST_SUCCESS_BG
-          }));
-          notifyBackground('done');
-          cleanup();
-          return;
-        }
-
-        showErrorToast(error || 'No items found to extract.');
+      if (items.length) {
+        navigator.clipboard.writeText(items.join('\n'));
+        clearArmedToast();
+        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
+          position: 'top-right',
+          duration: EXTRACTED_TOAST_MS,
+          background: TOAST_SUCCESS_BG
+        }));
+        notifyBackground('done');
         cleanup();
-      });
+        return;
+      }
+
+      showErrorToast(error || 'No items found to extract.');
+      cleanup();
       return;
     }
 
@@ -398,41 +514,39 @@
       e.preventDefault();
       e.stopPropagation();
 
-      getPrefs(prefs => {
-        if (prefs.debug && copyDebugHtml(reactSelectMenuList)) return;
-        const options = [
-          ...reactSelectMenuList.querySelectorAll('[class*="react-select__option"]'),
-          ...reactSelectMenuList.querySelectorAll('[id^="react-select-"][id*="-option-"]'),
-          ...reactSelectMenuList.querySelectorAll('[aria-disabled],[aria-selected]')
-        ];
-        const uniqueOptions = [...new Set(options)]
-          .filter(el => !el.className.includes('react-select__group-heading'));
-    const fields = resolveFields(
-          uniqueOptions,
-          o => getOptionLabelText(o),
-          [
-            o => o.value || o.getAttribute('value'),
-            o => o.dataset.value
-          ]
-        );
-        const { items, note, error } = buildOutput(fields, prefs);
+      if (shouldDebugSupported(prefs) && copyDebugHtml(reactSelectMenuList, 'supported dropdown')) return;
+      const options = [
+        ...reactSelectMenuList.querySelectorAll('[class*="react-select__option"]'),
+        ...reactSelectMenuList.querySelectorAll('[id^="react-select-"][id*="-option-"]'),
+        ...reactSelectMenuList.querySelectorAll('[aria-disabled],[aria-selected]')
+      ];
+      const uniqueOptions = [...new Set(options)]
+        .filter(el => !el.className.includes('react-select__group-heading'));
+      const fields = resolveFields(
+        uniqueOptions,
+        o => getOptionLabelText(o),
+        [
+          o => o.value || o.getAttribute('value'),
+          o => o.dataset.value
+        ]
+      );
+      const { items, note, error } = buildOutput(fields, prefs);
 
-        if (items.length) {
-          navigator.clipboard.writeText(items.join('\n'));
-          clearArmedToast();
-          replaceActiveToast(showToast(buildExtractedMessage(items, note), {
-            position: 'top-right',
-            duration: EXTRACTED_TOAST_MS,
-            background: TOAST_SUCCESS_BG
-          }));
-          notifyBackground('done');
-          cleanup();
-          return;
-        }
-
-        showErrorToast(error || 'No items found to extract.');
+      if (items.length) {
+        navigator.clipboard.writeText(items.join('\n'));
+        clearArmedToast();
+        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
+          position: 'top-right',
+          duration: EXTRACTED_TOAST_MS,
+          background: TOAST_SUCCESS_BG
+        }));
+        notifyBackground('done');
         cleanup();
-      });
+        return;
+      }
+
+      showErrorToast(error || 'No items found to extract.');
+      cleanup();
       return;
     }
 
@@ -443,39 +557,51 @@
       e.preventDefault();
       e.stopPropagation();
 
-      getPrefs(prefs => {
-        if (prefs.debug && copyDebugHtml(listbox)) return;
-        const options = [...listbox.querySelectorAll('[role="option"]')];
-    const fields = resolveFields(
-          options,
-          o => getOptionLabelText(o),
-          [
-            o => o.value || o.getAttribute('value'),
-            o => o.dataset.value
-          ]
-        );
-        const { items, note, error } = buildOutput(fields, prefs);
+      if (shouldDebugSupported(prefs) && copyDebugHtml(listbox, 'supported dropdown')) return;
+      const options = [...listbox.querySelectorAll('[role="option"]')];
+      const fields = resolveFields(
+        options,
+        o => getOptionLabelText(o),
+        [
+          o => o.value || o.getAttribute('value'),
+          o => o.dataset.value
+        ]
+      );
+      const { items, note, error } = buildOutput(fields, prefs);
 
-        if (items.length) {
-          navigator.clipboard.writeText(items.join('\n'));
-          clearArmedToast();
-          replaceActiveToast(showToast(buildExtractedMessage(items, note), {
-            position: 'top-right',
-            duration: EXTRACTED_TOAST_MS,
-            background: TOAST_SUCCESS_BG
-          }));
-          notifyBackground('done');
-          cleanup();
-          return;
-        }
-
-        showErrorToast(error || 'No items found to extract.');
+      if (items.length) {
+        navigator.clipboard.writeText(items.join('\n'));
+        clearArmedToast();
+        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
+          position: 'top-right',
+          duration: EXTRACTED_TOAST_MS,
+          background: TOAST_SUCCESS_BG
+        }));
+        notifyBackground('done');
         cleanup();
-      });
+        return;
+      }
+
+      showErrorToast(error || 'No items found to extract.');
+      cleanup();
+      return;
+    }
+  }
+
+  // ===== MAIN HANDLER =====
+  function onMouseDown(e) {
+    const prefs = window.__dropdownExtractorPrefs;
+    if (prefs) {
+      if (shouldDebugAnyTwo(prefs) && captureDebugElement(e.target)) return;
+      handleSupportedClick(e, prefs);
       return;
     }
 
-    // otherwise: do nothing, allow normal clicks
+    getPrefs(loadedPrefs => {
+      window.__dropdownExtractorPrefs = loadedPrefs;
+      if (shouldDebugAnyTwo(loadedPrefs) && captureDebugElement(e.target)) return;
+      handleSupportedClick(e, loadedPrefs);
+    });
   }
 
   document.addEventListener('mousedown', onMouseDown, true);

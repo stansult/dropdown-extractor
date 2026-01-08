@@ -27,6 +27,26 @@ label {
   margin-top: 16px;
 }
 
+.playground-link {
+  margin: 16px 0 0 0;
+  font-size: 14px;
+}
+
+.debug-options {
+  margin: 8px 0 0 26px;
+  display: none;
+}
+
+.debug-title {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+}
+
+.debug-option {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+}
+
 .format-row {
   margin: 12px 0 0 26px;
   display: none;

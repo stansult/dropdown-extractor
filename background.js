@@ -2,7 +2,11 @@ const ARM_DURATION_MS = 10000;
 let armIntervalId = null;
 
 function resetDebugFlag() {
-  chrome.storage.sync.set({ debug: false });
+  chrome.storage.sync.set({
+    debug: false,
+    debugMode: false,
+    debugModeTarget: "supported"
+  });
 }
 
 chrome.runtime.onInstalled.addListener(() => {

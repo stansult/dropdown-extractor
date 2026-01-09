@@ -51,6 +51,13 @@ p {
   margin-top: 12px;
 }
 
+.support-note {
+  margin: 0 0 10px 0;
+  font-size: 12px;
+  color: #666;
+  max-width: 720px;
+}
+
 .render-section {
   display: flex;
   align-items: flex-start;

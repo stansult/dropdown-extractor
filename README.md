@@ -39,14 +39,22 @@ You can choose what to copy via **Extension Options**:
 
 ## Dropdown types
 
-| Dropdown type | Supported |
-|--------------|:---------:|
+| Dropdown type | Supported* |
+|--------------|:----------:|
 | Native `<select>` | Yes |
+| ARIA listbox (`role="listbox"`) | Yes |
 | Selectize | Yes |
 | React Select | Yes |
-| ARIA listbox | Yes |
+| React Select (Atlassian variant) | Yes |
+| Downshift-style | Yes |
+| MUI Autocomplete-style | Yes |
+| Ant Design Select-style | No |
+| Select2-style | No |
+| Chosen-style | No |
 | Canvas-rendered / virtualized | No |
 | Cross-origin iframes | No |
+
+*Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom implementations, virtualized or canvas-rendered menus, Shadow DOM, or cross-origin iframes may not be detectable.
 
 ---
 

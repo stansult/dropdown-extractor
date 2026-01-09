@@ -50,7 +50,7 @@
       <h2>Configure test dropdown</h2>
       <div class="controls">
         <div class="control">
-          <label for="type">Type <span id="type-support-config" class="type-support supported">Supported</span></label>
+          <label for="type">Type <span id="type-support-config" class="type-support supported">Supported</span>*</label>
           <div class="type-picker">
             <button id="type-trigger" type="button" class="type-trigger" aria-haspopup="listbox" aria-expanded="false">
               <span id="type-label">Native &lt;select&gt;</span>
@@ -89,6 +89,10 @@
           <button id="randomize">Fill with random values</button>
         </div>
       </div>
+
+      <p class="support-note">
+        * Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom or virtualized menus may not be detectable.
+      </p>
 
       <table class="items-table">
         <thead>

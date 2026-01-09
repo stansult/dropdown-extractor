@@ -83,6 +83,10 @@ This runs a clean step and generates `dist/dropdown-extractor-<version>.zip`.
 
 To bump the patch version and package in one step: `npm run package:patch`
 
+#### Dropdown Playground
+
+To test extension, you can use our [Dropdown Playground](https://dropdown-extractor.stansult.com)
+
 ## License
 
 MIT. See `LICENSE`.

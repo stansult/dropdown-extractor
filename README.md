@@ -11,7 +11,7 @@ It supports many popular [types of dropboxes](#dropdown-types). Go to any websit
 1. Click one of its options
 1. All dropdown items are copied to the clipboard  
 
-The extractor automatically cancels itself after a short timeout if no dropdown lists are detected.
+The extractor automatically expires after a short timeout if no dropdown items are extracted.
 
 ### What gets extracted
 
@@ -27,7 +27,13 @@ If enabled in **[Extension Options](#extension-options)**, Safe capture prevents
 
 ### Debug mode
 
-Debug mode is intended for troubleshooting unsupported dropdowns. It copies raw HTML to your clipboard so you can inspect the menu structure and share it for adding support.
+Debug mode is intended for troubleshooting, and has two modes:
+- supported dropdowns
+  - for debugging
+- any two elements
+  - for inspecting unsupported dropdowns for potentially adding support.
+
+In debug mode, extension copies raw HTML to your clipboard so you can inspect the menu structure.
 
 ### Extension Options
 
@@ -85,7 +91,12 @@ To bump the patch version and package in one step: `npm run package:patch`
 
 #### Dropdown Playground
 
-To test extension, you can use our [Dropdown Playground](https://dropdown-extractor.stansult.com)
+To test the extension, you can use [Dropdown Playground](https://dropdown-extractor.stansult.com). It lets you:
+
+- pick a dropdown type and value source
+- generate items (text/value/data-value) and mark missing fields
+- render a mock dropdown and extract from it
+- copy a snapshot (text/JSON) to easily share a repro setup
 
 ## License
 

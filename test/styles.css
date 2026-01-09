@@ -444,6 +444,12 @@ button:focus-visible {
   text-align: left;
 }
 
+.mui-listbox {
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+}
+
 .select2-results__options,
 .chosen-results,
 .downshift-listbox {

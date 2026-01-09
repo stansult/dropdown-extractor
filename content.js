@@ -12,18 +12,57 @@
   const EXTRACTED_PREVIEW_MAX_CHARS = 60;
   const EXTRACTED_TOAST_MS = 5000;
   const ARMED_TOAST_TEXT = 'Click a dropdown, then click any item to copy the full list.';
+  const NO_ITEMS_FOUND_TEXT = 'No items found to extract.';
   const TOAST_INFO_BG = 'rgba(20, 40, 70, 0.75)';
   const TOAST_SUCCESS_BG = 'rgba(20, 70, 40, 0.75)';
   const TOAST_EXPIRED_BG = 'rgba(60, 60, 60, 0.75)';
   const TOAST_ERROR_BG = 'rgba(120, 30, 30, 0.85)';
 
   // ===== TOAST =====
+  function moveToastToCorner(toast, corner) {
+    const rect = toast.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    let left = 16;
+    let top = 16;
+
+    if (corner === 'top-right') {
+      left = Math.max(16, window.innerWidth - width - 16);
+      top = 16;
+    } else if (corner === 'top-left') {
+      left = 16;
+      top = 16;
+    } else if (corner === 'bottom-left') {
+      left = 16;
+      top = Math.max(16, window.innerHeight - height - 16);
+    } else {
+      left = Math.max(16, window.innerWidth - width - 16);
+      top = Math.max(16, window.innerHeight - height - 16);
+    }
+
+    Object.assign(toast.style, {
+      right: '',
+      bottom: '',
+      left: `${left}px`,
+      top: `${top}px`
+    });
+    toast.dataset.corner = corner;
+  }
+
+  function getOppositeCorner(corner) {
+    if (corner === 'top-right') return 'top-left';
+    if (corner === 'top-left') return 'top-right';
+    if (corner === 'bottom-right') return 'bottom-left';
+    return 'bottom-right';
+  }
+
   function showToast(message, options = {}) {
     const {
       duration = 2000,
       position = 'bottom-right',
       event = null,
-      background = TOAST_INFO_BG
+      background = TOAST_INFO_BG,
+      allowMove = false
     } = options;
     const toast = document.createElement('div');
     toast.textContent = message;
@@ -39,11 +78,16 @@
       borderRadius: '4px',
       zIndex: 999999,
       opacity: '0',
-      transition: 'opacity 0.2s ease'
+      transition: 'opacity 0.2s ease, top 0.35s ease, right 0.35s ease, bottom 0.35s ease, left 0.35s ease'
     };
 
+    let pendingCorner = null;
     if (position === 'top-right') {
-      Object.assign(baseStyle, { top: '16px', right: '16px' });
+      pendingCorner = 'top-right';
+    } else if (position === 'top-left') {
+      pendingCorner = 'top-left';
+    } else if (position === 'bottom-left') {
+      pendingCorner = 'bottom-left';
     } else if (position === 'cursor' && event) {
       const offset = 12;
       const toastMaxWidth = 240;
@@ -57,12 +101,45 @@
       );
       Object.assign(baseStyle, { left: `${x}px`, top: `${y}px`, maxWidth: `${toastMaxWidth}px` });
     } else {
-      Object.assign(baseStyle, { bottom: '16px', right: '16px' });
+      pendingCorner = 'bottom-right';
     }
 
     Object.assign(toast.style, baseStyle);
+    if (allowMove) {
+      if (position === 'cursor') {
+        toast.dataset.corner = 'cursor';
+      }
+
+      toast.addEventListener('mouseenter', () => {
+        if (toast.dataset.hoverTimeoutId) return;
+        const timeoutId = setTimeout(() => {
+          const corner = toast.dataset.corner || 'bottom-right';
+          if (corner === 'cursor') {
+            moveToastToCorner(toast, 'top-left');
+            return;
+          }
+          moveToastToCorner(toast, getOppositeCorner(corner));
+          toast.dataset.hoverTimeoutId = '';
+        }, 1000);
+        toast.dataset.hoverTimeoutId = String(timeoutId);
+      });
+
+      toast.addEventListener('mouseleave', () => {
+        const timeoutId = Number(toast.dataset.hoverTimeoutId);
+        if (timeoutId) clearTimeout(timeoutId);
+        toast.dataset.hoverTimeoutId = '';
+      });
+    }
 
     document.body.appendChild(toast);
+
+    if (allowMove && pendingCorner) {
+      const originalTransition = toast.style.transition;
+      toast.style.transition = 'none';
+      moveToastToCorner(toast, pendingCorner);
+      toast.offsetHeight;
+      toast.style.transition = originalTransition;
+    }
 
     requestAnimationFrame(() => {
       toast.style.opacity = '1';
@@ -102,7 +179,8 @@
     window.__dropdownExtractorArmedToast = replaceActiveToast(showToast(ARMED_TOAST_TEXT, {
       position: 'top-right',
       duration: ARM_DURATION_MS,
-      background: TOAST_INFO_BG
+      background: TOAST_INFO_BG,
+      allowMove: true
     }));
   }
 
@@ -475,7 +553,7 @@
         return;
       }
 
-      showErrorToast(error || 'No items found to extract.');
+        showErrorToast(error || NO_ITEMS_FOUND_TEXT);
       cleanup();
       return;
     }
@@ -511,7 +589,7 @@
         return;
       }
 
-      showErrorToast(error || 'No items found to extract.');
+        showErrorToast(error || NO_ITEMS_FOUND_TEXT);
       cleanup();
       return;
     }
@@ -554,7 +632,7 @@
         return;
       }
 
-      showErrorToast(error || 'No items found to extract.');
+        showErrorToast(error || NO_ITEMS_FOUND_TEXT);
       cleanup();
       return;
     }
@@ -591,7 +669,7 @@
         return;
       }
 
-      showErrorToast(error || 'No items found to extract.');
+      showErrorToast(error || NO_ITEMS_FOUND_TEXT);
       cleanup();
       return;
     }

@@ -568,12 +568,15 @@
   function getVisibleReactSelectMenuList() {
     const candidates = [
       ...document.querySelectorAll('[class*="react-select__menu-list"]'),
+      ...document.querySelectorAll('[class*="react-select__menu"]'),
       ...document.querySelectorAll('[id^="react-select-"][id$="-listbox"]'),
       ...document.querySelectorAll('[class*="-MenuList"]')
     ];
     return candidates.find(el => {
       if (!el || el.offsetParent === null) return false;
-      if (el.querySelector('[class*="react-select__option"], [role="listitem"]')) return true;
+      if (el.querySelector('[class*="react-select__option"], [role="listitem"], [id^="react-select-"][id*="-option-"]')) {
+        return true;
+      }
       return false;
     }) || null;
   }

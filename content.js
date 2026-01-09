@@ -411,6 +411,18 @@
 
   function findDebugContainer(element) {
     if (!element || !element.closest) return null;
+    const id = element.id || '';
+    const match = id.match(/^(react-select-\d+)-option/);
+    if (match) {
+      const base = match[1];
+      const byId = document.getElementById(`${base}-listbox`);
+      if (byId && byId.offsetParent !== null) return byId;
+      const byPrefix = document.querySelector(`[id^="${base}-"][id$="listbox"]`);
+      if (byPrefix && byPrefix.offsetParent !== null) return byPrefix;
+      const menuList = [...document.querySelectorAll('[class*="react-select__menu-list"], [class*="-MenuList"]')]
+        .find(el => el.offsetParent !== null);
+      if (menuList) return menuList;
+    }
     return (
       element.closest('[role="listbox"]') ||
       element.closest('[role="menu"]') ||
@@ -426,10 +438,31 @@
     const blocks = window.__dropdownExtractorDebugBlocks || [];
     const toCapture = [];
 
-    if (element.matches('[role="option"], [role="listitem"]')) {
+    const isOption = element.matches('[role="option"], [role="listitem"]')
+      || element.hasAttribute('aria-selected')
+      || (element.id && /react-select-\d+-option-\d+/.test(element.id));
+    if (isOption) {
       const container = findDebugContainer(element);
       if (container && container !== element) {
-        toCapture.push(container);
+        if (blocks.length === 1) {
+          const containerBlock = buildDebugBlock(container, 'element 1');
+          const optionBlock = buildDebugBlock(element, 'element 2');
+          if (containerBlock && optionBlock) {
+            window.__dropdownExtractorDebugBlocks = [containerBlock, optionBlock];
+            clearArmedToast();
+            navigator.clipboard.writeText([containerBlock, optionBlock].join('\n\n'));
+            replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
+              position: 'top-right',
+              duration: EXTRACTED_TOAST_MS,
+              background: TOAST_SUCCESS_BG
+            }));
+            notifyBackground('done');
+            cleanup();
+            return true;
+          }
+        } else if (blocks.length === 0) {
+          toCapture.push(container);
+        }
       }
     }
     toCapture.push(element);

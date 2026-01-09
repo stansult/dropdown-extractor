@@ -393,14 +393,38 @@
     window.__dropdownExtractorDebugBlocks = null;
   }
 
+  function findDebugContainer(element) {
+    if (!element || !element.closest) return null;
+    return (
+      element.closest('[role="listbox"]') ||
+      element.closest('[role="menu"]') ||
+      element.closest('[role="list"]') ||
+      element.closest('ul,ol')
+    );
+  }
+
   function captureDebugElement(target) {
     if (!target) return false;
     const element = target.nodeType === 1 ? target : target.parentElement;
     if (!element) return false;
     const blocks = window.__dropdownExtractorDebugBlocks || [];
-    const block = buildDebugBlock(element, `element ${blocks.length + 1}`);
-    if (!block) return false;
-    blocks.push(block);
+    const toCapture = [];
+
+    if (element.matches('[role="option"], [role="listitem"]')) {
+      const container = findDebugContainer(element);
+      if (container && container !== element) {
+        toCapture.push(container);
+      }
+    }
+    toCapture.push(element);
+
+    for (const el of toCapture) {
+      if (blocks.length >= 2) break;
+      const block = buildDebugBlock(el, `element ${blocks.length + 1}`);
+      if (!block) continue;
+      blocks.push(block);
+    }
+
     window.__dropdownExtractorDebugBlocks = blocks;
     clearArmedToast();
 

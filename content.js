@@ -258,7 +258,18 @@
     if (!optionEl || optionEl.nodeType !== Node.ELEMENT_NODE) return '';
     const clone = optionEl.cloneNode(true);
     clone.querySelectorAll('svg, title').forEach(el => el.remove());
-    return clone.textContent;
+    const textNodes = [];
+    const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode();
+    while (node) {
+      const text = node.nodeValue;
+      if (text) {
+        const normalized = text.replace(/\s+/g, ' ').trim();
+        if (normalized) textNodes.push(normalized);
+      }
+      node = walker.nextNode();
+    }
+    return textNodes.join(' ').trim();
   }
 
   function resolveFields(items, getText, valueGetters) {

@@ -28,10 +28,8 @@ If enabled in **[Extension Options](#extension-options)**, Safe capture prevents
 ### Debug mode
 
 Debug mode is intended for troubleshooting, and has two modes:
-- supported dropdowns
-  - for debugging
-- any two elements
-  - for inspecting unsupported dropdowns for potentially adding support.
+- **supported dropdowns** — for debugging
+- **any two elements** — for inspecting unsupported dropdowns for potentially adding support
 
 In debug mode, extension copies raw HTML to your clipboard so you can inspect the menu structure.
 

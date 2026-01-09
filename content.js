@@ -83,11 +83,23 @@
 
     let pendingCorner = null;
     if (position === 'top-right') {
-      pendingCorner = 'top-right';
+      if (allowMove) {
+        pendingCorner = 'top-right';
+      } else {
+        Object.assign(baseStyle, { top: '16px', right: '16px' });
+      }
     } else if (position === 'top-left') {
-      pendingCorner = 'top-left';
+      if (allowMove) {
+        pendingCorner = 'top-left';
+      } else {
+        Object.assign(baseStyle, { top: '16px', left: '16px' });
+      }
     } else if (position === 'bottom-left') {
-      pendingCorner = 'bottom-left';
+      if (allowMove) {
+        pendingCorner = 'bottom-left';
+      } else {
+        Object.assign(baseStyle, { bottom: '16px', left: '16px' });
+      }
     } else if (position === 'cursor' && event) {
       const offset = 12;
       const toastMaxWidth = 240;
@@ -101,7 +113,11 @@
       );
       Object.assign(baseStyle, { left: `${x}px`, top: `${y}px`, maxWidth: `${toastMaxWidth}px` });
     } else {
-      pendingCorner = 'bottom-right';
+      if (allowMove) {
+        pendingCorner = 'bottom-right';
+      } else {
+        Object.assign(baseStyle, { bottom: '16px', right: '16px' });
+      }
     }
 
     Object.assign(toast.style, baseStyle);

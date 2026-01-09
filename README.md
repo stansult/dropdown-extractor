@@ -39,7 +39,7 @@ To open Extension Options, right-click the extension button and select Options.
 
 ## Dropdown types
 
-| Dropdown type | Supported* |
+| Dropdown type | Supported |
 |--------------|:----------:|
 | Native `<select>` | Yes |
 | ARIA listbox (`role="listbox"`) | Yes |

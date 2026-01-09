@@ -13,6 +13,8 @@ const dropdownContainer = document.getElementById('dropdown');
 const dropdownType = document.getElementById('dropdown-type');
 const dropdownPanel = document.querySelector('.dropdown-panel');
 const valueModeSelect = document.getElementById('value-mode');
+const muiNote = document.getElementById('note-mui');
+const notesTitle = document.getElementById('notes-title');
 
 let lastRenderSnapshot = null;
 
@@ -51,6 +53,17 @@ function updateRenderedTypeDisplay() {
   pill.className = `type-support ${isTypeSupported(lastRenderSnapshot.type) ? 'supported' : 'unsupported'}`;
   pill.textContent = isTypeSupported(lastRenderSnapshot.type) ? 'Supported' : 'Not supported';
   dropdownType.appendChild(pill);
+}
+
+function updateNotesVisibility() {
+  if (!muiNote) return;
+  const showMui = typeSelect.value === 'mui' || (lastRenderSnapshot && lastRenderSnapshot.type === 'mui');
+  muiNote.style.display = showMui ? 'list-item' : 'none';
+  if (notesTitle) {
+    const visibleNotes = document.querySelectorAll('.notes-list .note')
+      .length - document.querySelectorAll('.notes-list .note[style*="display: none"]').length;
+    notesTitle.textContent = visibleNotes > 1 ? 'Notes:' : 'Note:';
+  }
 }
 
 function setTypeMenuOpen(open) {
@@ -382,12 +395,27 @@ function applyValueTarget(element, value) {
   }
 }
 
+function applyMuiValueTarget(element, item) {
+  const mode = valueModeSelect.value;
+  if ((mode === 'attribute' || mode === 'both') && item.value) {
+    element.setAttribute('value', item.value);
+  }
+  if (item.dataValue) {
+    element.dataset.value = item.dataValue;
+    return;
+  }
+  if (mode === 'property' && item.value) {
+    element.dataset.value = item.value;
+  }
+}
+
 function renderDropdown() {
   dropdownContainer.innerHTML = '';
   const items = readItems();
   const type = typeSelect.value;
   lastRenderSnapshot = buildSnapshot();
   updateRenderedTypeDisplay();
+  updateNotesVisibility();
   updateChangedState();
 
   if (type === 'native') {
@@ -543,8 +571,7 @@ function renderDropdown() {
       option.className = 'mui-option';
       option.setAttribute('role', 'option');
       option.textContent = item.text;
-      applyValueTarget(option, item.value);
-      if (item.dataValue) option.dataset.value = item.dataValue;
+      applyMuiValueTarget(option, item);
       listbox.appendChild(option);
     });
     menu.appendChild(listbox);
@@ -659,6 +686,7 @@ countInput.addEventListener('change', () => {
 typeSelect.addEventListener('change', () => {
   updateTypeDisplay();
   updateTypeMenuSelection();
+  updateNotesVisibility();
   updateChangedState();
 });
 valueModeSelect.addEventListener('change', updateChangedState);
@@ -679,6 +707,7 @@ bindHeaderActions();
 fillRandomValues();
 buildTypeMenu();
 updateTypeDisplay();
+updateNotesVisibility();
 renderDropdown();
 enablePressedState();
 

@@ -94,24 +94,19 @@ function save() {
   });
 }
 
-text.onchange = () => {
+function handleToggle(target) {
   if (!text.checked && !value.checked) {
-    text.checked = true;
-    showInlineToast(text, 'Select at least one option.');
+    target.checked = true;
+    showInlineToast(target, 'Select at least one option.');
     return;
   }
   updateFormatVisibility();
   save();
-};
-value.onchange = () => {
-  if (!text.checked && !value.checked) {
-    value.checked = true;
-    showInlineToast(value, 'Select at least one option.');
-    return;
-  }
-  updateFormatVisibility();
-  save();
-};
+}
+
+text.onchange = () => handleToggle(text);
+value.onchange = () => handleToggle(value);
+
 formatOptions.forEach(option => {
   option.onchange = save;
 });

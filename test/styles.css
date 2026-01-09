@@ -51,11 +51,30 @@ p {
   margin-top: 12px;
 }
 
-.support-note {
+.notes {
   margin: 0 0 10px 0;
   font-size: 12px;
   color: #666;
   max-width: 720px;
+}
+
+.notes-title {
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.notes-list {
+  margin: 0 0 0 18px;
+  padding: 0;
+}
+
+.notes-list .note {
+  margin: 2px 0;
+}
+
+.notes-list .note::marker {
+  font-size: 10px;
+  color: #888;
 }
 
 .render-section {

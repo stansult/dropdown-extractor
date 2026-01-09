@@ -5,6 +5,7 @@ const formatOptions = document.querySelectorAll('input[name="format"]');
 const debug = document.getElementById('debug');
 const debugOptions = document.getElementById('debug-options');
 const debugModeOptions = document.querySelectorAll('input[name="debug-mode"]');
+const safeCapture = document.getElementById('safe-capture');
 const TOAST_ERROR_BG = 'rgba(120, 30, 30, 0.85)';
 
 chrome.storage.sync.get(
@@ -14,12 +15,14 @@ chrome.storage.sync.get(
     format: 'text-tab-value',
     debug: false,
     debugMode: false,
-    debugModeTarget: 'supported'
+    debugModeTarget: 'supported',
+    safeCapture: false
   },
   prefs => {
     text.checked = prefs.extractText;
     value.checked = prefs.extractValue;
     debug.checked = prefs.debugMode ?? prefs.debug ?? false;
+    safeCapture.checked = prefs.safeCapture;
     const debugTarget = prefs.debugModeTarget || 'supported';
     debugModeOptions.forEach(option => {
       option.checked = option.value === debugTarget;
@@ -90,14 +93,15 @@ function save() {
     format: selectedFormat,
     debug: debug.checked,
     debugMode: debug.checked,
-    debugModeTarget: selectedDebugMode
+    debugModeTarget: selectedDebugMode,
+    safeCapture: safeCapture.checked
   });
 }
 
 function handleToggle(target) {
   if (!text.checked && !value.checked) {
     target.checked = true;
-    showInlineToast(target, 'Select at least one option.');
+    showInlineToast(target, 'At least one option should be selected');
     return;
   }
   updateFormatVisibility();
@@ -118,3 +122,4 @@ debug.onchange = () => {
 debugModeOptions.forEach(option => {
   option.onchange = save;
 });
+safeCapture.onchange = save;

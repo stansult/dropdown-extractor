@@ -550,7 +550,8 @@
           format: 'text-tab-value',
           debug: false,
           debugMode: false,
-          debugModeTarget: 'supported'
+          debugModeTarget: 'supported',
+          safeCapture: false
         },
         prefs => callback(normalizePrefs(prefs))
       );
@@ -579,6 +580,25 @@
       }
       return false;
     }) || null;
+  }
+
+  function isOptionLike(target) {
+    if (!target || !target.closest) return false;
+    return !!target.closest([
+      '[role="option"]',
+      '[role="listitem"]',
+      '.option',
+      '.mock-option',
+      '.react-select__option',
+      '.react-select-variant-option',
+      '.mui-option',
+      '.ant-option',
+      '.select2-results__option',
+      '.chosen-option',
+      '.downshift-option',
+      '.menuitem',
+      '[id^="react-select-"][id*="-option-"]'
+    ].join(','));
   }
 
   function cleanup() {
@@ -755,6 +775,10 @@
   function onMouseDown(e) {
     const prefs = window.__dropdownExtractorPrefs;
     if (prefs) {
+      if (prefs.safeCapture && !e.target.closest('select') && isOptionLike(e.target)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       if (shouldDebugAnyTwo(prefs) && captureDebugElement(e.target)) return;
       handleSupportedClick(e, prefs);
       return;
@@ -762,6 +786,10 @@
 
     getPrefs(loadedPrefs => {
       window.__dropdownExtractorPrefs = loadedPrefs;
+      if (loadedPrefs.safeCapture && !e.target.closest('select') && isOptionLike(e.target)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       if (shouldDebugAnyTwo(loadedPrefs) && captureDebugElement(e.target)) return;
       handleSupportedClick(e, loadedPrefs);
     });

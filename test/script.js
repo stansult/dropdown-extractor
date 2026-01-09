@@ -652,6 +652,7 @@ function fillRandomValues() {
 
 function updateChangedState() {
   if (!lastRenderSnapshot) return;
+  let anyChanged = false;
   const count = Math.max(1, Math.min(20, Number(countInput.value) || 1));
   for (let i = 0; i < count; i += 1) {
     const isNewRow = i >= Number(lastRenderSnapshot.count || 0);
@@ -664,18 +665,24 @@ function updateChangedState() {
       const currentMissing = input.disabled;
       const currentValue = currentMissing ? '' : (input.value || '');
       const changed = isNewRow || currentMissing !== snapshotMissing || String(snapshotValue || '') !== String(currentValue || '');
+      if (changed) anyChanged = true;
       input.parentElement.classList.toggle('changed', changed);
     });
   }
 
   const typeChanged = typeSelect.value !== lastRenderSnapshot.type;
+  if (typeChanged) anyChanged = true;
   typeSelect.parentElement.classList.toggle('changed', typeChanged);
 
   const countChanged = String(countInput.value) !== String(lastRenderSnapshot.countValue);
+  if (countChanged) anyChanged = true;
   countInput.parentElement.classList.toggle('changed', countChanged);
 
   const valueSourceChanged = valueModeSelect.value !== lastRenderSnapshot.valueSource;
+  if (valueSourceChanged) anyChanged = true;
   valueModeSelect.parentElement.classList.toggle('changed', valueSourceChanged);
+
+  renderButton.classList.toggle('changed', anyChanged);
 }
 
 countInput.addEventListener('change', () => {

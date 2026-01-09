@@ -6,98 +6,105 @@
     <link rel="stylesheet" href="styles.css?v=3">
   </head>
   <body>
-    <h2>Dropdown Extractor</h2>
-    <p class="intro">
-      Dropdown Extractor is a Chrome extension that copies items from dropdown lists into your clipboard.
-    </p>
-    <ul>
-      <li>Chrome Web Store: <a href="https://chrome.google.com/webstore/detail/dropdown-extractor/gbocefdbkfckcdbdhmaipklcfhgmeghm" target="_blank" rel="noopener noreferrer">Dropdown Extractor</a></li>
-      <li>Github project: <a href="https://github.com/stansult/dropdown-extractor" target="_blank" rel="noopener noreferrer">Dropdown Extractor</a></li>
-    </ul>
+    <div class="page-grid">
+      <div class="left-column">
+        <h2>Dropdown Extractor</h2>
+        <p class="intro">
+          Dropdown Extractor is a Chrome extension that copies items from dropdown lists into your clipboard.
+        </p>
+        <ul>
+          <li>Chrome Web Store: <a href="https://chrome.google.com/webstore/detail/dropdown-extractor/gbocefdbkfckcdbdhmaipklcfhgmeghm" target="_blank" rel="noopener noreferrer">Dropdown Extractor</a></li>
+          <li>Github project: <a href="https://github.com/stansult/dropdown-extractor" target="_blank" rel="noopener noreferrer">Dropdown Extractor</a></li>
+        </ul>
 
-    <section class="render-section">
-      <div>
-        <h2>Dropdown Playground</h2>
-        <p>This is a testing page for Dropdown Extractor extension.<br>Here you can configure a single dropdown to test extraction behavior.</p>
-        <details class="howto">
-          <summary>How?</summary>
-          <ol>
-            <li>Pick a dropdown type and value source.</li>
-            <li>Set the number of items to generate.</li>
-            <li>Edit text/value/data-value cells, or mark them missing.</li>
-            <li>Use header tools to clear, toggle missing, or number a column.</li>
-            <li>Click “Render dropdown” and test extraction on the right.</li>
-            <li>Use Snapshot buttons to copy the current setup.</li>
-          </ol>
-        </details>
+        <section class="playground-section">
+          <h2>Dropdown Playground</h2>
+          <p>This is a testing page for Dropdown Extractor extension.<br>Here you can configure a single dropdown to test extraction behavior.</p>
+          <details class="howto">
+            <summary>How?</summary>
+            <ol>
+              <li>Pick a dropdown type and value source.</li>
+              <li>Set the number of items to generate.</li>
+              <li>Edit text/value/data-value cells, or mark them missing.</li>
+              <li>Use header tools to clear, toggle missing, or number a column.</li>
+              <li>Click “Render dropdown” and test extraction on the right.</li>
+              <li>Use Snapshot buttons to copy the current setup.</li>
+            </ol>
+          </details>
+        </section>
+
+        <section class="configure-section">
+          <h2>Configure test dropdown</h2>
+          <div class="controls">
+            <div class="control">
+              <label for="type">Type <span id="type-support-config" class="type-support supported">Supported</span></label>
+              <div class="type-picker">
+                <button id="type-trigger" type="button" class="type-trigger" aria-haspopup="listbox" aria-expanded="false" title="Choose a dropdown type">
+                  <span id="type-label">Native &lt;select&gt;</span>
+                </button>
+                <div id="type-menu" class="type-menu" role="listbox"></div>
+              </div>
+              <select id="type" class="type-select">
+                <option value="native">Native &lt;select&gt;</option>
+                <option value="aria">ARIA listbox</option>
+                <option value="selectize">Selectize-style</option>
+                <option value="react">React Select-style</option>
+                <option value="react-variant">React Select (Atlassian variant)</option>
+                <option value="downshift">Downshift-style</option>
+                <option value="mui">MUI Autocomplete-style</option>
+                <option value="antd">Ant Design Select-style</option>
+                <option value="select2">Select2-style</option>
+                <option value="chosen">Chosen-style</option>
+              </select>
+            </div>
+
+            <div class="control">
+              <label for="count">Number of items</label>
+              <input id="count" type="number" min="1" max="20" value="5" title="How many options to generate">
+            </div>
+
+            <div class="control">
+              <label for="value-mode">Value source</label>
+              <select id="value-mode" title="Where values are stored: attribute, property, or both">
+                <option value="attribute">attribute</option>
+                <option value="property">property</option>
+                <option value="both">both</option>
+              </select>
+            </div>
+
+            <div class="control buttons">
+              <button id="randomize" title="Fill empty fields with random text values">Random values</button>
+            </div>
+          </div>
+
+          <div class="notes">
+            <div id="notes-title" class="notes-title">Notes:</div>
+            <ul class="notes-list">
+              <li class="note">Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom or virtualized menus may not be detectable.</li>
+              <li id="note-mui" class="note">MUI options don’t expose value properties on DOM nodes; use data-value for testing.</li>
+            </ul>
+          </div>
+        </section>
       </div>
-      <div class="dropdown-panel">
-        <h2>Test dropdown</h2>
+
+      <aside class="right-column">
+        <div class="dropdown-panel">
+          <h2>Test dropdown</h2>
         <div class="render-actions">
-          <button id="render" title="Render the dropdown with current settings">Render dropdown</button>
+          <button id="render" title="Render the dropdown with current settings">Render</button>
         </div>
         <div id="dropdown-type" class="dropdown-type">Type: Native &lt;select&gt;</div>
-        <div id="dropdown"></div>
-        <div class="snapshot-summary">
-          <span>Snapshot:</span>
-          <button id="snapshot-text" class="icon-button" title="Copy snapshot (text)" aria-label="Copy snapshot (text)">📝</button>
-          <button id="snapshot-json" class="icon-button" title="Copy snapshot (JSON)" aria-label="Copy snapshot (JSON)">{ }</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="configure-section">
-      <h2>Configure test dropdown</h2>
-      <div class="controls">
-        <div class="control">
-          <label for="type">Type <span id="type-support-config" class="type-support supported">Supported</span></label>
-          <div class="type-picker">
-            <button id="type-trigger" type="button" class="type-trigger" aria-haspopup="listbox" aria-expanded="false" title="Choose a dropdown type">
-              <span id="type-label">Native &lt;select&gt;</span>
-            </button>
-            <div id="type-menu" class="type-menu" role="listbox"></div>
+          <div id="dropdown"></div>
+          <div class="snapshot-summary">
+            <span>Snapshot:</span>
+            <button id="snapshot-text" class="icon-button" title="Copy snapshot (text)" aria-label="Copy snapshot (text)">📝</button>
+            <button id="snapshot-json" class="icon-button" title="Copy snapshot (JSON)" aria-label="Copy snapshot (JSON)">{ }</button>
           </div>
-          <select id="type" class="type-select">
-            <option value="native">Native &lt;select&gt;</option>
-            <option value="aria">ARIA listbox</option>
-            <option value="selectize">Selectize-style</option>
-            <option value="react">React Select-style</option>
-            <option value="react-variant">React Select (Atlassian variant)</option>
-            <option value="downshift">Downshift-style</option>
-            <option value="mui">MUI Autocomplete-style</option>
-            <option value="antd">Ant Design Select-style</option>
-            <option value="select2">Select2-style</option>
-            <option value="chosen">Chosen-style</option>
-          </select>
         </div>
+      </aside>
+    </div>
 
-        <div class="control">
-          <label for="count">Number of items</label>
-          <input id="count" type="number" min="1" max="20" value="5" title="How many options to generate">
-        </div>
-
-        <div class="control">
-          <label for="value-mode">Value source</label>
-          <select id="value-mode" title="Where values are stored: attribute, property, or both">
-            <option value="attribute">attribute</option>
-            <option value="property">property</option>
-            <option value="both">both</option>
-          </select>
-        </div>
-
-        <div class="control buttons">
-          <button id="randomize" title="Fill empty fields with random text values">Random values</button>
-        </div>
-      </div>
-
-      <div class="notes">
-        <div id="notes-title" class="notes-title">Notes:</div>
-        <ul class="notes-list">
-          <li class="note">Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom or virtualized menus may not be detectable.</li>
-          <li id="note-mui" class="note">MUI options don’t expose value properties on DOM nodes; use data-value for testing.</li>
-        </ul>
-      </div>
-
+    <section class="items-section">
       <table class="items-table">
         <thead>
           <tr>

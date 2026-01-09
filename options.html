@@ -1,105 +1,107 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Dropdown Extractor – Options</title>
-    <link rel="stylesheet" href="options.css">
-  </head>
-  <body>
-    <h1>Dropdown Extractor</h1>
-    <p>
-      Copies items from dropdown lists into your clipboard.
-    </p>
 
-    <p>
-      Choose what to extract for each dropdown item:
-    </p>
+<head>
+  <title>Dropdown Extractor – Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
 
-    <label class="option-label">
-      <input type="checkbox" id="text" checked>
-      Item text (what you see)
-    </label>
-
-    <label>
-      <input type="checkbox" id="value">
-      Item value (underlying value)
-    </label>
-
-    <div id="format-row" class="format-row">
-      <!-- Format options: radio buttons (active) -->
-      <div class="format-title">Format when both are selected:</div>
-
-      <label class="format-option">
-        <input type="radio" name="format" value="text-space-value">
-        <span class="format-name">space:</span>
-        <span class="example">text value</span>
-      </label>
-      <label class="format-option">
-        <input type="radio" name="format" value="text-dash-value">
-        <span class="format-name">dash:</span>
-        <span class="example">text <span class="example-delim">-</span> value</span>
-      </label>
-      <label class="format-option">
-        <input type="radio" name="format" value="text-pipe-value">
-        <span class="format-name">pipe:</span>
-        <span class="example">text <span class="example-delim">|</span> value</span>
-      </label>
-      <label class="format-option">
-        <input type="radio" name="format" value="text-tab-value">
-        <span class="format-name">tab:</span>
-        <span class="example">text <span class="example-delim">&lt;tab&gt;</span> value</span>
-      </label>
-      <label class="format-option">
-        <input type="radio" name="format" value="text-linebreak-value">
-        <span class="format-name">line break:</span>
-        <span class="example">text <span class="example-delim">&lt;line break&gt;</span> value</span>
-      </label>
-      <label class="format-option">
-        <input type="radio" name="format" value="text-parens-value">
-        <span class="format-name">parentheses:</span>
-        <span class="example">text <span class="example-delim">(</span>value<span class="example-delim">)</span></span>
-      </label>
-      <label class="format-option">
-        <input type="radio" name="format" value="text-brackets-value">
-        <span class="format-name">brackets:</span>
-        <span class="example">text <span class="example-delim">[</span>value<span class="example-delim">]</span></span>
+<body>
+  <h1>Dropdown Extractor</h1>
+  <h2>What does it do?</h2>
+  <p>
+    Dropdown Extractor copies items from dropdown lists into your clipboard.
+  </p>
+  <section class="section">
+    <h2 class="section-title">Options</h2>
+    <div class="option-box">
+      <p>Choose what to extract from each dropdown list:</p>
+      <label class="option-label">
+        <input type="checkbox" id="text" checked>
+        <span class="example">Text</span> &ndash; what you see in the dropdown
       </label>
 
-      <!-- Format options: dropdown (commented out) -->
-      <!--
-      <label for="format" class="format-label">Format when both are selected:</label>
-      <select id="format" class="format-select">
-        <option value="text-space-value">text value</option>
-        <option value="text-dash-value">text - value</option>
-        <option value="text-pipe-value">text | value</option>
-        <option value="text-tab-value">text &lt;tab&gt; value</option>
-        <option value="text-linebreak-value">text &lt;line break&gt; value</option>
-        <option value="text-parens-value">text (value)</option>
-        <option value="text-brackets-value">text [value]</option>
-      </select>
-      -->
+      <label class="option-label">
+        <input type="checkbox" id="value">
+        <span class="example">Value</span> &ndash; the underlying value of each item
+      </label>
+
+      <div id="format-row" class="format-row">
+        <div class="format-title">Format when both are selected:</div>
+
+        <label class="format-option">
+          <input type="radio" name="format" value="text-space-value">
+          <span class="format-name">space:</span>
+          <span class="example">text value</span>
+        </label>
+        <label class="format-option">
+          <input type="radio" name="format" value="text-dash-value">
+          <span class="format-name">dash:</span>
+          <span class="example">text <span class="example-delim">-</span> value</span>
+        </label>
+        <label class="format-option">
+          <input type="radio" name="format" value="text-pipe-value">
+          <span class="format-name">pipe:</span>
+          <span class="example">text <span class="example-delim">|</span> value</span>
+        </label>
+        <label class="format-option">
+          <input type="radio" name="format" value="text-tab-value">
+          <span class="format-name">tab:</span>
+          <span class="example">text <span class="example-delim">&lt;tab&gt;</span> value</span>
+        </label>
+        <label class="format-option">
+          <input type="radio" name="format" value="text-linebreak-value">
+          <span class="format-name">line break:</span>
+          <span class="example">text <span class="example-delim">&lt;line break&gt;</span> value</span>
+        </label>
+        <label class="format-option">
+          <input type="radio" name="format" value="text-parens-value">
+          <span class="format-name">parentheses:</span>
+          <span class="example">text <span class="example-delim">(</span>value<span class="example-delim">)</span></span>
+        </label>
+        <label class="format-option">
+          <input type="radio" name="format" value="text-brackets-value">
+          <span class="format-name">brackets:</span>
+          <span class="example">text <span class="example-delim">[</span>value<span class="example-delim">]</span></span>
+        </label>
+      </div>
     </div>
 
-    <p class="playground-link">
+    <div class="option-block">
+      <label class="option-label safe-capture-row">
+        <input type="checkbox" id="safe-capture">
+        Safe capture (do not trigger option click)
+      </label>
+    </div>
+
+    <div class="option-block">
+      <h3 class="subsection-title">Developer zone</h3>
+      <label class="option-label debug-row">
+        <input type="checkbox" id="debug">
+        Debug mode
+      </label>
+      <div id="debug-options" class="debug-options">
+        <div class="debug-title">Copy raw HTML:</div>
+        <label class="debug-option">
+          <input type="radio" name="debug-mode" value="supported">
+          Supported dropdown
+        </label>
+        <label class="debug-option">
+          <input type="radio" name="debug-mode" value="any-two">
+          Any two elements (open + select)
+        </label>
+      </div>
+    </div>
+
+    <h3 class="subsection-title">Testing</h3>
+    <p>
       You can test this extension on the
-      <a href="https://dropdown-extractor.stansult.com" target="_blank" rel="noopener noreferrer">Dropdown Playground page</a>.
+      <a href="https://dropdown-extractor.stansult.com" target="_blank" rel="noopener noreferrer">Dropdown Playground
+        page</a>.
     </p>
+  </section>
 
-    <label class="option-label debug-row">
-      <input type="checkbox" id="debug">
-      Debug mode
-    </label>
-    <div id="debug-options" class="debug-options">
-      <div class="debug-title">Copy raw HTML:</div>
-      <label class="debug-option">
-        <input type="radio" name="debug-mode" value="supported">
-        Supported dropdown
-      </label>
-      <label class="debug-option">
-        <input type="radio" name="debug-mode" value="any-two">
-        Any two elements (open + select)
-      </label>
-    </div>
+  <script src="options.js"></script>
+</body>
 
-    <script src="options.js"></script>
-  </body>
 </html>

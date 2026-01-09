@@ -79,11 +79,13 @@
 
           <div class="notes">
             <div id="notes-title" class="notes-title">Notes:</div>
-            <ul class="notes-list">
-              <li class="note">Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom or virtualized menus may not be detectable.</li>
-              <li id="note-mui" class="note">MUI options don’t expose value properties on DOM nodes; use data-value for testing.</li>
-            </ul>
-          </div>
+        <ul class="notes-list">
+          <li class="note">Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom or virtualized menus may not be detectable.</li>
+          <li id="note-native" class="note">Safe capture doesn’t apply to native &lt;select&gt; dropdowns.</li>
+          <li id="note-libs" class="note">AntD/Select2/Chosen support depends on default DOM structure; customized themes may not be detectable.</li>
+          <li id="note-mui" class="note">MUI options don’t expose value properties on DOM nodes; use data-value for testing.</li>
+        </ul>
+      </div>
         </section>
       </div>
 

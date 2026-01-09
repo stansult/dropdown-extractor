@@ -13,6 +13,8 @@ const dropdownContainer = document.getElementById('dropdown');
 const dropdownType = document.getElementById('dropdown-type');
 const dropdownPanel = document.querySelector('.dropdown-panel');
 const valueModeSelect = document.getElementById('value-mode');
+const nativeNote = document.getElementById('note-native');
+const libsNote = document.getElementById('note-libs');
 const muiNote = document.getElementById('note-mui');
 const notesTitle = document.getElementById('notes-title');
 
@@ -25,7 +27,10 @@ const supportedTypes = new Set([
   'react',
   'react-variant',
   'downshift',
-  'mui'
+  'mui',
+  'antd',
+  'select2',
+  'chosen'
 ]);
 
 function isTypeSupported(type) {
@@ -56,9 +61,14 @@ function updateRenderedTypeDisplay() {
 }
 
 function updateNotesVisibility() {
-  if (!muiNote) return;
+  if (!muiNote || !libsNote || !nativeNote) return;
+  const showNative = typeSelect.value === 'native' || (lastRenderSnapshot && lastRenderSnapshot.type === 'native');
   const showMui = typeSelect.value === 'mui' || (lastRenderSnapshot && lastRenderSnapshot.type === 'mui');
+  const showLibs = ['antd', 'select2', 'chosen'].includes(typeSelect.value)
+    || (lastRenderSnapshot && ['antd', 'select2', 'chosen'].includes(lastRenderSnapshot.type));
+  nativeNote.style.display = showNative ? 'list-item' : 'none';
   muiNote.style.display = showMui ? 'list-item' : 'none';
+  libsNote.style.display = showLibs ? 'list-item' : 'none';
   if (notesTitle) {
     const visibleNotes = document.querySelectorAll('.notes-list .note')
       .length - document.querySelectorAll('.notes-list .note[style*="display: none"]').length;

@@ -10,6 +10,11 @@ It supports:
 - Selectize-based dropdowns
 - React Select dropdowns
 - ARIA listbox dropdowns (`role="listbox"` / `role="option"`)
+- Downshift-style dropdowns
+- MUI Autocomplete-style dropdowns
+- Ant Design Select-style dropdowns
+- Select2-style dropdowns
+- Chosen-style dropdowns
 
 The extracted items are copied as plain text, one per line.
 
@@ -25,15 +30,21 @@ The extracted items are copied as plain text, one per line.
 
 The extractor automatically cancels itself after a short timeout if nothing is clicked.
 
----
-
-## What gets extracted
+### What gets extracted
 
 You can choose what to copy via **Extension Options**:
 
 - **Item text** — what you see on screen  
 - **Item value** — the underlying value  
 - **Both** — copied using a configurable format (tab, space, dash, etc.)
+
+### Safe capture
+
+If enabled in **Extension Options**, Safe capture prevents option clicks from triggering actions while extracting. This lets you copy dropdown items without selecting an option. Safe capture does not apply to native `<select>` dropdowns.
+
+### Debug mode
+
+Debug mode is intended for troubleshooting unsupported dropdowns. It copies raw HTML to your clipboard so you can inspect the menu structure and share it for adding support.
 
 ---
 
@@ -48,13 +59,17 @@ You can choose what to copy via **Extension Options**:
 | React Select (Atlassian variant) | Yes |
 | Downshift-style | Yes |
 | MUI Autocomplete-style | Yes |
-| Ant Design Select-style | No |
-| Select2-style | No |
-| Chosen-style | No |
+| Ant Design Select-style | Yes |
+| Select2-style | Yes |
+| Chosen-style | Yes |
 | Canvas-rendered / virtualized | No |
 | Cross-origin iframes | No |
 
-*Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom implementations, virtualized or canvas-rendered menus, Shadow DOM, or cross-origin iframes may not be detectable.
+Notes:
+- Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom implementations, virtualized or canvas-rendered menus, Shadow DOM, or cross-origin iframes may not be detectable.
+- AntD/Select2/Chosen support depends on their default DOM structure; customized themes may not be detectable.
+- MUI options don’t expose value properties on DOM nodes; use data-value if available.
+- Safe capture does not apply to native `<select>` dropdowns.
 
 ---
 

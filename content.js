@@ -582,6 +582,15 @@
     }) || null;
   }
 
+  function getVisibleDropdownContainer(selectors, target) {
+    if (target && target.closest) {
+      const containing = target.closest(selectors);
+      if (containing && containing.offsetParent !== null) return containing;
+    }
+    return [...document.querySelectorAll(selectors)]
+      .find(el => el && el.offsetParent !== null) || null;
+  }
+
   function isOptionLike(target) {
     if (!target || !target.closest) return false;
     return !!target.closest([
@@ -601,8 +610,25 @@
     ].join(','));
   }
 
-  function cleanup() {
+  let deferCleanup = false;
+  let pendingSafeCleanup = false;
+
+  function shouldBlockOptionClick(prefs, target) {
+    if (!prefs || !prefs.safeCapture) return false;
+    if (target && target.closest && target.closest('select')) return false;
+    return isOptionLike(target);
+  }
+
+  function cleanup(force = false) {
+    if (!force && deferCleanup) {
+      pendingSafeCleanup = true;
+      return;
+    }
+    deferCleanup = false;
+    pendingSafeCleanup = false;
     document.removeEventListener('mousedown', onMouseDown, true);
+    document.removeEventListener('click', onClick, true);
+    document.removeEventListener('mouseup', onMouseUp, true);
     window.__dropdownExtractorActive = false;
     resetDebugCapture();
 
@@ -733,6 +759,117 @@
       return;
     }
 
+    // --- 4) Ant Design support ---
+    const antDropdown = getVisibleDropdownContainer('.ant-select-dropdown', e.target);
+    if (antDropdown && antDropdown.contains(e.target)) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (shouldDebugSupported(prefs) && copyDebugHtml(antDropdown, 'supported dropdown')) return;
+      const options = [
+        ...antDropdown.querySelectorAll('.ant-option'),
+        ...antDropdown.querySelectorAll('.ant-select-item-option')
+      ];
+      const fields = resolveFields(
+        options,
+        o => getOptionLabelText(o),
+        [
+          o => o.value || o.getAttribute('value'),
+          o => o.dataset.value
+        ]
+      );
+      const { items, note, error } = buildOutput(fields, prefs);
+
+      if (items.length) {
+        navigator.clipboard.writeText(items.join('\n'));
+        clearArmedToast();
+        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
+          position: 'top-right',
+          duration: EXTRACTED_TOAST_MS,
+          background: TOAST_SUCCESS_BG
+        }));
+        notifyBackground('done');
+        cleanup();
+        return;
+      }
+
+      showErrorToast(error || NO_ITEMS_FOUND_TEXT);
+      cleanup();
+      return;
+    }
+
+    // --- 5) Select2 support ---
+    const select2Results = getVisibleDropdownContainer('.select2-results__options, .select2-results', e.target);
+    if (select2Results && select2Results.contains(e.target)) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (shouldDebugSupported(prefs) && copyDebugHtml(select2Results, 'supported dropdown')) return;
+      const options = [...select2Results.querySelectorAll('.select2-results__option')];
+      const fields = resolveFields(
+        options,
+        o => getOptionLabelText(o),
+        [
+          o => o.value || o.getAttribute('value'),
+          o => o.dataset.value
+        ]
+      );
+      const { items, note, error } = buildOutput(fields, prefs);
+
+      if (items.length) {
+        navigator.clipboard.writeText(items.join('\n'));
+        clearArmedToast();
+        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
+          position: 'top-right',
+          duration: EXTRACTED_TOAST_MS,
+          background: TOAST_SUCCESS_BG
+        }));
+        notifyBackground('done');
+        cleanup();
+        return;
+      }
+
+      showErrorToast(error || NO_ITEMS_FOUND_TEXT);
+      cleanup();
+      return;
+    }
+
+    // --- 6) Chosen support ---
+    const chosenResults = getVisibleDropdownContainer('.chosen-results', e.target);
+    if (chosenResults && chosenResults.contains(e.target)) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (shouldDebugSupported(prefs) && copyDebugHtml(chosenResults, 'supported dropdown')) return;
+      const options = [...chosenResults.querySelectorAll('.chosen-option')];
+      const fields = resolveFields(
+        options,
+        o => getOptionLabelText(o),
+        [
+          o => o.value || o.getAttribute('value'),
+          o => o.dataset.value
+        ]
+      );
+      const { items, note, error } = buildOutput(fields, prefs);
+
+      if (items.length) {
+        navigator.clipboard.writeText(items.join('\n'));
+        clearArmedToast();
+        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
+          position: 'top-right',
+          duration: EXTRACTED_TOAST_MS,
+          background: TOAST_SUCCESS_BG
+        }));
+        notifyBackground('done');
+        cleanup();
+        return;
+      }
+
+      showErrorToast(error || NO_ITEMS_FOUND_TEXT);
+      cleanup();
+      return;
+    }
+
     const listbox = [...document.querySelectorAll('[role="listbox"]')]
       .find(el => el.offsetParent !== null);
 
@@ -775,7 +912,8 @@
   function onMouseDown(e) {
     const prefs = window.__dropdownExtractorPrefs;
     if (prefs) {
-      if (prefs.safeCapture && !e.target.closest('select') && isOptionLike(e.target)) {
+      if (shouldBlockOptionClick(prefs, e.target)) {
+        deferCleanup = true;
         e.preventDefault();
         e.stopPropagation();
       }
@@ -786,7 +924,8 @@
 
     getPrefs(loadedPrefs => {
       window.__dropdownExtractorPrefs = loadedPrefs;
-      if (loadedPrefs.safeCapture && !e.target.closest('select') && isOptionLike(e.target)) {
+      if (shouldBlockOptionClick(loadedPrefs, e.target)) {
+        deferCleanup = true;
         e.preventDefault();
         e.stopPropagation();
       }
@@ -795,7 +934,28 @@
     });
   }
 
+  function onClick(e) {
+    const prefs = window.__dropdownExtractorPrefs;
+    if (!prefs) return;
+    if (shouldBlockOptionClick(prefs, e.target)) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (pendingSafeCleanup) cleanup(true);
+    }
+  }
+
+  function onMouseUp(e) {
+    const prefs = window.__dropdownExtractorPrefs;
+    if (!prefs) return;
+    if (shouldBlockOptionClick(prefs, e.target)) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
   document.addEventListener('mousedown', onMouseDown, true);
+  document.addEventListener('click', onClick, true);
+  document.addEventListener('mouseup', onMouseUp, true);
 
   showArmedToast();
   notifyBackground('armed');

@@ -13,7 +13,7 @@ body {
   font-family: sans-serif;
   padding: var(--space-8);
   line-height: 1.5;
-  max-width: 800px;
+  max-width: 600px;
   font-size: 15px;
   color: #1f2933;
 }

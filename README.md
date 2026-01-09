@@ -2,33 +2,23 @@
 
 **Dropdown Extractor** is a Chrome extension that copies items from dropdown lists into your clipboard.
 
+It supports many popular [types of dropboxes](#dropdown-types).
+
+### Links
+
 - Chrome Web Store: [Dropdown Extractor](https://chrome.google.com/webstore/detail/dropdown-extractor/gbocefdbkfckcdbdhmaipklcfhgmeghm)
 - Test page: [Dropdown Playground](https://dropdown-extractor.stansult.com)
-
-It supports:
-- native HTML `<select>` dropdowns
-- Selectize-based dropdowns
-- React Select dropdowns
-- ARIA listbox dropdowns (`role="listbox"` / `role="option"`)
-- Downshift-style dropdowns
-- MUI Autocomplete-style dropdowns
-- Ant Design Select-style dropdowns
-- Select2-style dropdowns
-- Chosen-style dropdowns
-
-The extracted items are copied as plain text, one per line.
 
 ---
 
 ## How it works
 
-1. Click the extension icon  
-2. The extractor becomes **armed**  
-3. Open a dropdown on the page  
-4. Click one of its options  
-5. All dropdown items are copied to the clipboard  
+1. Click the extension icon → extractor becomes **armed**  
+1. Open a dropdown on the page  
+1. Click one of its options
+1. All dropdown items are copied to the clipboard  
 
-The extractor automatically cancels itself after a short timeout if nothing is clicked.
+The extractor automatically cancels itself after a short timeout if no dropdown lists are detected.
 
 ### What gets extracted
 

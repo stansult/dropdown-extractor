@@ -37,7 +37,7 @@ In debug mode, extension copies raw HTML to your clipboard so you can inspect th
 
 To open Extension Options, right-click the extension button and select Options.
 
-## Dropdown types
+### Dropdown types
 
 | Dropdown type | Supported |
 |--------------|:----------:|
@@ -55,7 +55,7 @@ To open Extension Options, right-click the extension button and select Options.
 | Canvas-rendered / virtualized | No |
 | Cross-origin iframes | No |
 
-### Notes / Limitations
+#### Notes / Limitations
 
 - Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom implementations, virtualized or canvas-rendered menus, Shadow DOM, or cross-origin iframes may not be detectable.
 - AntD/Select2/Chosen support depends on their default DOM structure; customized themes may not be detectable.

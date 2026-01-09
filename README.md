@@ -74,6 +74,8 @@ Install public version from Chrome Web Store:<a href="https://chrome.google.com/
 
 ### Development mode
 
+Follow these steps to load the unpacked extension in Chrome:
+
 1. Clone or download this repository
 2. Open Chrome and go to: chrome://extensions
 3. Enable **Developer mode** (top right)
@@ -83,11 +85,13 @@ Install public version from Chrome Web Store:<a href="https://chrome.google.com/
 
 #### Packaging for Chrome Web Store
 
-To create a ZIP for upload: `npm run package`
+Use these commands to build uploadable zip archives:
 
-This runs a clean step and generates `dist/dropdown-extractor-<version>.zip`.
+- To create a ZIP for upload: `npm run package`
 
-To bump the patch version and package in one step: `npm run package:patch`
+- This runs a clean step and generates `dist/dropdown-extractor-<version>.zip`.
+
+- To bump the patch version and package in one step: `npm run package:patch`
 
 #### Dropdown Playground
 

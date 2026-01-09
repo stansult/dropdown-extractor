@@ -34,7 +34,7 @@
       <div class="dropdown-panel">
         <h2>Test dropdown</h2>
         <div class="render-actions">
-          <button id="render">Render dropdown</button>
+          <button id="render" title="Render the dropdown with current settings">Render dropdown</button>
         </div>
         <div id="dropdown-type" class="dropdown-type">Type: Native &lt;select&gt;</div>
         <div id="dropdown"></div>
@@ -52,7 +52,7 @@
         <div class="control">
           <label for="type">Type <span id="type-support-config" class="type-support supported">Supported</span>*</label>
           <div class="type-picker">
-            <button id="type-trigger" type="button" class="type-trigger" aria-haspopup="listbox" aria-expanded="false">
+            <button id="type-trigger" type="button" class="type-trigger" aria-haspopup="listbox" aria-expanded="false" title="Choose a dropdown type">
               <span id="type-label">Native &lt;select&gt;</span>
             </button>
             <div id="type-menu" class="type-menu" role="listbox"></div>
@@ -73,12 +73,12 @@
 
         <div class="control">
           <label for="count">Number of items</label>
-          <input id="count" type="number" min="1" max="20" value="5">
+          <input id="count" type="number" min="1" max="20" value="5" title="How many options to generate">
         </div>
 
         <div class="control">
           <label for="value-mode">Value source</label>
-          <select id="value-mode">
+          <select id="value-mode" title="Where values are stored: attribute, property, or both">
             <option value="attribute">attribute</option>
             <option value="property">property</option>
             <option value="both">both</option>
@@ -86,7 +86,7 @@
         </div>
 
         <div class="control buttons">
-          <button id="randomize">Fill with random values</button>
+          <button id="randomize" title="Fill empty fields with random text values">Random values</button>
         </div>
       </div>
 

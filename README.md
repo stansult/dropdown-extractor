@@ -3,7 +3,7 @@
 **Dropdown Extractor** is a Chrome extension that copies items from dropdown lists into your clipboard.
 
 - Chrome Web Store: [Dropdown Extractor](https://chrome.google.com/webstore/detail/dropdown-extractor/gbocefdbkfckcdbdhmaipklcfhgmeghm)
-- Test playground: [Dropdown Playground](https://dropdown-extractor.stansult.com)
+- Test page: [Dropdown Playground](https://dropdown-extractor.stansult.com)
 
 It supports:
 - native HTML `<select>` dropdowns

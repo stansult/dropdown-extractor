@@ -1,5 +1,7 @@
 const ARM_DURATION_MS = 10000; // Keep in sync with content.js.
 const EXTENSION_TITLE = "Dropdown Extractor";
+const FEEDBACK_DURATION_MS = 900;
+const ERROR_BADGE_DURATION_MS = 1500;
 let armIntervalId = null;
 
 function resetDebugFlag() {
@@ -27,6 +29,29 @@ function clearArmBadge() {
   chrome.action.setTitle({ title: EXTENSION_TITLE });
 }
 
+function showDoneBadge() {
+  clearArmBadge();
+  chrome.action.setBadgeBackgroundColor({ color: "#188038" });
+  chrome.action.setBadgeText({ text: "✓" });
+  chrome.action.setTitle({ title: `${EXTENSION_TITLE}: extracted` });
+  setTimeout(() => {
+    chrome.action.setBadgeText({ text: "" });
+    chrome.action.setTitle({ title: EXTENSION_TITLE });
+  }, FEEDBACK_DURATION_MS);
+}
+
+function showErrorBadge(titleSuffix) {
+  clearArmBadge();
+  chrome.action.setBadgeBackgroundColor({ color: "#d93025" });
+  chrome.action.setBadgeText({ text: "!" });
+  const suffix = titleSuffix ? `: ${titleSuffix}` : ": error";
+  chrome.action.setTitle({ title: `${EXTENSION_TITLE}${suffix}` });
+  setTimeout(() => {
+    chrome.action.setBadgeText({ text: "" });
+    chrome.action.setTitle({ title: EXTENSION_TITLE });
+  }, ERROR_BADGE_DURATION_MS);
+}
+
 function startArmBadge() {
   clearArmBadge();
   chrome.action.setBadgeBackgroundColor({ color: "#1a73e8" });
@@ -51,7 +76,17 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     return;
   }
 
-  if (msg.action === "done" || msg.action === "canceled") {
+  if (msg.action === "done") {
+    showDoneBadge();
+    return;
+  }
+
+  if (msg.action === "error") {
+    showErrorBadge("error");
+    return;
+  }
+
+  if (msg.action === "canceled") {
     clearArmBadge();
     return;
   }
@@ -70,14 +105,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     }, () => {
       const err = chrome.runtime.lastError;
       if (err) {
-        clearArmBadge();
-        chrome.action.setBadgeBackgroundColor({ color: "#d93025" });
-        chrome.action.setBadgeText({ text: "!" });
-        chrome.action.setTitle({ title: `${EXTENSION_TITLE}: can't run on this page` });
-        setTimeout(() => {
-          chrome.action.setBadgeText({ text: "" });
-          chrome.action.setTitle({ title: EXTENSION_TITLE });
-        }, 2000);
+        showErrorBadge("can't run on this page");
         sendResponse && sendResponse({ ok: false, error: err.message });
         return;
       }

@@ -341,6 +341,7 @@
       duration: 2000,
       background: TOAST_ERROR_BG
     }));
+    notifyBackground('error');
   }
 
   function formatDebugText(value) {
@@ -404,7 +405,11 @@
   function copyDebugHtml(element, label) {
     const block = buildDebugBlock(element, label);
     if (!block) return false;
-    navigator.clipboard.writeText(block);
+    const writeBlock = () => {
+      navigator.clipboard.writeText(block);
+    };
+    flashElement(element);
+    setTimeout(writeBlock, 120);
     clearArmedToast();
     replaceActiveToast(showToast('Debug: copied dropdown HTML', {
       position: 'top-right',
@@ -461,7 +466,10 @@
           if (containerBlock && optionBlock) {
             window.__dropdownExtractorDebugBlocks = [containerBlock, optionBlock];
             clearArmedToast();
-            navigator.clipboard.writeText([containerBlock, optionBlock].join('\n\n'));
+            flashElement(container);
+            setTimeout(() => {
+              navigator.clipboard.writeText([containerBlock, optionBlock].join('\n\n'));
+            }, 120);
             replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
               position: 'top-right',
               duration: EXTRACTED_TOAST_MS,
@@ -489,6 +497,7 @@
     clearArmedToast();
 
     if (blocks.length === 1) {
+      if (toCapture[0]) flashElement(toCapture[0]);
       replaceActiveToast(showToast('Debug: copied HTML (1/2)', {
         position: 'top-right',
         duration: EXTRACTED_TOAST_MS,
@@ -497,7 +506,10 @@
       return true;
     }
 
-    navigator.clipboard.writeText(blocks.join('\n\n'));
+    flashElement(toCapture[0] || element);
+    setTimeout(() => {
+      navigator.clipboard.writeText(blocks.join('\n\n'));
+    }, 120);
     replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
       position: 'top-right',
       duration: EXTRACTED_TOAST_MS,
@@ -602,28 +614,102 @@
       .find(el => el && el.offsetParent !== null) || null;
   }
 
+  const OPTION_LIKE_SELECTOR = [
+    '[role="option"]',
+    '[role="listitem"]',
+    '.option',
+    '.mock-option',
+    '.react-select__option',
+    '.react-select-variant-option',
+    '.mui-option',
+    '.ant-option',
+    '.select2-results__option',
+    '.chosen-option',
+    '.downshift-option',
+    '[role="menuitem"]',
+    '.menuitem',
+    '[id^="react-select-"][id*="-option-"]'
+  ].join(',');
+
+  const FLASH_CLASS = 'dropdown-extractor-flash';
+  const FLASH_STYLE_ID = 'dropdown-extractor-flash-style';
+  const FEEDBACK_DURATION_MS = 900;
+
   function isOptionLike(target) {
     if (!target || !target.closest) return false;
-    return !!target.closest([
-      '[role="option"]',
-      '[role="listitem"]',
-      '.option',
-      '.mock-option',
-      '.react-select__option',
-      '.react-select-variant-option',
-      '.mui-option',
-      '.ant-option',
-      '.select2-results__option',
-      '.chosen-option',
-      '.downshift-option',
-      '[role="menuitem"]',
-      '.menuitem',
-      '[id^="react-select-"][id*="-option-"]'
-    ].join(','));
+    return !!target.closest(OPTION_LIKE_SELECTOR);
+  }
+
+  function ensureFlashStyles() {
+    if (document.getElementById(FLASH_STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = FLASH_STYLE_ID;
+    style.textContent = `
+      @keyframes dropdownExtractorFlash {
+        0%, 60% {
+          box-shadow: 0 0 0 3px rgba(46, 140, 90, 0.55),
+            inset 0 0 0 9999px rgba(46, 140, 90, 0.12);
+        }
+        100% {
+          box-shadow: 0 0 0 3px rgba(46, 140, 90, 0),
+            inset 0 0 0 9999px rgba(46, 140, 90, 0);
+        }
+      }
+      .${FLASH_CLASS} {
+        animation: dropdownExtractorFlash ${FEEDBACK_DURATION_MS}ms linear;
+        border-radius: var(--dropdown-extractor-flash-radius, inherit);
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function getNearestBorderRadius(element) {
+    let current = element;
+    while (current) {
+      const radius = getComputedStyle(current).borderRadius;
+      if (radius && radius !== '0px' && radius !== '0px 0px 0px 0px') return radius;
+      current = current.parentElement;
+    }
+    return '';
+  }
+
+  function getOptionLikeTarget(target, container) {
+    if (!target || !target.closest) return container || null;
+    const option = target.closest(OPTION_LIKE_SELECTOR);
+    if (option && (!container || container.contains(option))) return option;
+    return container || null;
+  }
+
+  function flashElement(element) {
+    if (!element) return;
+    ensureFlashStyles();
+    const radius = getNearestBorderRadius(element);
+    const previousRadius = element.style.getPropertyValue('--dropdown-extractor-flash-radius');
+    if (radius) {
+      element.style.setProperty('--dropdown-extractor-flash-radius', radius);
+    } else {
+      element.style.removeProperty('--dropdown-extractor-flash-radius');
+    }
+    const timeoutId = element.dataset.dropdownExtractorFlashTimeout;
+    if (timeoutId) clearTimeout(Number(timeoutId));
+    element.classList.remove(FLASH_CLASS);
+    element.offsetHeight;
+    element.classList.add(FLASH_CLASS);
+    const newTimeoutId = window.setTimeout(() => {
+      element.classList.remove(FLASH_CLASS);
+      element.dataset.dropdownExtractorFlashTimeout = '';
+      if (previousRadius) {
+        element.style.setProperty('--dropdown-extractor-flash-radius', previousRadius);
+      } else {
+        element.style.removeProperty('--dropdown-extractor-flash-radius');
+      }
+    }, FEEDBACK_DURATION_MS);
+    element.dataset.dropdownExtractorFlashTimeout = String(newTimeoutId);
   }
 
   let deferCleanup = false;
   let pendingSafeCleanup = false;
+  let extractionPending = false;
 
   function shouldBlockOptionClick(prefs, target) {
     if (!prefs || !prefs.safeCapture) return false;
@@ -638,6 +724,7 @@
     }
     deferCleanup = false;
     pendingSafeCleanup = false;
+    extractionPending = false;
     document.removeEventListener('mousedown', onMouseDown, true);
     document.removeEventListener('click', onClick, true);
     document.removeEventListener('mouseup', onMouseUp, true);
@@ -648,6 +735,31 @@
       clearTimeout(window.__dropdownExtractorCancelTimer);
       window.__dropdownExtractorCancelTimer = null;
     }
+  }
+
+  function completeExtraction(items, note, flashTarget, prefs) {
+    if (!items.length || extractionPending) return;
+    extractionPending = true;
+    if (flashTarget) flashElement(flashTarget);
+
+    const finish = () => {
+      navigator.clipboard.writeText(items.join('\n'));
+      clearArmedToast();
+      replaceActiveToast(showToast(buildExtractedMessage(items, note), {
+        position: 'top-right',
+        duration: EXTRACTED_TOAST_MS,
+        background: TOAST_SUCCESS_BG
+      }));
+      notifyBackground('done');
+      cleanup();
+    };
+
+    const delay = prefs && !prefs.safeCapture ? 120 : 0;
+    if (delay) {
+      setTimeout(finish, delay);
+      return;
+    }
+    finish();
   }
 
   function shouldDebugSupported(prefs) {
@@ -675,15 +787,7 @@
       const { items, note, error } = buildOutput(fields, prefs);
 
       if (items.length) {
-        navigator.clipboard.writeText(items.join('\n'));
-        clearArmedToast();
-        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
-          position: 'top-right',
-          duration: EXTRACTED_TOAST_MS,
-          background: TOAST_SUCCESS_BG
-        }));
-        notifyBackground('done');
-        cleanup();
+        completeExtraction(items, note, selectEl, prefs);
         return;
       }
 
@@ -711,15 +815,7 @@
       const { items, note, error } = buildOutput(fields, prefs);
 
       if (items.length) {
-        navigator.clipboard.writeText(items.join('\n'));
-        clearArmedToast();
-        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
-          position: 'top-right',
-          duration: EXTRACTED_TOAST_MS,
-          background: TOAST_SUCCESS_BG
-        }));
-        notifyBackground('done');
-        cleanup();
+        completeExtraction(items, note, selectizeContent, prefs);
         return;
       }
 
@@ -754,15 +850,7 @@
       const { items, note, error } = buildOutput(fields, prefs);
 
       if (items.length) {
-        navigator.clipboard.writeText(items.join('\n'));
-        clearArmedToast();
-        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
-          position: 'top-right',
-          duration: EXTRACTED_TOAST_MS,
-          background: TOAST_SUCCESS_BG
-        }));
-        notifyBackground('done');
-        cleanup();
+        completeExtraction(items, note, reactSelectMenuList, prefs);
         return;
       }
 
@@ -791,15 +879,7 @@
       const { items, note, error } = buildOutput(fields, prefs);
 
       if (items.length) {
-        navigator.clipboard.writeText(items.join('\n'));
-        clearArmedToast();
-        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
-          position: 'top-right',
-          duration: EXTRACTED_TOAST_MS,
-          background: TOAST_SUCCESS_BG
-        }));
-        notifyBackground('done');
-        cleanup();
+        completeExtraction(items, note, menu, prefs);
         return;
       }
 
@@ -830,15 +910,7 @@
       const { items, note, error } = buildOutput(fields, prefs);
 
       if (items.length) {
-        navigator.clipboard.writeText(items.join('\n'));
-        clearArmedToast();
-        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
-          position: 'top-right',
-          duration: EXTRACTED_TOAST_MS,
-          background: TOAST_SUCCESS_BG
-        }));
-        notifyBackground('done');
-        cleanup();
+        completeExtraction(items, note, antDropdown, prefs);
         return;
       }
 
@@ -866,15 +938,7 @@
       const { items, note, error } = buildOutput(fields, prefs);
 
       if (items.length) {
-        navigator.clipboard.writeText(items.join('\n'));
-        clearArmedToast();
-        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
-          position: 'top-right',
-          duration: EXTRACTED_TOAST_MS,
-          background: TOAST_SUCCESS_BG
-        }));
-        notifyBackground('done');
-        cleanup();
+        completeExtraction(items, note, select2Results, prefs);
         return;
       }
 
@@ -902,15 +966,7 @@
       const { items, note, error } = buildOutput(fields, prefs);
 
       if (items.length) {
-        navigator.clipboard.writeText(items.join('\n'));
-        clearArmedToast();
-        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
-          position: 'top-right',
-          duration: EXTRACTED_TOAST_MS,
-          background: TOAST_SUCCESS_BG
-        }));
-        notifyBackground('done');
-        cleanup();
+        completeExtraction(items, note, chosenResults, prefs);
         return;
       }
 
@@ -939,15 +995,7 @@
       const { items, note, error } = buildOutput(fields, prefs);
 
       if (items.length) {
-        navigator.clipboard.writeText(items.join('\n'));
-        clearArmedToast();
-        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
-          position: 'top-right',
-          duration: EXTRACTED_TOAST_MS,
-          background: TOAST_SUCCESS_BG
-        }));
-        notifyBackground('done');
-        cleanup();
+        completeExtraction(items, note, listbox, prefs);
         return;
       }
 
@@ -959,6 +1007,7 @@
 
   // ===== MAIN HANDLER =====
   function onMouseDown(e) {
+    if (extractionPending) return;
     const prefs = window.__dropdownExtractorPrefs;
     if (prefs) {
       if (shouldBlockOptionClick(prefs, e.target)) {

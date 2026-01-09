@@ -372,12 +372,35 @@ button.changed:focus-visible {
 .items-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .items-table th,
 .items-table td {
   padding: 6px 14px;
   vertical-align: top;
+}
+
+.col-text {
+  width: 32%;
+}
+
+.col-value {
+  width: 18%;
+}
+
+.col-data {
+  width: 18%;
+}
+
+.col-href {
+  width: 32%;
+}
+
+.items-table.hide-href .col-href,
+.items-table.hide-href .th-href {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .th-row {
@@ -439,6 +462,8 @@ button.changed:focus-visible {
   box-sizing: border-box;
   padding: 6px 8px;
   font-size: 14px;
+  border: 1px solid #d7dde3;
+  border-radius: 4px;
 }
 
 .item-cell.changed input[type="text"] {
@@ -472,6 +497,7 @@ button.changed:focus-visible {
 .mock-listbox,
 .selectize-dropdown-content,
 .react-select__menu-list,
+.radix-menu,
 .mui-listbox,
 .ant-select-dropdown,
 .select2-results__options,
@@ -499,6 +525,7 @@ button.changed:focus-visible {
 .mock-option,
 .selectize-dropdown-content .option,
 .react-select__option,
+.radix-menuitem,
 .mui-option,
 .ant-option,
 .select2-results__option,

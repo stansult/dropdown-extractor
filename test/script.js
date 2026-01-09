@@ -9,12 +9,14 @@ const snapshotTextButton = document.getElementById('snapshot-text');
 const snapshotJsonButton = document.getElementById('snapshot-json');
 const randomizeButton = document.getElementById('randomize');
 const itemsBody = document.getElementById('items');
+const itemsTable = document.querySelector('.items-table');
 const dropdownContainer = document.getElementById('dropdown');
 const dropdownType = document.getElementById('dropdown-type');
 const dropdownPanel = document.querySelector('.dropdown-panel');
 const valueModeSelect = document.getElementById('value-mode');
 const nativeNote = document.getElementById('note-native');
 const libsNote = document.getElementById('note-libs');
+const radixNote = document.getElementById('note-radix');
 const muiNote = document.getElementById('note-mui');
 const notesTitle = document.getElementById('notes-title');
 
@@ -28,6 +30,7 @@ const supportedTypes = new Set([
   'react-variant',
   'downshift',
   'mui',
+  'radix-menu',
   'antd',
   'select2',
   'chosen'
@@ -61,14 +64,19 @@ function updateRenderedTypeDisplay() {
 }
 
 function updateNotesVisibility() {
-  if (!muiNote || !libsNote || !nativeNote) return;
+  if (!muiNote || !libsNote || !nativeNote || !radixNote) return;
   const showNative = typeSelect.value === 'native' || (lastRenderSnapshot && lastRenderSnapshot.type === 'native');
   const showMui = typeSelect.value === 'mui' || (lastRenderSnapshot && lastRenderSnapshot.type === 'mui');
   const showLibs = ['antd', 'select2', 'chosen'].includes(typeSelect.value)
     || (lastRenderSnapshot && ['antd', 'select2', 'chosen'].includes(lastRenderSnapshot.type));
+  const showRadix = typeSelect.value === 'radix-menu' || (lastRenderSnapshot && lastRenderSnapshot.type === 'radix-menu');
   nativeNote.style.display = showNative ? 'list-item' : 'none';
   muiNote.style.display = showMui ? 'list-item' : 'none';
   libsNote.style.display = showLibs ? 'list-item' : 'none';
+  radixNote.style.display = showRadix ? 'list-item' : 'none';
+  if (itemsTable) {
+    itemsTable.classList.toggle('hide-href', !showRadix);
+  }
   if (notesTitle) {
     const visibleNotes = document.querySelectorAll('.notes-list .note')
       .length - document.querySelectorAll('.notes-list .note[style*="display: none"]').length;
@@ -164,7 +172,7 @@ function createDropdownShell(selectedText) {
 
 function wireSelection(menuWrapper, listEl, trigger) {
   listEl.addEventListener('click', (event) => {
-    const option = event.target.closest('[role="option"], [role="listitem"], .option, .react-select__option, .react-select-variant-option, .mui-option, .ant-option, .select2-results__option, .chosen-option, .downshift-option, .mock-option');
+    const option = event.target.closest('[role="option"], [role="listitem"], [role="menuitem"], .option, .react-select__option, .react-select-variant-option, .mui-option, .ant-option, .select2-results__option, .chosen-option, .downshift-option, .mock-option, .radix-menuitem');
     if (!option) return;
     listEl.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
     option.classList.add('selected');
@@ -201,8 +209,14 @@ function randomDashPhrase() {
   return words.join('-');
 }
 
+function randomUrl() {
+  return `https://example.com/${randomDashPhrase()}`;
+}
+
 function createCell(field, index, initial) {
   const cell = document.createElement('td');
+  const columnClass = field === 'data' ? 'col-data' : `col-${field}`;
+  cell.classList.add(columnClass);
   const wrapper = document.createElement('div');
   wrapper.className = 'item-cell';
 
@@ -218,11 +232,13 @@ function createCell(field, index, initial) {
     }
   }
 
+  const fieldLabel = field === 'data' ? 'data-value' : field;
+
   const clear = document.createElement('button');
   clear.type = 'button';
   clear.className = 'cell-button';
   clear.textContent = '🗑';
-  clear.title = 'Clear value';
+  clear.title = `Clear ${fieldLabel}`;
   clear.addEventListener('click', () => {
     input.value = '';
     updateChangedState();
@@ -232,7 +248,7 @@ function createCell(field, index, initial) {
   missing.type = 'button';
   missing.className = 'cell-button danger';
   missing.textContent = '✕';
-  missing.title = 'Toggle missing';
+  missing.title = `Toggle missing ${fieldLabel}`;
   missing.setAttribute('aria-pressed', input.disabled ? 'true' : 'false');
   missing.addEventListener('click', () => {
     const isMissing = input.disabled;
@@ -262,10 +278,12 @@ function rebuildRows() {
     const textInput = document.getElementById(`text-${index}`);
     const valueInput = document.getElementById(`value-${index}`);
     const dataInput = document.getElementById(`data-${index}`);
+    const hrefInput = document.getElementById(`href-${index}`);
     existing[index] = {
       text: { value: textInput?.value || '', missing: !!textInput?.disabled },
       value: { value: valueInput?.value || '', missing: !!valueInput?.disabled },
-      data: { value: dataInput?.value || '', missing: !!dataInput?.disabled }
+      data: { value: dataInput?.value || '', missing: !!dataInput?.disabled },
+      href: { value: hrefInput?.value || '', missing: !!hrefInput?.disabled }
     };
   });
 
@@ -277,6 +295,7 @@ function rebuildRows() {
     row.appendChild(createCell('text', i, existing[i]?.text));
     row.appendChild(createCell('value', i, existing[i]?.value));
     row.appendChild(createCell('data', i, existing[i]?.data));
+    row.appendChild(createCell('href', i, existing[i]?.href));
     itemsBody.appendChild(row);
   }
   updateChangedState();
@@ -352,14 +371,17 @@ function readItems() {
     const textInput = document.getElementById(`text-${i}`);
     const valueInput = document.getElementById(`value-${i}`);
     const dataInput = document.getElementById(`data-${i}`);
+    const hrefInput = document.getElementById(`href-${i}`);
 
     items.push({
       text: textInput.disabled ? '' : (textInput.value || ''),
       value: valueInput.disabled ? '' : (valueInput.value || ''),
       dataValue: dataInput.disabled ? '' : (dataInput.value || ''),
+      href: hrefInput.disabled ? '' : (hrefInput.value || ''),
       textMissing: !!textInput.disabled,
       valueMissing: !!valueInput.disabled,
-      dataMissing: !!dataInput.disabled
+      dataMissing: !!dataInput.disabled,
+      hrefMissing: !!hrefInput.disabled
     });
   }
   return items;
@@ -382,14 +404,15 @@ function buildSnapshotText(snapshot) {
   const missingText = snapshot.items.filter(i => !i.text).length;
   const missingValue = snapshot.items.filter(i => !i.value).length;
   const missingData = snapshot.items.filter(i => !i.dataValue).length;
+  const missingHref = snapshot.items.filter(i => !i.href).length;
   return [
     `type: ${snapshot.typeLabel}`,
     `value source: ${snapshot.valueSource}`,
     `items: ${snapshot.count}`,
-    `missing text/value/data: ${missingText}/${missingValue}/${missingData}`,
+    `missing text/value/data/href: ${missingText}/${missingValue}/${missingData}/${missingHref}`,
     '',
     ...snapshot.items.map((item, index) => (
-      `${index + 1}. text="${item.text}" value="${item.value}" data-value="${item.dataValue}" (missing: ${item.textMissing}/${item.valueMissing}/${item.dataMissing})`
+      `${index + 1}. text="${item.text}" value="${item.value}" data-value="${item.dataValue}" href="${item.href}" (missing: ${item.textMissing}/${item.valueMissing}/${item.dataMissing}/${item.hrefMissing})`
     ))
   ].join('\n');
 }
@@ -591,6 +614,29 @@ function renderDropdown() {
     return;
   }
 
+  if (type === 'radix-menu') {
+    const { shell, trigger, menu } = createDropdownShell(items[0]?.text);
+    const list = document.createElement('div');
+    list.className = 'radix-menu';
+    list.setAttribute('role', 'menu');
+    list.setAttribute('aria-orientation', 'vertical');
+    items.forEach(item => {
+      const option = document.createElement('a');
+      option.className = 'radix-menuitem';
+      option.setAttribute('role', 'menuitem');
+      option.textContent = item.text;
+      applyValueTarget(option, item.value);
+      if (item.href) option.setAttribute('href', item.href);
+      if (item.dataValue) option.dataset.value = item.dataValue;
+      list.appendChild(option);
+    });
+    menu.appendChild(list);
+    wireSelection(menu, list, trigger);
+    dropdownContainer.appendChild(shell);
+    pulsePanel();
+    return;
+  }
+
   if (type === 'antd') {
     const { shell, trigger, menu } = createDropdownShell(items[0]?.text);
     const list = document.createElement('div');
@@ -653,6 +699,8 @@ function fillRandomValues() {
     if (input.value) return;
     if (input.id.startsWith('text-')) {
       input.value = randomPhrase();
+    } else if (input.id.startsWith('href-')) {
+      input.value = randomUrl();
     } else {
       input.value = randomDashPhrase();
     }
@@ -666,10 +714,19 @@ function updateChangedState() {
   const count = Math.max(1, Math.min(20, Number(countInput.value) || 1));
   for (let i = 0; i < count; i += 1) {
     const isNewRow = i >= Number(lastRenderSnapshot.count || 0);
-    ['text', 'value', 'data'].forEach(field => {
+    ['text', 'value', 'data', 'href'].forEach(field => {
       const input = document.getElementById(`${field}-${i}`);
       if (!input) return;
-      const snapshotItem = lastRenderSnapshot.items[i] || { text: '', value: '', dataValue: '', textMissing: false, valueMissing: false, dataMissing: false };
+      const snapshotItem = lastRenderSnapshot.items[i] || {
+        text: '',
+        value: '',
+        dataValue: '',
+        href: '',
+        textMissing: false,
+        valueMissing: false,
+        dataMissing: false,
+        hrefMissing: false
+      };
       const snapshotValue = field === 'data' ? snapshotItem.dataValue : snapshotItem[field];
       const snapshotMissing = field === 'data' ? snapshotItem.dataMissing : snapshotItem[`${field}Missing`];
       const currentMissing = input.disabled;

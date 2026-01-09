@@ -52,6 +52,7 @@
                 <option value="react-variant">React Select (Atlassian variant)</option>
                 <option value="downshift">Downshift-style</option>
                 <option value="mui">MUI Autocomplete-style</option>
+                <option value="radix-menu">Radix menu (role="menu")</option>
                 <option value="antd">Ant Design Select-style</option>
                 <option value="select2">Select2-style</option>
                 <option value="chosen">Chosen-style</option>
@@ -83,6 +84,7 @@
           <li class="note">Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom or virtualized menus may not be detectable.</li>
           <li id="note-native" class="note">Safe capture doesn’t apply to native &lt;select&gt; dropdowns.</li>
           <li id="note-libs" class="note">AntD/Select2/Chosen support depends on default DOM structure; customized themes may not be detectable.</li>
+          <li id="note-radix" class="note">Radix menus often omit value/data-value; use href to test value extraction.</li>
           <li id="note-mui" class="note">MUI options don’t expose value properties on DOM nodes; use data-value for testing.</li>
         </ul>
       </div>
@@ -108,30 +110,43 @@
 
     <section class="items-section">
       <table class="items-table">
+        <colgroup>
+          <col class="col-text">
+          <col class="col-value">
+          <col class="col-data">
+          <col class="col-href">
+        </colgroup>
         <thead>
           <tr>
-            <th>
+            <th class="th-text">
               <div class="th-row">
-                <span>Text</span>
+                <span>text</span>
                 <button class="icon-button" data-action="clear" data-field="text" title="Clear text" aria-label="Clear text">🗑</button>
                 <button class="icon-button danger" data-action="missing" data-field="text" title="Toggle missing text" aria-label="Toggle missing text">✕</button>
                 <button class="icon-button" data-action="number" data-field="text" title="Prefix numbers" aria-label="Prefix numbers">#</button>
               </div>
             </th>
-            <th>
+            <th class="th-value">
               <div class="th-row">
-                <span>Value</span>
+                <span>value</span>
                 <button class="icon-button" data-action="clear" data-field="value" title="Clear value" aria-label="Clear value">🗑</button>
                 <button class="icon-button danger" data-action="missing" data-field="value" title="Toggle missing value" aria-label="Toggle missing value">✕</button>
                 <button class="icon-button" data-action="number" data-field="value" title="Prefix numbers" aria-label="Prefix numbers">#</button>
               </div>
             </th>
-            <th>
+            <th class="th-data">
               <div class="th-row">
-                <span>Data-value</span>
+                <span>data-value</span>
                 <button class="icon-button" data-action="clear" data-field="data" title="Clear data-value" aria-label="Clear data-value">🗑</button>
                 <button class="icon-button danger" data-action="missing" data-field="data" title="Toggle missing data-value" aria-label="Toggle missing data-value">✕</button>
                 <button class="icon-button" data-action="number" data-field="data" title="Prefix numbers" aria-label="Prefix numbers">#</button>
+              </div>
+            </th>
+            <th class="th-href">
+              <div class="th-row">
+                <span>href</span>
+                <button class="icon-button" data-action="clear" data-field="href" title="Clear href" aria-label="Clear href">🗑</button>
+                <button class="icon-button danger" data-action="missing" data-field="href" title="Toggle missing href" aria-label="Toggle missing href">✕</button>
               </div>
             </th>
           </tr>

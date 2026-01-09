@@ -605,6 +605,7 @@
       '.select2-results__option',
       '.chosen-option',
       '.downshift-option',
+      '[role="menuitem"]',
       '.menuitem',
       '[id^="react-select-"][id*="-option-"]'
     ].join(','));
@@ -755,6 +756,43 @@
       }
 
         showErrorToast(error || NO_ITEMS_FOUND_TEXT);
+      cleanup();
+      return;
+    }
+
+    // --- 4) Radix / role="menu" support ---
+    const menu = getVisibleDropdownContainer('[role="menu"]', e.target);
+    if (menu && menu.contains(e.target)) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (shouldDebugSupported(prefs) && copyDebugHtml(menu, 'supported dropdown')) return;
+      const options = [...menu.querySelectorAll('[role="menuitem"]')];
+      const fields = resolveFields(
+        options,
+        o => getOptionLabelText(o),
+        [
+          o => o.value || o.getAttribute('value'),
+          o => o.dataset.value,
+          o => o.getAttribute('href')
+        ]
+      );
+      const { items, note, error } = buildOutput(fields, prefs);
+
+      if (items.length) {
+        navigator.clipboard.writeText(items.join('\n'));
+        clearArmedToast();
+        replaceActiveToast(showToast(buildExtractedMessage(items, note), {
+          position: 'top-right',
+          duration: EXTRACTED_TOAST_MS,
+          background: TOAST_SUCCESS_BG
+        }));
+        notifyBackground('done');
+        cleanup();
+        return;
+      }
+
+      showErrorToast(error || NO_ITEMS_FOUND_TEXT);
       cleanup();
       return;
     }

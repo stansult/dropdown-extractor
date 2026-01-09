@@ -50,16 +50,18 @@ To open Extension Options, right-click the extension button and select Options.
 | React Select (Atlassian variant) | Yes |
 | Downshift-style | Yes |
 | MUI Autocomplete-style | Yes |
+| Radix menu (role="menu") | Yes |
 | Ant Design Select-style | Yes |
 | Select2-style | Yes |
 | Chosen-style | Yes |
 | Canvas-rendered / virtualized | No |
 | Cross-origin iframes | No |
 
-### Limitations
+### Notes / Limitations
 
 - Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom implementations, virtualized or canvas-rendered menus, Shadow DOM, or cross-origin iframes may not be detectable.
 - AntD/Select2/Chosen support depends on their default DOM structure; customized themes may not be detectable.
+- Radix menus often omit value/data-value; href is used as a fallback value when present.
 - MUI options don’t expose value properties on DOM nodes; use data-value if available.
 - Safe capture does not apply to native `<select>` dropdowns.
 - Right-click (context menu) cannot be used with Selectize dropdowns because they close immediately on right-mouse events. That’s why right-click wasn’t implemented.

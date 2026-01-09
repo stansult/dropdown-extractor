@@ -1,4 +1,5 @@
-const ARM_DURATION_MS = 10000;
+const ARM_DURATION_MS = 10000; // Keep in sync with content.js.
+const EXTENSION_TITLE = "Dropdown Extractor";
 let armIntervalId = null;
 
 function resetDebugFlag() {
@@ -23,13 +24,13 @@ function clearArmBadge() {
     armIntervalId = null;
   }
   chrome.action.setBadgeText({ text: "" });
-  chrome.action.setTitle({ title: "Dropdown Extractor" });
+  chrome.action.setTitle({ title: EXTENSION_TITLE });
 }
 
 function startArmBadge() {
   clearArmBadge();
   chrome.action.setBadgeBackgroundColor({ color: "#1a73e8" });
-  chrome.action.setTitle({ title: "Dropdown Extractor: armed" });
+  chrome.action.setTitle({ title: `${EXTENSION_TITLE}: armed` });
 
   let remaining = Math.ceil(ARM_DURATION_MS / 1000);
   chrome.action.setBadgeText({ text: String(remaining) });
@@ -72,10 +73,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         clearArmBadge();
         chrome.action.setBadgeBackgroundColor({ color: "#d93025" });
         chrome.action.setBadgeText({ text: "!" });
-        chrome.action.setTitle({ title: "Dropdown Extractor: can't run on this page" });
+        chrome.action.setTitle({ title: `${EXTENSION_TITLE}: can't run on this page` });
         setTimeout(() => {
           chrome.action.setBadgeText({ text: "" });
-          chrome.action.setTitle({ title: "Dropdown Extractor" });
+          chrome.action.setTitle({ title: EXTENSION_TITLE });
         }, 2000);
         sendResponse && sendResponse({ ok: false, error: err.message });
         return;

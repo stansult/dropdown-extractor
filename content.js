@@ -17,6 +17,9 @@
   const TOAST_SUCCESS_BG = 'rgba(20, 70, 40, 0.75)';
   const TOAST_EXPIRED_BG = 'rgba(60, 60, 60, 0.75)';
   const TOAST_ERROR_BG = 'rgba(120, 30, 30, 0.85)';
+  var deferCleanup = false;
+  var pendingSafeCleanup = false;
+  var extractionPending = false;
 
   // ===== TOAST =====
   function moveToastToCorner(toast, corner) {
@@ -56,6 +59,8 @@
     return 'bottom-right';
   }
 
+  const TOAST_CLASS = 'dropdown-extractor-toast';
+
   function showToast(message, options = {}) {
     const {
       duration = 2000,
@@ -65,6 +70,7 @@
       allowMove = false
     } = options;
     const toast = document.createElement('div');
+    toast.className = TOAST_CLASS;
     toast.textContent = message;
 
     const baseStyle = {
@@ -136,7 +142,7 @@
           }
           moveToastToCorner(toast, getOppositeCorner(corner));
           toast.dataset.hoverTimeoutId = '';
-        }, 1000);
+        }, 500);
         toast.dataset.hoverTimeoutId = String(timeoutId);
       });
 
@@ -423,6 +429,13 @@
 
   function resetDebugCapture() {
     window.__dropdownExtractorDebugBlocks = null;
+    window.__dropdownExtractorDebugContainer = null;
+    window.__dropdownExtractorLastHover = null;
+    window.__dropdownExtractorDebugFirstElement = null;
+    if (window.__dropdownExtractorDebugPendingTimeout) {
+      clearTimeout(window.__dropdownExtractorDebugPendingTimeout);
+      window.__dropdownExtractorDebugPendingTimeout = null;
+    }
   }
 
   function findDebugContainer(element) {
@@ -447,22 +460,152 @@
     );
   }
 
+  function getVisibleMenuContainer(point = null) {
+    const candidates = [...document.querySelectorAll('[role="menu"], [role="listbox"], [role="list"]')]
+      .filter(el => el && el.offsetParent !== null);
+    if (!candidates.length) return null;
+
+    const viewportArea = window.innerWidth * window.innerHeight;
+    const scored = candidates
+      .map(el => {
+        const rect = el.getBoundingClientRect();
+        const area = rect.width * rect.height;
+        if (!rect.width || !rect.height) return null;
+        if (area > viewportArea * 0.45) return null;
+        let distance = 0;
+        if (point) {
+          const dx = Math.max(rect.left - point.x, 0, point.x - rect.right);
+          const dy = Math.max(rect.top - point.y, 0, point.y - rect.bottom);
+          distance = Math.hypot(dx, dy);
+        }
+        return { el, distance };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.distance - b.distance);
+    return scored[0]?.el || null;
+  }
+
   function captureDebugElement(target) {
     if (!target) return false;
     const element = target.nodeType === 1 ? target : target.parentElement;
     if (!element) return false;
     const blocks = window.__dropdownExtractorDebugBlocks || [];
     const toCapture = [];
+    const storedContainer = window.__dropdownExtractorDebugContainer;
 
-    const isOption = element.matches('[role="option"], [role="listitem"]')
+    if (blocks.length === 0) {
+      const isTriggerButton = element.matches('button,[role="button"]');
+      if (isTriggerButton) {
+        const point = window.__dropdownExtractorLastPointer || null;
+        const openMenu = getVisibleDropdownContainer('[role="menu"], [role="listbox"], [role="list"]', element)
+          || getVisibleMenuContainer(point);
+        if (openMenu && openMenu !== element) {
+          toCapture.push(openMenu);
+          window.__dropdownExtractorDebugContainer = openMenu;
+        } else if (!window.__dropdownExtractorDebugPendingTimeout) {
+          window.__dropdownExtractorDebugPendingTimeout = setTimeout(() => {
+            if (window.__dropdownExtractorDebugBlocks && window.__dropdownExtractorDebugBlocks.length) return;
+            const delayedMenu = getVisibleMenuContainer(window.__dropdownExtractorLastPointer || null);
+            if (!delayedMenu) return;
+            const delayedBlock = buildDebugBlock(delayedMenu, 'element 1');
+            if (!delayedBlock) return;
+            window.__dropdownExtractorDebugBlocks = [delayedBlock];
+            window.__dropdownExtractorDebugContainer = delayedMenu;
+            window.__dropdownExtractorDebugFirstElement = delayedMenu;
+            clearArmedToast();
+            flashElement(delayedMenu);
+            const placeholder = '--- dropdown-extractor: element 2 ---\nnot extracted yet';
+            navigator.clipboard.writeText([delayedBlock, placeholder].join('\n\n'));
+            replaceActiveToast(showToast('Debug: copied HTML (1/2)', {
+              position: 'top-right',
+              duration: EXTRACTED_TOAST_MS,
+              background: TOAST_SUCCESS_BG
+            }));
+          }, 80);
+        }
+      }
+    }
+
+    if (blocks.length === 1) {
+      const activeContainer = storedContainer || getVisibleMenuContainer(window.__dropdownExtractorLastPointer || null);
+      if (activeContainer && activeContainer !== element) {
+        const containerBlock = buildDebugBlock(activeContainer, 'element 1');
+        const optionBlock = buildDebugBlock(element, 'element 2');
+        if (containerBlock && optionBlock) {
+          window.__dropdownExtractorDebugBlocks = [containerBlock, optionBlock];
+          clearArmedToast();
+          flashElement(activeContainer);
+          setTimeout(() => {
+            navigator.clipboard.writeText([containerBlock, optionBlock].join('\n\n'));
+          }, 120);
+          replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
+            position: 'top-right',
+            duration: EXTRACTED_TOAST_MS,
+            background: TOAST_SUCCESS_BG
+          }));
+          notifyBackground('done');
+          cleanup();
+          return true;
+        }
+      }
+    }
+
+    if (blocks.length === 1 && storedContainer && storedContainer.contains(element) && storedContainer !== element) {
+      const containerBlock = buildDebugBlock(storedContainer, 'element 1');
+      const optionBlock = buildDebugBlock(element, 'element 2');
+      if (containerBlock && optionBlock) {
+        window.__dropdownExtractorDebugBlocks = [containerBlock, optionBlock];
+        clearArmedToast();
+        flashElement(storedContainer);
+        setTimeout(() => {
+          navigator.clipboard.writeText([containerBlock, optionBlock].join('\n\n'));
+        }, 120);
+        replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
+          position: 'top-right',
+          duration: EXTRACTED_TOAST_MS,
+          background: TOAST_SUCCESS_BG
+        }));
+        notifyBackground('done');
+        cleanup();
+        return true;
+      }
+    }
+
+    if (blocks.length === 1) {
+      const container = findDebugContainer(element);
+      if (container && container !== element) {
+        const containerBlock = buildDebugBlock(container, 'element 1');
+        const optionBlock = buildDebugBlock(element, 'element 2');
+        if (containerBlock && optionBlock) {
+          window.__dropdownExtractorDebugBlocks = [containerBlock, optionBlock];
+          clearArmedToast();
+          flashElement(container);
+          setTimeout(() => {
+            navigator.clipboard.writeText([containerBlock, optionBlock].join('\n\n'));
+          }, 120);
+          replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
+            position: 'top-right',
+            duration: EXTRACTED_TOAST_MS,
+            background: TOAST_SUCCESS_BG
+          }));
+          notifyBackground('done');
+          cleanup();
+          return true;
+        }
+      }
+    }
+
+    const optionContext = getOptionContext(element);
+    const isOption = !!optionContext
       || element.hasAttribute('aria-selected')
       || (element.id && /react-select-\d+-option-\d+/.test(element.id));
     if (isOption) {
-      const container = findDebugContainer(element);
-      if (container && container !== element) {
+      const optionEl = optionContext ? optionContext.option : element;
+      const container = optionContext ? optionContext.container : findDebugContainer(element);
+      if (container && container !== optionEl) {
         if (blocks.length === 1) {
           const containerBlock = buildDebugBlock(container, 'element 1');
-          const optionBlock = buildDebugBlock(element, 'element 2');
+          const optionBlock = buildDebugBlock(optionEl, 'element 2');
           if (containerBlock && optionBlock) {
             window.__dropdownExtractorDebugBlocks = [containerBlock, optionBlock];
             clearArmedToast();
@@ -481,10 +624,14 @@
           }
         } else if (blocks.length === 0) {
           toCapture.push(container);
+          window.__dropdownExtractorDebugContainer = container;
+          window.__dropdownExtractorDebugBlocks = null;
         }
       }
     }
-    toCapture.push(element);
+    if (!(blocks.length === 0 && optionContext && optionContext.container)) {
+      toCapture.push(optionContext ? optionContext.option : element);
+    }
 
     for (const el of toCapture) {
       if (blocks.length >= 2) break;
@@ -498,6 +645,9 @@
 
     if (blocks.length === 1) {
       if (toCapture[0]) flashElement(toCapture[0]);
+      window.__dropdownExtractorDebugFirstElement = toCapture[0] || element;
+      const placeholder = '--- dropdown-extractor: element 2 ---\nnot extracted yet';
+      navigator.clipboard.writeText([blocks[0], placeholder].join('\n\n'));
       replaceActiveToast(showToast('Debug: copied HTML (1/2)', {
         position: 'top-right',
         duration: EXTRACTED_TOAST_MS,
@@ -627,6 +777,7 @@
     '.chosen-option',
     '.downshift-option',
     '[role="menuitem"]',
+    '[role^="menuitem"]',
     '.menuitem',
     '[id^="react-select-"][id*="-option-"]'
   ].join(',');
@@ -635,9 +786,23 @@
   const FLASH_STYLE_ID = 'dropdown-extractor-flash-style';
   const FEEDBACK_DURATION_MS = 900;
 
+  function getOptionContext(target) {
+    if (!target || !target.closest) return null;
+    const optionEl = target.closest(OPTION_LIKE_SELECTOR);
+    if (optionEl) {
+      return { option: optionEl, container: findDebugContainer(optionEl) };
+    }
+    const buttonEl = target.closest('button,[role="button"]');
+    if (!buttonEl) return null;
+    const container = findDebugContainer(buttonEl);
+    if (container && container.contains(buttonEl) && container.offsetParent !== null) {
+      return { option: buttonEl, container };
+    }
+    return null;
+  }
+
   function isOptionLike(target) {
-    if (!target || !target.closest) return false;
-    return !!target.closest(OPTION_LIKE_SELECTOR);
+    return !!getOptionContext(target);
   }
 
   function ensureFlashStyles() {
@@ -673,13 +838,6 @@
     return '';
   }
 
-  function getOptionLikeTarget(target, container) {
-    if (!target || !target.closest) return container || null;
-    const option = target.closest(OPTION_LIKE_SELECTOR);
-    if (option && (!container || container.contains(option))) return option;
-    return container || null;
-  }
-
   function flashElement(element) {
     if (!element) return;
     ensureFlashStyles();
@@ -706,10 +864,6 @@
     }, FEEDBACK_DURATION_MS);
     element.dataset.dropdownExtractorFlashTimeout = String(newTimeoutId);
   }
-
-  let deferCleanup = false;
-  let pendingSafeCleanup = false;
-  let extractionPending = false;
 
   function shouldBlockOptionClick(prefs, target) {
     if (!prefs || !prefs.safeCapture) return false;
@@ -771,8 +925,9 @@
   }
 
   function handleSupportedClick(e, prefs) {
+    const target = e._dropdownExtractorTarget || e.target;
     // --- 1) Native <select> support ---
-    const selectEl = e.target.closest('select');
+    const selectEl = target.closest('select');
     if (selectEl) {
       if (shouldDebugSupported(prefs) && copyDebugHtml(selectEl, 'supported dropdown')) return;
       const options = [...selectEl.options];
@@ -798,7 +953,7 @@
 
     // --- 2) Selectize support ---
     const selectizeContent = getVisibleSelectizeContent();
-    if (selectizeContent && selectizeContent.contains(e.target)) {
+    if (selectizeContent && selectizeContent.contains(target)) {
       e.preventDefault();
       e.stopPropagation();
 
@@ -860,8 +1015,8 @@
     }
 
     // --- 4) Radix / role="menu" support ---
-    const menu = getVisibleDropdownContainer('[role="menu"]', e.target);
-    if (menu && menu.contains(e.target)) {
+    const menu = getVisibleDropdownContainer('[role="menu"]', target);
+    if (menu && menu.contains(target)) {
       e.preventDefault();
       e.stopPropagation();
 
@@ -889,8 +1044,8 @@
     }
 
     // --- 4) Ant Design support ---
-    const antDropdown = getVisibleDropdownContainer('.ant-select-dropdown', e.target);
-    if (antDropdown && antDropdown.contains(e.target)) {
+    const antDropdown = getVisibleDropdownContainer('.ant-select-dropdown', target);
+    if (antDropdown && antDropdown.contains(target)) {
       e.preventDefault();
       e.stopPropagation();
 
@@ -920,8 +1075,8 @@
     }
 
     // --- 5) Select2 support ---
-    const select2Results = getVisibleDropdownContainer('.select2-results__options, .select2-results', e.target);
-    if (select2Results && select2Results.contains(e.target)) {
+    const select2Results = getVisibleDropdownContainer('.select2-results__options, .select2-results', target);
+    if (select2Results && select2Results.contains(target)) {
       e.preventDefault();
       e.stopPropagation();
 
@@ -948,8 +1103,8 @@
     }
 
     // --- 6) Chosen support ---
-    const chosenResults = getVisibleDropdownContainer('.chosen-results', e.target);
-    if (chosenResults && chosenResults.contains(e.target)) {
+    const chosenResults = getVisibleDropdownContainer('.chosen-results', target);
+    if (chosenResults && chosenResults.contains(target)) {
       e.preventDefault();
       e.stopPropagation();
 
@@ -978,7 +1133,7 @@
     const listbox = [...document.querySelectorAll('[role="listbox"]')]
       .find(el => el.offsetParent !== null);
 
-    if (listbox && listbox.contains(e.target)) {
+    if (listbox && listbox.contains(target)) {
       e.preventDefault();
       e.stopPropagation();
 
@@ -1008,34 +1163,70 @@
   // ===== MAIN HANDLER =====
   function onMouseDown(e) {
     if (extractionPending) return;
+    window.__dropdownExtractorLastPointer = { x: e.clientX, y: e.clientY };
+    const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
+    const target = pathTarget || e.target;
     const prefs = window.__dropdownExtractorPrefs;
     if (prefs) {
-      if (shouldBlockOptionClick(prefs, e.target)) {
+      e._dropdownExtractorTarget = target;
+      if (shouldBlockOptionClick(prefs, target)) {
         deferCleanup = true;
         e.preventDefault();
         e.stopPropagation();
       }
-      if (shouldDebugAnyTwo(prefs) && captureDebugElement(e.target)) return;
+      if (shouldDebugAnyTwo(prefs)) {
+        const debugTarget = document.elementFromPoint(e.clientX, e.clientY) || target;
+        if (captureDebugElement(debugTarget)) return;
+      }
       handleSupportedClick(e, prefs);
       return;
     }
 
     getPrefs(loadedPrefs => {
       window.__dropdownExtractorPrefs = loadedPrefs;
-      if (shouldBlockOptionClick(loadedPrefs, e.target)) {
+      e._dropdownExtractorTarget = target;
+      if (shouldBlockOptionClick(loadedPrefs, target)) {
         deferCleanup = true;
         e.preventDefault();
         e.stopPropagation();
       }
-      if (shouldDebugAnyTwo(loadedPrefs) && captureDebugElement(e.target)) return;
+      if (shouldDebugAnyTwo(loadedPrefs)) {
+        const debugTarget = document.elementFromPoint(e.clientX, e.clientY) || target;
+        if (captureDebugElement(debugTarget)) return;
+      }
       handleSupportedClick(e, loadedPrefs);
     });
+  }
+
+  function onMouseMove(e) {
+    const prefs = window.__dropdownExtractorPrefs;
+    if (!prefs || !shouldDebugAnyTwo(prefs)) return;
+    const hovered = document.elementFromPoint(e.clientX, e.clientY);
+    if (hovered && hovered.nodeType === Node.ELEMENT_NODE && !hovered.closest(`.${TOAST_CLASS}`)) {
+      window.__dropdownExtractorLastHover = hovered;
+    }
+  }
+
+  function onContextMenu(e) {
+    const prefs = window.__dropdownExtractorPrefs;
+    if (!prefs || !shouldDebugAnyTwo(prefs)) return;
+    window.__dropdownExtractorLastPointer = { x: e.clientX, y: e.clientY };
+    const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
+    const pointTarget = document.elementFromPoint(e.clientX, e.clientY);
+    const target = pointTarget || pathTarget || e.target;
+    if (!target) return;
+    if (captureDebugElement(target)) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   }
 
   function onClick(e) {
     const prefs = window.__dropdownExtractorPrefs;
     if (!prefs) return;
-    if (shouldBlockOptionClick(prefs, e.target)) {
+    const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
+    const target = pathTarget || e.target;
+    if (shouldBlockOptionClick(prefs, target)) {
       e.preventDefault();
       e.stopPropagation();
       if (pendingSafeCleanup) cleanup(true);
@@ -1045,13 +1236,17 @@
   function onMouseUp(e) {
     const prefs = window.__dropdownExtractorPrefs;
     if (!prefs) return;
-    if (shouldBlockOptionClick(prefs, e.target)) {
+    const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
+    const target = pathTarget || e.target;
+    if (shouldBlockOptionClick(prefs, target)) {
       e.preventDefault();
       e.stopPropagation();
     }
   }
 
   document.addEventListener('mousedown', onMouseDown, true);
+  document.addEventListener('mousemove', onMouseMove, true);
+  document.addEventListener('contextmenu', onContextMenu, true);
   document.addEventListener('click', onClick, true);
   document.addEventListener('mouseup', onMouseUp, true);
 

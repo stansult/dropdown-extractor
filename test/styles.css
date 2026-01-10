@@ -466,6 +466,10 @@ button.changed:focus-visible {
   border-radius: 4px;
 }
 
+.item-cell input[type="text"]::placeholder {
+  color: #c0c0c0;
+}
+
 .item-cell.changed input[type="text"] {
   border-color: #e6a23c;
   box-shadow: 0 0 0 1px rgba(230, 162, 60, 0.3);

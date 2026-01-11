@@ -20,6 +20,7 @@
   var deferCleanup = false;
   var pendingSafeCleanup = false;
   var extractionPending = false;
+  var skipMouseDown = false;
 
   // ===== TOAST =====
   function moveToastToCorner(toast, corner) {
@@ -208,7 +209,7 @@
 
   function handleContextInvalid() {
     clearArmedToast();
-    cleanup();
+    cleanup(true);
   }
 
   function buildExtractedMessage(items, note) {
@@ -432,6 +433,11 @@
     window.__dropdownExtractorDebugContainer = null;
     window.__dropdownExtractorLastHover = null;
     window.__dropdownExtractorDebugFirstElement = null;
+    window.__dropdownExtractorDebugSuppressClick = false;
+    if (window.__dropdownExtractorDebugCleanupTimer) {
+      clearTimeout(window.__dropdownExtractorDebugCleanupTimer);
+      window.__dropdownExtractorDebugCleanupTimer = null;
+    }
     if (window.__dropdownExtractorDebugPendingTimeout) {
       clearTimeout(window.__dropdownExtractorDebugPendingTimeout);
       window.__dropdownExtractorDebugPendingTimeout = null;
@@ -485,15 +491,63 @@
     return scored[0]?.el || null;
   }
 
+  function isReasonableDebugElement(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) return false;
+    const rect = element.getBoundingClientRect();
+    if (!rect.width || !rect.height) return false;
+    const area = rect.width * rect.height;
+    const viewportArea = window.innerWidth * window.innerHeight;
+    if (area > viewportArea * 0.25) return false;
+    const text = element.textContent ? element.textContent.trim() : '';
+    if (text.length > 120) return false;
+    return true;
+  }
+
+  function isDebugTriggerCandidate(element) {
+    if (!isReasonableDebugElement(element)) return false;
+    const role = element.getAttribute('role');
+    const hasPopup = element.getAttribute('aria-haspopup');
+    return role === 'button' || role === 'combobox' || !!hasPopup;
+  }
+
+  function isDebugFirstCandidate(element) {
+    return isDebugTriggerCandidate(element) || isReasonableDebugElement(element);
+  }
+
+  function finalizeDebugCapture() {
+    const prefs = window.__dropdownExtractorPrefs;
+    if (prefs && prefs.safeCapture && prefs.debugMode && prefs.debugModeTarget === 'any-two') {
+      deferCleanup = true;
+      pendingSafeCleanup = true;
+      window.__dropdownExtractorDebugSuppressClick = true;
+      window.__dropdownExtractorDebugCleanupTimer = setTimeout(() => {
+        if (window.__dropdownExtractorActive) cleanup(true);
+      }, 250);
+      return;
+    }
+    cleanup(true);
+  }
+
   function captureDebugElement(target) {
     if (!target) return false;
-    const element = target.nodeType === 1 ? target : target.parentElement;
+    let element = target.nodeType === 1 ? target : target.parentElement;
     if (!element) return false;
     const blocks = window.__dropdownExtractorDebugBlocks || [];
     const toCapture = [];
     const storedContainer = window.__dropdownExtractorDebugContainer;
+    if (blocks.length === 1 && storedContainer) {
+      const hover = window.__dropdownExtractorLastHover;
+      if (hover && hover.nodeType === Node.ELEMENT_NODE && !hover.closest(`.${TOAST_CLASS}`)) {
+        const hoverInside = storedContainer.contains(hover);
+        const elementInside = storedContainer.contains(element);
+        if (hoverInside && (element === storedContainer || !elementInside)) {
+          element = hover;
+        }
+      }
+    }
 
     if (blocks.length === 0) {
+      if (!isDebugFirstCandidate(element)) return false;
       const isTriggerButton = element.matches('button,[role="button"]');
       if (isTriggerButton) {
         const point = window.__dropdownExtractorLastPointer || null;
@@ -544,9 +598,29 @@
             background: TOAST_SUCCESS_BG
           }));
           notifyBackground('done');
-          cleanup();
+          finalizeDebugCapture();
           return true;
         }
+      }
+    }
+
+    if (blocks.length === 1 && element && element !== window.__dropdownExtractorDebugFirstElement) {
+      const optionBlock = buildDebugBlock(element, 'element 2');
+      if (optionBlock) {
+        window.__dropdownExtractorDebugBlocks = [blocks[0], optionBlock];
+        clearArmedToast();
+        flashElement(element);
+        setTimeout(() => {
+          navigator.clipboard.writeText([blocks[0], optionBlock].join('\n\n'));
+        }, 120);
+        replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
+          position: 'top-right',
+          duration: EXTRACTED_TOAST_MS,
+          background: TOAST_SUCCESS_BG
+        }));
+        notifyBackground('done');
+        finalizeDebugCapture();
+        return true;
       }
     }
 
@@ -566,7 +640,7 @@
           background: TOAST_SUCCESS_BG
         }));
         notifyBackground('done');
-        cleanup();
+        finalizeDebugCapture();
         return true;
       }
     }
@@ -589,7 +663,7 @@
             background: TOAST_SUCCESS_BG
           }));
           notifyBackground('done');
-          cleanup();
+          cleanup(true);
           return true;
         }
       }
@@ -619,7 +693,7 @@
               background: TOAST_SUCCESS_BG
             }));
             notifyBackground('done');
-            cleanup();
+            finalizeDebugCapture();
             return true;
           }
         } else if (blocks.length === 0) {
@@ -666,7 +740,7 @@
       background: TOAST_SUCCESS_BG
     }));
     notifyBackground('done');
-    cleanup();
+    finalizeDebugCapture();
     return true;
   }
 
@@ -677,7 +751,7 @@
     window.__dropdownExtractorCancelTimer = setTimeout(() => {
       clearArmedToast();
       notifyBackground('canceled');
-      cleanup();
+      cleanup(true);
       replaceActiveToast(showToast('Dropdown extractor canceled', {
         duration: 1500,
         position: 'top-right',
@@ -868,7 +942,9 @@
   function shouldBlockOptionClick(prefs, target) {
     if (!prefs || !prefs.safeCapture) return false;
     if (target && target.closest && target.closest('select')) return false;
-    return isOptionLike(target);
+    if (isOptionLike(target)) return true;
+    const menuContainer = getVisibleMenuContainer(window.__dropdownExtractorLastPointer || null);
+    return !!(menuContainer && menuContainer.contains(target));
   }
 
   function cleanup(force = false) {
@@ -880,6 +956,8 @@
     pendingSafeCleanup = false;
     extractionPending = false;
     document.removeEventListener('mousedown', onMouseDown, true);
+    document.removeEventListener('pointerdown', onPointerDown, true);
+    document.removeEventListener('mousemove', onMouseMove, true);
     document.removeEventListener('click', onClick, true);
     document.removeEventListener('mouseup', onMouseUp, true);
     window.__dropdownExtractorActive = false;
@@ -1162,6 +1240,10 @@
 
   // ===== MAIN HANDLER =====
   function onMouseDown(e) {
+    if (skipMouseDown) {
+      skipMouseDown = false;
+      return;
+    }
     if (extractionPending) return;
     window.__dropdownExtractorLastPointer = { x: e.clientX, y: e.clientY };
     const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
@@ -1176,8 +1258,18 @@
       }
       if (shouldDebugAnyTwo(prefs)) {
         const debugTarget = document.elementFromPoint(e.clientX, e.clientY) || target;
-        if (captureDebugElement(debugTarget)) return;
-      }
+        if (
+          prefs.safeCapture
+          && window.__dropdownExtractorDebugBlocks?.length === 1
+          && !debugTarget.closest(`.${TOAST_CLASS}`)
+        ) {
+          deferCleanup = true;
+          e.preventDefault();
+          e.stopPropagation();
+          window.__dropdownExtractorDebugSuppressClick = true;
+        }
+      if (captureDebugElement(debugTarget)) return;
+    }
       handleSupportedClick(e, prefs);
       return;
     }
@@ -1192,32 +1284,29 @@
       }
       if (shouldDebugAnyTwo(loadedPrefs)) {
         const debugTarget = document.elementFromPoint(e.clientX, e.clientY) || target;
-        if (captureDebugElement(debugTarget)) return;
-      }
+        if (
+          loadedPrefs.safeCapture
+          && window.__dropdownExtractorDebugBlocks?.length === 1
+          && !debugTarget.closest(`.${TOAST_CLASS}`)
+        ) {
+          deferCleanup = true;
+          e.preventDefault();
+          e.stopPropagation();
+          window.__dropdownExtractorDebugSuppressClick = true;
+        }
+      if (captureDebugElement(debugTarget)) return;
+    }
       handleSupportedClick(e, loadedPrefs);
     });
   }
 
   function onMouseMove(e) {
+    if (!window.__dropdownExtractorActive) return;
     const prefs = window.__dropdownExtractorPrefs;
     if (!prefs || !shouldDebugAnyTwo(prefs)) return;
     const hovered = document.elementFromPoint(e.clientX, e.clientY);
     if (hovered && hovered.nodeType === Node.ELEMENT_NODE && !hovered.closest(`.${TOAST_CLASS}`)) {
       window.__dropdownExtractorLastHover = hovered;
-    }
-  }
-
-  function onContextMenu(e) {
-    const prefs = window.__dropdownExtractorPrefs;
-    if (!prefs || !shouldDebugAnyTwo(prefs)) return;
-    window.__dropdownExtractorLastPointer = { x: e.clientX, y: e.clientY };
-    const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
-    const pointTarget = document.elementFromPoint(e.clientX, e.clientY);
-    const target = pointTarget || pathTarget || e.target;
-    if (!target) return;
-    if (captureDebugElement(target)) {
-      e.preventDefault();
-      e.stopPropagation();
     }
   }
 
@@ -1227,6 +1316,12 @@
     const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
     const target = pathTarget || e.target;
     if (shouldBlockOptionClick(prefs, target)) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (pendingSafeCleanup) cleanup(true);
+    }
+    if (shouldDebugAnyTwo(prefs) && window.__dropdownExtractorDebugSuppressClick) {
+      window.__dropdownExtractorDebugSuppressClick = false;
       e.preventDefault();
       e.stopPropagation();
       if (pendingSafeCleanup) cleanup(true);
@@ -1244,9 +1339,32 @@
     }
   }
 
+  function onPointerDown(e) {
+    if (!window.__dropdownExtractorActive) return;
+    const prefs = window.__dropdownExtractorPrefs;
+    if (!prefs || !shouldDebugAnyTwo(prefs)) return;
+    if (window.__dropdownExtractorDebugBlocks?.length !== 1) return;
+    const path = e.composedPath ? e.composedPath() : [];
+    const pathOption = path.find(el =>
+      el && el.nodeType === Node.ELEMENT_NODE && el.matches && el.matches(OPTION_LIKE_SELECTOR)
+    );
+    const target = pathOption || document.elementFromPoint(e.clientX, e.clientY) || e.target;
+    if (target && target.closest && target.closest(`.${TOAST_CLASS}`)) return;
+    window.__dropdownExtractorLastPointer = { x: e.clientX, y: e.clientY };
+    if (prefs.safeCapture) {
+      deferCleanup = true;
+      e.preventDefault();
+      e.stopPropagation();
+      window.__dropdownExtractorDebugSuppressClick = true;
+    }
+    if (captureDebugElement(target)) {
+      skipMouseDown = true;
+    }
+  }
+
   document.addEventListener('mousedown', onMouseDown, true);
+  document.addEventListener('pointerdown', onPointerDown, true);
   document.addEventListener('mousemove', onMouseMove, true);
-  document.addEventListener('contextmenu', onContextMenu, true);
   document.addEventListener('click', onClick, true);
   document.addEventListener('mouseup', onMouseUp, true);
 

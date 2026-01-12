@@ -76,21 +76,27 @@
     </div>
 
     <div class="option-block">
-      <h3 class="subsection-title">Developer zone</h3>
+      <h3 class="subsection-title developer-title">Developer zone</h3>
       <label class="option-label debug-row">
         <input type="checkbox" id="debug">
         Debug mode
       </label>
-      <div id="debug-options" class="debug-options">
-        <div class="debug-title">Copy raw HTML:</div>
-        <label class="debug-option">
-          <input type="radio" name="debug-mode" value="supported">
-          Supported dropdown
-        </label>
-        <label class="debug-option">
-          <input type="radio" name="debug-mode" value="any-two">
-          Any two elements (open + select)
-        </label>
+      <div id="debug-container" class="option-box debug-box">
+        <div id="debug-options" class="debug-options">
+          <div class="debug-title">Copy raw HTML:</div>
+          <label class="debug-option">
+            <input type="radio" name="debug-mode" value="supported">
+            Supported dropdown
+          </label>
+          <label class="debug-option">
+            <input type="radio" name="debug-mode" value="any-two">
+            Any two elements (open + select)
+          </label>
+          <label class="debug-option debug-divider">
+            <input type="checkbox" id="debug-all-frames">
+            Inject into all iframes
+          </label>
+        </div>
       </div>
     </div>
 

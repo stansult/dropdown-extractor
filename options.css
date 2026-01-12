@@ -6,6 +6,8 @@
   --space-6: 10px;
   --space-7: 12px;
   --space-8: 16px;
+  --space-9: 20px;
+  --space-10: 24px;
   --indent: 26px;
 }
 
@@ -74,6 +76,10 @@ label {
   color: #4a6e90;
 }
 
+.developer-title {
+  margin-top: var(--space-10);
+}
+
 .debug-row {
   margin-top: var(--space-8);
 }
@@ -84,7 +90,6 @@ label {
 
 .debug-options {
   margin: var(--space-5) 0 0 var(--indent);
-  display: none;
   font-size: 0.9em;
 }
 
@@ -96,6 +101,15 @@ label {
 .debug-option {
   margin: 0 0 var(--space-3) 0;
   font-size: inherit;
+}
+
+.debug-divider {
+  margin-top: var(--space-8);
+}
+
+.debug-box {
+  display: none;
+  margin-left: 0;
 }
 
 .format-row {

@@ -99,17 +99,20 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       return;
     }
 
-    chrome.scripting.executeScript({
-      target: { tabId: tabs[0].id },
-      files: ["content.js"]
-    }, () => {
-      const err = chrome.runtime.lastError;
-      if (err) {
-        showErrorBadge("can't run on this page");
-        sendResponse && sendResponse({ ok: false, error: err.message });
-        return;
-      }
-      sendResponse && sendResponse({ ok: true });
+    chrome.storage.sync.get({ debugMode: false, debugAllFrames: false }, prefs => {
+      const allFrames = !!(prefs.debugMode && prefs.debugAllFrames);
+      chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id, allFrames },
+        files: ["content.js"]
+      }, () => {
+        const err = chrome.runtime.lastError;
+        if (err) {
+          showErrorBadge("can't run on this page");
+          sendResponse && sendResponse({ ok: false, error: err.message });
+          return;
+        }
+        sendResponse && sendResponse({ ok: true });
+      });
     });
   });
   return true;

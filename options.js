@@ -3,8 +3,10 @@ const value = document.getElementById('value');
 const formatRow = document.getElementById('format-row');
 const formatOptions = document.querySelectorAll('input[name="format"]');
 const debug = document.getElementById('debug');
+const debugContainer = document.getElementById('debug-container');
 const debugOptions = document.getElementById('debug-options');
 const debugModeOptions = document.querySelectorAll('input[name="debug-mode"]');
+const debugAllFrames = document.getElementById('debug-all-frames');
 const safeCapture = document.getElementById('safe-capture');
 const TOAST_ERROR_BG = 'rgba(120, 30, 30, 0.85)';
 
@@ -16,6 +18,7 @@ chrome.storage.sync.get(
     debug: false,
     debugMode: false,
     debugModeTarget: 'supported',
+    debugAllFrames: false,
     safeCapture: false
   },
   prefs => {
@@ -23,6 +26,7 @@ chrome.storage.sync.get(
     value.checked = prefs.extractValue;
     debug.checked = prefs.debugMode ?? prefs.debug ?? false;
     safeCapture.checked = prefs.safeCapture;
+    debugAllFrames.checked = !!prefs.debugAllFrames;
     const debugTarget = prefs.debugModeTarget || 'supported';
     debugModeOptions.forEach(option => {
       option.checked = option.value === debugTarget;
@@ -37,7 +41,7 @@ chrome.storage.sync.get(
 );
 
 function updateFormatVisibility() {
-  const show = text.checked && value.checked;
+  const show = text.checked && value.checked && !debug.checked;
   formatRow.style.display = show ? 'block' : 'none';
 }
 
@@ -51,7 +55,14 @@ function updateDebugVisibility() {
   debugModeOptions.forEach(option => {
     option.disabled = !debug.checked;
   });
-  debugOptions.style.display = debug.checked ? 'block' : 'none';
+  if (debugAllFrames) {
+    debugAllFrames.disabled = !debug.checked;
+  }
+  if (debugContainer) {
+    debugContainer.style.display = debug.checked ? 'block' : 'none';
+  } else {
+    debugOptions.style.display = debug.checked ? 'block' : 'none';
+  }
 }
 
 function showInlineToast(target, message) {
@@ -94,6 +105,7 @@ function save() {
     debug: debug.checked,
     debugMode: debug.checked,
     debugModeTarget: selectedDebugMode,
+    debugAllFrames: debugAllFrames ? debugAllFrames.checked : false,
     safeCapture: safeCapture.checked
   });
 }
@@ -122,4 +134,7 @@ debug.onchange = () => {
 debugModeOptions.forEach(option => {
   option.onchange = save;
 });
+if (debugAllFrames) {
+  debugAllFrames.onchange = save;
+}
 safeCapture.onchange = save;

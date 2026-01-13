@@ -89,7 +89,7 @@ label {
 }
 
 .debug-options {
-  margin: var(--space-5) 0 0 var(--indent);
+  margin: var(--space-5) 0 0 0;
   font-size: 0.9em;
 }
 

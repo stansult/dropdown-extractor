@@ -409,6 +409,26 @@
     ].join('\n');
   }
 
+  function buildDebugPlaceholder(label, status) {
+    return [
+      `--- dropdown-extractor: ${label} ---`,
+      status
+    ].join('\n');
+  }
+
+  function buildDebugAnyTwoPayload(triggerEl, containerEl, optionEl) {
+    const triggerBlock = containerEl
+      ? buildDebugPlaceholder('1. trigger', 'skipped')
+      : (triggerEl ? buildDebugBlock(triggerEl, '1. trigger') : buildDebugPlaceholder('1. trigger', 'failed'));
+    const containerBlock = containerEl
+      ? buildDebugBlock(containerEl, '1. menu container')
+      : buildDebugPlaceholder('1. menu container', 'failed');
+    const optionBlock = optionEl
+      ? buildDebugBlock(optionEl, '2. menu option')
+      : buildDebugPlaceholder('2. menu option', 'not extracted yet');
+    return [triggerBlock, containerBlock, optionBlock].join('\n\n');
+  }
+
   function copyDebugHtml(element, label) {
     const block = buildDebugBlock(element, label);
     if (!block) return false;
@@ -433,6 +453,8 @@
     window.__dropdownExtractorDebugContainer = null;
     window.__dropdownExtractorLastHover = null;
     window.__dropdownExtractorDebugFirstElement = null;
+    window.__dropdownExtractorDebugTrigger = null;
+    window.__dropdownExtractorDebugOptionCandidate = null;
     window.__dropdownExtractorDebugSuppressClick = false;
     if (window.__dropdownExtractorDebugCleanupTimer) {
       clearTimeout(window.__dropdownExtractorDebugCleanupTimer);
@@ -491,6 +513,19 @@
     return scored[0]?.el || null;
   }
 
+  function getMenuContainerFromTrigger(element) {
+    if (!element || !element.getAttribute) return null;
+    const target =
+      element.getAttribute('data-bs-target')
+      || element.getAttribute('data-target')
+      || element.getAttribute('aria-controls')
+      || element.getAttribute('aria-owns');
+    if (!target) return null;
+    const selector = target.startsWith('#') ? target : `#${target}`;
+    const container = document.querySelector(selector);
+    return container || null;
+  }
+
   function isReasonableDebugElement(element) {
     if (!element || element.nodeType !== Node.ELEMENT_NODE) return false;
     const rect = element.getBoundingClientRect();
@@ -507,7 +542,8 @@
     if (!isReasonableDebugElement(element)) return false;
     const role = element.getAttribute('role');
     const hasPopup = element.getAttribute('aria-haspopup');
-    return role === 'button' || role === 'combobox' || !!hasPopup;
+    const hasMenuTarget = !!getMenuContainerFromTrigger(element);
+    return role === 'button' || role === 'combobox' || !!hasPopup || hasMenuTarget;
   }
 
   function isDebugFirstCandidate(element) {
@@ -535,6 +571,12 @@
     const blocks = window.__dropdownExtractorDebugBlocks || [];
     const toCapture = [];
     const storedContainer = window.__dropdownExtractorDebugContainer;
+    const optionCandidate = window.__dropdownExtractorDebugOptionCandidate;
+    if (blocks.length === 1 && storedContainer && optionCandidate && storedContainer.contains(optionCandidate)) {
+      if (!storedContainer.contains(element) || element === storedContainer) {
+        element = optionCandidate;
+      }
+    }
     if (blocks.length === 1 && storedContainer) {
       const hover = window.__dropdownExtractorLastHover;
       if (hover && hover.nodeType === Node.ELEMENT_NODE && !hover.closest(`.${TOAST_CLASS}`)) {
@@ -545,31 +587,54 @@
         }
       }
     }
+    if (blocks.length === 0 && !window.__dropdownExtractorDebugTrigger && isDebugTriggerCandidate(element)) {
+      window.__dropdownExtractorDebugTrigger = element;
+    }
 
     if (blocks.length === 0) {
       if (!isDebugFirstCandidate(element)) return false;
       const isTriggerButton = element.matches('button,[role="button"]');
-      if (isTriggerButton) {
+      const isTriggerLike = isTriggerButton || !!getMenuContainerFromTrigger(element);
+      if (isTriggerLike) {
         const point = window.__dropdownExtractorLastPointer || null;
+        const triggerContainer = getMenuContainerFromTrigger(element);
         const openMenu = getVisibleDropdownContainer('[role="menu"], [role="listbox"], [role="list"]', element)
+          || triggerContainer
           || getVisibleMenuContainer(point);
         if (openMenu && openMenu !== element) {
-          toCapture.push(openMenu);
+          window.__dropdownExtractorDebugBlocks = ['element-1'];
           window.__dropdownExtractorDebugContainer = openMenu;
+          window.__dropdownExtractorDebugFirstElement = openMenu;
+          clearArmedToast();
+          flashElement(openMenu);
+          navigator.clipboard.writeText(buildDebugAnyTwoPayload(
+            window.__dropdownExtractorDebugTrigger || element,
+            openMenu,
+            null
+          ));
+          replaceActiveToast(showToast('Debug: copied HTML (1/2)', {
+            position: 'top-right',
+            duration: EXTRACTED_TOAST_MS,
+            background: TOAST_SUCCESS_BG
+          }));
+          return true;
         } else if (!window.__dropdownExtractorDebugPendingTimeout) {
+          const triggerFallback = element;
           window.__dropdownExtractorDebugPendingTimeout = setTimeout(() => {
             if (window.__dropdownExtractorDebugBlocks && window.__dropdownExtractorDebugBlocks.length) return;
             const delayedMenu = getVisibleMenuContainer(window.__dropdownExtractorLastPointer || null);
-            if (!delayedMenu) return;
-            const delayedBlock = buildDebugBlock(delayedMenu, 'element 1');
-            if (!delayedBlock) return;
-            window.__dropdownExtractorDebugBlocks = [delayedBlock];
-            window.__dropdownExtractorDebugContainer = delayedMenu;
-            window.__dropdownExtractorDebugFirstElement = delayedMenu;
+            const triggerEl = window.__dropdownExtractorDebugTrigger || triggerFallback || null;
+            const resolvedContainer = triggerEl ? getMenuContainerFromTrigger(triggerEl) : null;
+            if (triggerEl) window.__dropdownExtractorDebugTrigger = triggerEl;
+            const containerEl = delayedMenu || resolvedContainer || null;
+            const element1 = containerEl || triggerEl;
+            if (!element1) return;
+            window.__dropdownExtractorDebugBlocks = ['element-1'];
+            window.__dropdownExtractorDebugContainer = containerEl;
+            window.__dropdownExtractorDebugFirstElement = element1;
             clearArmedToast();
-            flashElement(delayedMenu);
-            const placeholder = '--- dropdown-extractor: element 2 ---\nnot extracted yet';
-            navigator.clipboard.writeText([delayedBlock, placeholder].join('\n\n'));
+            flashElement(element1);
+            navigator.clipboard.writeText(buildDebugAnyTwoPayload(triggerEl, containerEl, null));
             replaceActiveToast(showToast('Debug: copied HTML (1/2)', {
               position: 'top-right',
               duration: EXTRACTED_TOAST_MS,
@@ -583,14 +648,13 @@
     if (blocks.length === 1) {
       const activeContainer = storedContainer || getVisibleMenuContainer(window.__dropdownExtractorLastPointer || null);
       if (activeContainer && activeContainer !== element) {
-        const containerBlock = buildDebugBlock(activeContainer, 'element 1');
         const optionBlock = buildDebugBlock(element, 'element 2');
-        if (containerBlock && optionBlock) {
-          window.__dropdownExtractorDebugBlocks = [containerBlock, optionBlock];
+        if (optionBlock) {
+          window.__dropdownExtractorDebugBlocks = ['element-1', 'element-2'];
           clearArmedToast();
           flashElement(activeContainer);
           setTimeout(() => {
-            navigator.clipboard.writeText([containerBlock, optionBlock].join('\n\n'));
+            navigator.clipboard.writeText(buildDebugAnyTwoPayload(window.__dropdownExtractorDebugTrigger, activeContainer, element));
           }, 120);
           replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
             position: 'top-right',
@@ -607,11 +671,15 @@
     if (blocks.length === 1 && element && element !== window.__dropdownExtractorDebugFirstElement) {
       const optionBlock = buildDebugBlock(element, 'element 2');
       if (optionBlock) {
-        window.__dropdownExtractorDebugBlocks = [blocks[0], optionBlock];
+        window.__dropdownExtractorDebugBlocks = ['element-1', 'element-2'];
         clearArmedToast();
         flashElement(element);
         setTimeout(() => {
-          navigator.clipboard.writeText([blocks[0], optionBlock].join('\n\n'));
+          navigator.clipboard.writeText(buildDebugAnyTwoPayload(
+            window.__dropdownExtractorDebugTrigger,
+            window.__dropdownExtractorDebugContainer,
+            element
+          ));
         }, 120);
         replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
           position: 'top-right',
@@ -625,14 +693,17 @@
     }
 
     if (blocks.length === 1 && storedContainer && storedContainer.contains(element) && storedContainer !== element) {
-      const containerBlock = buildDebugBlock(storedContainer, 'element 1');
       const optionBlock = buildDebugBlock(element, 'element 2');
-      if (containerBlock && optionBlock) {
-        window.__dropdownExtractorDebugBlocks = [containerBlock, optionBlock];
+      if (optionBlock) {
+        window.__dropdownExtractorDebugBlocks = ['element-1', 'element-2'];
         clearArmedToast();
         flashElement(storedContainer);
         setTimeout(() => {
-          navigator.clipboard.writeText([containerBlock, optionBlock].join('\n\n'));
+          navigator.clipboard.writeText(buildDebugAnyTwoPayload(
+            window.__dropdownExtractorDebugTrigger,
+            storedContainer,
+            element
+          ));
         }, 120);
         replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
           position: 'top-right',
@@ -648,14 +719,17 @@
     if (blocks.length === 1) {
       const container = findDebugContainer(element);
       if (container && container !== element) {
-        const containerBlock = buildDebugBlock(container, 'element 1');
         const optionBlock = buildDebugBlock(element, 'element 2');
-        if (containerBlock && optionBlock) {
-          window.__dropdownExtractorDebugBlocks = [containerBlock, optionBlock];
+        if (optionBlock) {
+          window.__dropdownExtractorDebugBlocks = ['element-1', 'element-2'];
           clearArmedToast();
           flashElement(container);
           setTimeout(() => {
-            navigator.clipboard.writeText([containerBlock, optionBlock].join('\n\n'));
+            navigator.clipboard.writeText(buildDebugAnyTwoPayload(
+              window.__dropdownExtractorDebugTrigger,
+              container,
+              element
+            ));
           }, 120);
           replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
             position: 'top-right',
@@ -663,7 +737,7 @@
             background: TOAST_SUCCESS_BG
           }));
           notifyBackground('done');
-          cleanup(true);
+          finalizeDebugCapture();
           return true;
         }
       }
@@ -678,14 +752,17 @@
       const container = optionContext ? optionContext.container : findDebugContainer(element);
       if (container && container !== optionEl) {
         if (blocks.length === 1) {
-          const containerBlock = buildDebugBlock(container, 'element 1');
           const optionBlock = buildDebugBlock(optionEl, 'element 2');
-          if (containerBlock && optionBlock) {
-            window.__dropdownExtractorDebugBlocks = [containerBlock, optionBlock];
+          if (optionBlock) {
+            window.__dropdownExtractorDebugBlocks = ['element-1', 'element-2'];
             clearArmedToast();
             flashElement(container);
             setTimeout(() => {
-              navigator.clipboard.writeText([containerBlock, optionBlock].join('\n\n'));
+              navigator.clipboard.writeText(buildDebugAnyTwoPayload(
+                window.__dropdownExtractorDebugTrigger,
+                container,
+                optionEl
+              ));
             }, 120);
             replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
               position: 'top-right',
@@ -718,10 +795,16 @@
     clearArmedToast();
 
     if (blocks.length === 1) {
-      if (toCapture[0]) flashElement(toCapture[0]);
-      window.__dropdownExtractorDebugFirstElement = toCapture[0] || element;
-      const placeholder = '--- dropdown-extractor: element 2 ---\nnot extracted yet';
-      navigator.clipboard.writeText([blocks[0], placeholder].join('\n\n'));
+      const triggerEl = window.__dropdownExtractorDebugTrigger;
+      const containerEl = window.__dropdownExtractorDebugContainer
+        || (optionContext ? optionContext.container : null)
+        || (toCapture[0] && toCapture[0].matches && toCapture[0].matches('[role="listbox"],[role="menu"],[role="list"],ul,ol')
+          ? toCapture[0]
+          : null);
+      const element1 = containerEl || toCapture[0] || element;
+      if (element1) flashElement(element1);
+      window.__dropdownExtractorDebugFirstElement = element1;
+      navigator.clipboard.writeText(buildDebugAnyTwoPayload(triggerEl, containerEl, null));
       replaceActiveToast(showToast('Debug: copied HTML (1/2)', {
         position: 'top-right',
         duration: EXTRACTED_TOAST_MS,
@@ -730,10 +813,21 @@
       return true;
     }
 
-    flashElement(toCapture[0] || element);
-    setTimeout(() => {
-      navigator.clipboard.writeText(blocks.join('\n\n'));
-    }, 120);
+    {
+      const triggerEl = window.__dropdownExtractorDebugTrigger;
+      const containerEl = window.__dropdownExtractorDebugContainer
+        || (optionContext ? optionContext.container : null)
+        || (toCapture[0] && toCapture[0].matches && toCapture[0].matches('[role="listbox"],[role="menu"],[role="list"],ul,ol')
+          ? toCapture[0]
+          : null);
+      const optionEl = optionContext
+        ? optionContext.option
+        : (toCapture.find(el => el && el !== containerEl) || element);
+      flashElement(containerEl || optionEl || element);
+      setTimeout(() => {
+        navigator.clipboard.writeText(buildDebugAnyTwoPayload(triggerEl, containerEl, optionEl));
+      }, 120);
+    }
     replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
       position: 'top-right',
       duration: EXTRACTED_TOAST_MS,
@@ -838,6 +932,27 @@
       .find(el => el && el.offsetParent !== null) || null;
   }
 
+  function getVisibleSallieMaeModal(target) {
+    if (target && target.closest) {
+      const containing = target.closest('.slm-dropdown-modal');
+      if (containing && isSallieMaeModalVisible(containing)) return containing;
+    }
+    return [...document.querySelectorAll('.slm-dropdown-modal')]
+      .find(el => el && isSallieMaeModalVisible(el)) || null;
+  }
+
+  function isSallieMaeModalVisible(modal) {
+    if (!modal || !modal.getBoundingClientRect) return false;
+    if (modal.getAttribute('aria-hidden') === 'true') return false;
+    const rect = modal.getBoundingClientRect();
+    if (!rect.width || !rect.height) return false;
+    const style = window.getComputedStyle(modal);
+    if (!style || style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+      return false;
+    }
+    return true;
+  }
+
   const OPTION_LIKE_SELECTOR = [
     '[role="option"]',
     '[role="listitem"]',
@@ -865,6 +980,13 @@
     const optionEl = target.closest(OPTION_LIKE_SELECTOR);
     if (optionEl) {
       return { option: optionEl, container: findDebugContainer(optionEl) };
+    }
+    const sallieOption = target.closest('.slm-dropdown-modal [role="button"]');
+    if (sallieOption && sallieOption.querySelector('input.slm-btngroup-radio')) {
+      const modal = sallieOption.closest('.slm-dropdown-modal');
+      if (modal) {
+        return { option: sallieOption, container: modal };
+      }
     }
     const buttonEl = target.closest('button,[role="button"]');
     if (!buttonEl) return null;
@@ -1180,6 +1302,37 @@
       return;
     }
 
+    // --- 7) Sallie Mae modal dropdowns ---
+    const sallieModal = getVisibleSallieMaeModal(target);
+    if (sallieModal && sallieModal.contains(target)) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (shouldDebugSupported(prefs) && copyDebugHtml(sallieModal, 'supported dropdown')) return;
+      const optionButtons = [...sallieModal.querySelectorAll('input.slm-btngroup-radio')]
+        .map(input => input.closest('[role="button"]'))
+        .filter(Boolean);
+      const uniqueOptions = [...new Set(optionButtons)];
+      const fields = resolveFields(
+        uniqueOptions,
+        o => getOptionLabelText(o),
+        [
+          o => o.querySelector('input.slm-btngroup-radio')?.value || '',
+          o => o.dataset.value
+        ]
+      );
+      const { items, note, error } = buildOutput(fields, prefs);
+
+      if (items.length) {
+        completeExtraction(items, note, sallieModal, prefs);
+        return;
+      }
+
+      showErrorToast(error || NO_ITEMS_FOUND_TEXT);
+      cleanup();
+      return;
+    }
+
     // --- 6) Chosen support ---
     const chosenResults = getVisibleDropdownContainer('.chosen-results', target);
     if (chosenResults && chosenResults.contains(target)) {
@@ -1345,6 +1498,15 @@
     if (!prefs || !shouldDebugAnyTwo(prefs)) return;
     if (window.__dropdownExtractorDebugBlocks?.length !== 1) return;
     const path = e.composedPath ? e.composedPath() : [];
+    const storedContainer = window.__dropdownExtractorDebugContainer;
+    if (storedContainer) {
+      const pathInside = path.find(el =>
+        el && el.nodeType === Node.ELEMENT_NODE && storedContainer.contains(el) && el !== storedContainer
+      );
+      if (pathInside) {
+        window.__dropdownExtractorDebugOptionCandidate = pathInside;
+      }
+    }
     const pathOption = path.find(el =>
       el && el.nodeType === Node.ELEMENT_NODE && el.matches && el.matches(OPTION_LIKE_SELECTOR)
     );

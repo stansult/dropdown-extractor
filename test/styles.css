@@ -170,6 +170,34 @@ p {
   display: block;
 }
 
+.slm-dropdown-modal {
+  margin-top: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  padding: 8px;
+  display: none;
+}
+
+.slm-dropdown-modal.show {
+  display: block;
+}
+
+.slm-modal-body {
+  max-height: 220px;
+  overflow: auto;
+}
+
+.slm-dropdown-modal [role="button"] {
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.slm-dropdown-modal [role="button"]:hover {
+  background: #eef4ff;
+}
+
 .selected {
   background: #e8f0fe;
 }

@@ -33,7 +33,8 @@ const supportedTypes = new Set([
   'radix-menu',
   'antd',
   'select2',
-  'chosen'
+  'chosen',
+  'slm-modal'
 ]);
 
 function isTypeSupported(type) {
@@ -168,6 +169,85 @@ function createDropdownShell(selectedText) {
   });
 
   return { shell, trigger, menu };
+}
+
+function createSlmModalDropdown(items, selectedText) {
+  const shell = document.createElement('div');
+  shell.className = 'dropdown-shell';
+
+  const trigger = document.createElement('a');
+  trigger.className = 'slm-show-modal select form-control';
+  trigger.id = 'slm-trigger';
+  trigger.href = '';
+  trigger.dataset.bsTarget = '#slm-modal';
+  trigger.dataset.bsToggle = 'modal';
+  trigger.textContent = selectedText || 'Select an option';
+
+  const modal = document.createElement('div');
+  modal.className = 'modal slm-dropdown-modal';
+  modal.id = 'slm-modal';
+  modal.setAttribute('tabindex', '-1');
+  modal.setAttribute('aria-hidden', 'true');
+
+  const modalBody = document.createElement('div');
+  modalBody.className = 'slm-modal-body';
+
+  const group = document.createElement('div');
+  group.className = 'btn-group slm-subtitle3-reg';
+  group.setAttribute('role', 'group');
+
+  items.forEach(item => {
+    const option = document.createElement('div');
+    option.setAttribute('role', 'button');
+    option.tabIndex = 0;
+    option.id = `slm-${item.value || item.text}-btn`;
+    option.setAttribute('aria-expanded', 'false');
+
+    const input = document.createElement('input');
+    input.className = 'slm-btngroup-radio';
+    input.type = 'radio';
+    input.tabIndex = -1;
+    input.name = 'slm-choices';
+    input.value = item.value || item.text || '';
+
+    option.appendChild(input);
+    option.appendChild(document.createTextNode(item.text || ''));
+    group.appendChild(option);
+  });
+
+  modalBody.appendChild(group);
+  modal.appendChild(modalBody);
+  shell.appendChild(trigger);
+  shell.appendChild(modal);
+
+  function setOpen(open) {
+    modal.classList.toggle('show', open);
+    modal.style.display = open ? 'block' : 'none';
+    modal.setAttribute('aria-hidden', open ? 'false' : 'true');
+  }
+
+  trigger.addEventListener('click', event => {
+    event.preventDefault();
+    setOpen(true);
+  });
+
+  modal.addEventListener('click', event => {
+    const option = event.target.closest('[role="button"]');
+    if (!option) return;
+    group.querySelectorAll('input.slm-btngroup-radio').forEach(input => {
+      input.checked = input === option.querySelector('input.slm-btngroup-radio');
+    });
+    trigger.textContent = option.textContent.trim();
+    setOpen(false);
+  });
+
+  document.addEventListener('click', event => {
+    if (!shell.contains(event.target)) {
+      setOpen(false);
+    }
+  });
+
+  return { shell, trigger, modal };
 }
 
 function wireSelection(menuWrapper, listEl, trigger) {
@@ -670,6 +750,13 @@ function renderDropdown() {
     });
     menu.appendChild(list);
     wireSelection(menu, list, trigger);
+    dropdownContainer.appendChild(shell);
+    pulsePanel();
+    return;
+  }
+
+  if (type === 'slm-modal') {
+    const { shell } = createSlmModalDropdown(items, items[0]?.text);
     dropdownContainer.appendChild(shell);
     pulsePanel();
     return;

@@ -1377,7 +1377,9 @@
       e.stopPropagation();
 
       if (shouldDebugSupported(prefs) && copyDebugHtml(menu, 'supported dropdown')) return;
-      const options = [...menu.querySelectorAll('[role="menuitem"]')];
+      const options = [
+        ...menu.querySelectorAll('[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]')
+      ];
       const fields = resolveFields(
         options,
         o => getOptionLabelText(o),

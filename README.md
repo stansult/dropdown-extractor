@@ -62,6 +62,7 @@ To open Extension Options, right-click the extension button and select Options.
 - Radix menus often omit value/data-value; href is used as a fallback value when present.
 - AliExpress search suggestions use href as value; value/data-value are ignored.
 - MUI options don’t expose value properties on DOM nodes; use data-value if available.
+- Google Search suggestions are supported via standard ARIA listbox/option markup.
 - Safe capture does not apply to native `<select>` dropdowns.
 - Right-click (context menu) cannot be used with Selectize dropdowns because they close immediately on right-mouse events. That’s why right-click wasn’t implemented.
 - Cross-origin iframes cannot be accessed.

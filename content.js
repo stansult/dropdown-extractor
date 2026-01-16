@@ -1052,6 +1052,7 @@
     '.downshift-option',
     '[class*="src--listTitle--"]',
     '[class*="src--hisItem--"] a',
+    '[class*="src--autoItem--"]',
     '[role="menuitem"]',
     '[role^="menuitem"]',
     '.menuitem',
@@ -1071,6 +1072,10 @@
 
   function getOptionContext(target) {
     if (!target || !target.closest) return null;
+    const aliAutoItemAnchor = target.closest('a');
+    if (aliAutoItemAnchor && aliAutoItemAnchor.querySelector('[class*="src--autoItem--"]')) {
+      return { option: aliAutoItemAnchor, container: getAliExpressSuggestionContainer(aliAutoItemAnchor) };
+    }
     const optionEl = target.closest(OPTION_LIKE_SELECTOR);
     if (optionEl) {
       const container = findDebugContainer(optionEl) || findSuggestionContainer(optionEl);
@@ -1105,8 +1110,25 @@
         return containing;
       }
     }
-    return [...document.querySelectorAll(selector)]
+    const activeMatch = [...document.querySelectorAll(selector)]
       .find(el => el && el.offsetParent !== null && hasSuggestions(el)) || null;
+    if (activeMatch) return activeMatch;
+
+    if (target && target.closest) {
+      let current = target.parentElement;
+      let depth = 0;
+      while (current && depth < 8) {
+        const autoCount = current.querySelectorAll('[class*="src--autoItem--"]').length;
+        if (autoCount >= 2 && current.offsetParent !== null) return current;
+        current = current.parentElement;
+        depth += 1;
+      }
+    }
+
+    return [...document.querySelectorAll('[class*="src--autoItem--"]')]
+      .map(el => el.closest('div'))
+      .find(el => el && el.offsetParent !== null
+        && el.querySelectorAll('[class*="src--autoItem--"]').length >= 2) || null;
   }
 
   function getAliExpressSuggestionLinks(container) {
@@ -1114,9 +1136,13 @@
     const listTitleAnchors = [...container.querySelectorAll('a [class*="src--listTitle--"]')]
       .map(span => span.closest('a'))
       .filter(Boolean);
+    const autoItemAnchors = [...container.querySelectorAll('a [class*="src--autoItem--"]')]
+      .map(span => span.closest('a'))
+      .filter(Boolean);
     const links = [
       ...container.querySelectorAll('[class*="src--hisItem--"] a'),
-      ...listTitleAnchors
+      ...listTitleAnchors,
+      ...autoItemAnchors
     ].filter(Boolean);
     const uniqueLinks = [...new Set(links)];
     return uniqueLinks.filter(link => getOptionLabelText(link));

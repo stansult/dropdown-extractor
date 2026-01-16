@@ -935,6 +935,18 @@
   }
 
   window.__dropdownExtractorActive = true;
+  window.__dropdownExtractorPageHideHandler = () => {
+    if (!window.__dropdownExtractorActive) return;
+    clearArmedToast();
+    replaceActiveToast(showToast('Dropdown extractor stopped (page navigated)', {
+      duration: 1500,
+      position: 'top-right',
+      background: TOAST_EXPIRED_BG
+    }));
+    notifyBackground('canceled');
+    cleanup(true);
+  };
+  window.addEventListener('pagehide', window.__dropdownExtractorPageHideHandler, true);
   getPrefs(prefs => {
     window.__dropdownExtractorPrefs = prefs;
   });
@@ -1038,6 +1050,8 @@
     '.select2-results__option',
     '.chosen-option',
     '.downshift-option',
+    '[class*="src--listTitle--"]',
+    '[class*="src--hisItem--"] a',
     '[role="menuitem"]',
     '[role^="menuitem"]',
     '.menuitem',
@@ -1076,6 +1090,36 @@
       return { option: buttonEl, container };
     }
     return null;
+  }
+
+  function getAliExpressSuggestionContainer(target) {
+    const selector = '[class*="src--active--"]';
+    const hasSuggestions = el => {
+      if (!el || !el.querySelectorAll) return false;
+      const count = el.querySelectorAll('[class*="src--hisItem--"] a, [class*="src--listTitle--"]').length;
+      return count >= 2;
+    };
+    if (target && target.closest) {
+      const containing = target.closest(selector);
+      if (containing && containing.offsetParent !== null && hasSuggestions(containing)) {
+        return containing;
+      }
+    }
+    return [...document.querySelectorAll(selector)]
+      .find(el => el && el.offsetParent !== null && hasSuggestions(el)) || null;
+  }
+
+  function getAliExpressSuggestionLinks(container) {
+    if (!container) return [];
+    const listTitleAnchors = [...container.querySelectorAll('a [class*="src--listTitle--"]')]
+      .map(span => span.closest('a'))
+      .filter(Boolean);
+    const links = [
+      ...container.querySelectorAll('[class*="src--hisItem--"] a'),
+      ...listTitleAnchors
+    ].filter(Boolean);
+    const uniqueLinks = [...new Set(links)];
+    return uniqueLinks.filter(link => getOptionLabelText(link));
   }
 
   function isOptionLike(target) {
@@ -1163,6 +1207,10 @@
     document.removeEventListener('mousemove', onMouseMove, true);
     document.removeEventListener('click', onClick, true);
     document.removeEventListener('mouseup', onMouseUp, true);
+    if (window.__dropdownExtractorPageHideHandler) {
+      window.removeEventListener('pagehide', window.__dropdownExtractorPageHideHandler, true);
+      window.__dropdownExtractorPageHideHandler = null;
+    }
     window.__dropdownExtractorActive = false;
     resetDebugCapture();
 
@@ -1291,6 +1339,33 @@
       }
 
         showErrorToast(error || NO_ITEMS_FOUND_TEXT);
+      cleanup();
+      return;
+    }
+
+    // --- 4) AliExpress search suggestions ---
+    const aliSuggestions = getAliExpressSuggestionContainer(target);
+    if (aliSuggestions && aliSuggestions.contains(target)) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (shouldDebugSupported(prefs) && copyDebugHtml(aliSuggestions, 'supported dropdown')) return;
+      const links = getAliExpressSuggestionLinks(aliSuggestions);
+      const fields = resolveFields(
+        links,
+        link => getOptionLabelText(link),
+        [
+          link => link.getAttribute('href')
+        ]
+      );
+      const { items, note, error } = buildOutput(fields, prefs);
+
+      if (items.length) {
+        completeExtraction(items, note, aliSuggestions, prefs);
+        return;
+      }
+
+      showErrorToast(error || NO_ITEMS_FOUND_TEXT);
       cleanup();
       return;
     }
@@ -1489,6 +1564,10 @@
         deferCleanup = true;
         e.preventDefault();
         e.stopPropagation();
+        if (!prefs.debugMode) {
+          handleSupportedClick(e, prefs);
+          return;
+        }
       }
       if (shouldDebugAnyTwo(prefs)) {
         const debugTarget = document.elementFromPoint(e.clientX, e.clientY) || target;

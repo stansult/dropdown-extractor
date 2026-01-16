@@ -2,7 +2,9 @@ const ARM_DURATION_MS = 10000; // Keep in sync with content.js.
 const EXTENSION_TITLE = "Dropdown Extractor";
 const FEEDBACK_DURATION_MS = 900;
 const ERROR_BADGE_DURATION_MS = 1500;
+const STOP_BADGE_DURATION_MS = 1500;
 let armIntervalId = null;
+let armedTabId = null;
 
 function resetDebugFlag() {
   chrome.storage.sync.set({
@@ -27,6 +29,18 @@ function clearArmBadge() {
   }
   chrome.action.setBadgeText({ text: "" });
   chrome.action.setTitle({ title: EXTENSION_TITLE });
+}
+
+function showStoppedBadge() {
+  clearArmBadge();
+  chrome.action.setBadgeTextColor({ color: "#ffffff" });
+  chrome.action.setBadgeBackgroundColor({ color: "#5f6368" });
+  chrome.action.setBadgeText({ text: " ■ " });
+  chrome.action.setTitle({ title: `${EXTENSION_TITLE}: stopped` });
+  setTimeout(() => {
+    chrome.action.setBadgeText({ text: "" });
+    chrome.action.setTitle({ title: EXTENSION_TITLE });
+  }, STOP_BADGE_DURATION_MS);
 }
 
 function showDoneBadge() {
@@ -63,7 +77,7 @@ function startArmBadge() {
   armIntervalId = setInterval(() => {
     remaining -= 1;
     if (remaining <= 0) {
-      clearArmBadge();
+      showStoppedBadge();
       return;
     }
     chrome.action.setBadgeText({ text: String(remaining) });
@@ -72,22 +86,26 @@ function startArmBadge() {
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.action === "armed") {
+    armedTabId = _sender?.tab?.id || null;
     startArmBadge();
     return;
   }
 
   if (msg.action === "done") {
+    armedTabId = null;
     showDoneBadge();
     return;
   }
 
   if (msg.action === "error") {
+    armedTabId = null;
     showErrorBadge("error");
     return;
   }
 
   if (msg.action === "canceled") {
-    clearArmBadge();
+    armedTabId = null;
+    showStoppedBadge();
     return;
   }
 
@@ -116,4 +134,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     });
   });
   return true;
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (armedTabId && tabId === armedTabId && changeInfo.status === "loading") {
+    armedTabId = null;
+    showStoppedBadge();
+    return;
+  }
 });

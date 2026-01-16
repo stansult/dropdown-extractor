@@ -18,6 +18,7 @@ const nativeNote = document.getElementById('note-native');
 const libsNote = document.getElementById('note-libs');
 const radixNote = document.getElementById('note-radix');
 const muiNote = document.getElementById('note-mui');
+const aliNote = document.getElementById('note-ali');
 const notesTitle = document.getElementById('notes-title');
 
 let lastRenderSnapshot = null;
@@ -34,7 +35,8 @@ const supportedTypes = new Set([
   'antd',
   'select2',
   'chosen',
-  'slm-modal'
+  'slm-modal',
+  'aliexpress'
 ]);
 
 function isTypeSupported(type) {
@@ -65,18 +67,20 @@ function updateRenderedTypeDisplay() {
 }
 
 function updateNotesVisibility() {
-  if (!muiNote || !libsNote || !nativeNote || !radixNote) return;
+  if (!muiNote || !libsNote || !nativeNote || !radixNote || !aliNote) return;
   const showNative = typeSelect.value === 'native' || (lastRenderSnapshot && lastRenderSnapshot.type === 'native');
   const showMui = typeSelect.value === 'mui' || (lastRenderSnapshot && lastRenderSnapshot.type === 'mui');
   const showLibs = ['antd', 'select2', 'chosen'].includes(typeSelect.value)
     || (lastRenderSnapshot && ['antd', 'select2', 'chosen'].includes(lastRenderSnapshot.type));
   const showRadix = typeSelect.value === 'radix-menu' || (lastRenderSnapshot && lastRenderSnapshot.type === 'radix-menu');
+  const showAli = typeSelect.value === 'aliexpress' || (lastRenderSnapshot && lastRenderSnapshot.type === 'aliexpress');
   nativeNote.style.display = showNative ? 'list-item' : 'none';
   muiNote.style.display = showMui ? 'list-item' : 'none';
   libsNote.style.display = showLibs ? 'list-item' : 'none';
   radixNote.style.display = showRadix ? 'list-item' : 'none';
+  aliNote.style.display = showAli ? 'list-item' : 'none';
   if (itemsTable) {
-    itemsTable.classList.toggle('hide-href', !showRadix);
+    itemsTable.classList.toggle('hide-href', !(showRadix || showAli));
   }
   if (notesTitle) {
     const visibleNotes = document.querySelectorAll('.notes-list .note')
@@ -248,6 +252,95 @@ function createSlmModalDropdown(items, selectedText) {
   });
 
   return { shell, trigger, modal };
+}
+
+function createAliExpressSearchDropdown(items, selectedText) {
+  const shell = document.createElement('div');
+  shell.className = 'ali-shell';
+
+  const input = document.createElement('input');
+  input.className = 'search--keyword--15P08Ji';
+  input.id = 'search-words';
+  input.type = 'text';
+  input.placeholder = selectedText || 'Search for items';
+  input.autocomplete = 'off';
+
+  const suggestions = document.createElement('div');
+  suggestions.className = 'src--active--mock ali-suggestions';
+
+  const historySection = document.createElement('section');
+  historySection.className = 'src--history--mock';
+
+  const historyTitle = document.createElement('div');
+  historyTitle.className = 'ali-section-title';
+  historyTitle.textContent = 'Search history';
+  historySection.appendChild(historyTitle);
+
+  const historyWrap = document.createElement('div');
+  historyWrap.className = 'src--hisWrap--mock';
+  historySection.appendChild(historyWrap);
+
+  const discoverSection = document.createElement('section');
+  discoverSection.className = 'src--section--mock';
+
+  const discoverTitle = document.createElement('div');
+  discoverTitle.className = 'ali-section-title';
+  discoverTitle.textContent = 'Discover more';
+  discoverSection.appendChild(discoverTitle);
+
+  const discoverList = document.createElement('ul');
+  discoverList.className = 'src--listWrap--mock';
+  discoverSection.appendChild(discoverList);
+
+  const historyItems = items.slice(0, Math.max(2, Math.min(4, items.length)));
+  const discoverItems = items.slice(historyItems.length);
+
+  historyItems.forEach(item => {
+    const historyItem = document.createElement('span');
+    historyItem.className = 'src--hisItem--mock';
+    const link = document.createElement('a');
+    link.href = item.href || '#';
+    link.textContent = item.text || '';
+    historyItem.appendChild(link);
+    historyWrap.appendChild(historyItem);
+  });
+
+  discoverItems.forEach(item => {
+    const entry = document.createElement('li');
+    entry.className = 'src--item--mock';
+    const link = document.createElement('a');
+    link.href = item.href || '#';
+    const title = document.createElement('span');
+    title.className = 'src--listTitle--mock';
+    title.textContent = item.text || '';
+    link.appendChild(title);
+    entry.appendChild(link);
+    discoverList.appendChild(entry);
+  });
+
+  suggestions.appendChild(historySection);
+  suggestions.appendChild(discoverSection);
+
+  shell.appendChild(input);
+  shell.appendChild(suggestions);
+
+  const openSuggestions = () => {
+    suggestions.classList.add('open');
+  };
+  const closeSuggestions = () => {
+    suggestions.classList.remove('open');
+  };
+
+  input.addEventListener('focus', openSuggestions);
+  input.addEventListener('click', openSuggestions);
+
+  document.addEventListener('click', (event) => {
+    if (!shell.contains(event.target)) {
+      closeSuggestions();
+    }
+  });
+
+  return { shell };
 }
 
 function wireSelection(menuWrapper, listEl, trigger) {
@@ -433,14 +526,18 @@ function numberColumn(field) {
 }
 
 function bindHeaderActions() {
-  document.querySelectorAll('.icon-button').forEach(button => {
-    button.addEventListener('click', () => {
-      const field = button.dataset.field;
-      const action = button.dataset.action;
-      if (action === 'clear') clearColumn(field);
-      if (action === 'missing') toggleColumnMissing(field);
-      if (action === 'number') numberColumn(field);
-    });
+  const headerRow = document.querySelector('.items-table thead');
+  if (!headerRow) return;
+  if (headerRow.dataset.bound === 'true') return;
+  headerRow.dataset.bound = 'true';
+  headerRow.addEventListener('click', event => {
+    const button = event.target.closest('.icon-button');
+    if (!button) return;
+    const field = button.dataset.field;
+    const action = button.dataset.action;
+    if (action === 'clear') clearColumn(field);
+    if (action === 'missing') toggleColumnMissing(field);
+    if (action === 'number') numberColumn(field);
   });
 }
 
@@ -750,6 +847,13 @@ function renderDropdown() {
     });
     menu.appendChild(list);
     wireSelection(menu, list, trigger);
+    dropdownContainer.appendChild(shell);
+    pulsePanel();
+    return;
+  }
+
+  if (type === 'aliexpress') {
+    const { shell } = createAliExpressSearchDropdown(items, items[0]?.text);
     dropdownContainer.appendChild(shell);
     pulsePanel();
     return;

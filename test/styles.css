@@ -198,6 +198,80 @@ p {
   background: #eef4ff;
 }
 
+.ali-shell {
+  position: relative;
+  width: 100%;
+}
+
+.ali-shell input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #c7d2e1;
+  border-radius: 18px;
+  padding: 8px 14px;
+  font-size: 14px;
+}
+
+.ali-suggestions {
+  display: none;
+  max-width: 100%;
+  margin-top: 10px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+  background: #fff;
+  padding: 10px 12px 12px;
+}
+
+.ali-suggestions.open {
+  display: block;
+}
+
+.ali-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.src--hisWrap--mock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.src--hisItem--mock a {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #1f2937;
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.src--listWrap--mock {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.src--item--mock a {
+  text-decoration: none;
+  color: #0f172a;
+  display: inline-flex;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.src--item--mock a:hover {
+  background: #f8fafc;
+}
+
 .selected {
   background: #e8f0fe;
 }

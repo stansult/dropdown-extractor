@@ -416,17 +416,27 @@
     ].join('\n');
   }
 
-  function buildDebugAnyTwoPayload(triggerEl, containerEl, optionEl) {
-    const triggerBlock = containerEl
-      ? buildDebugPlaceholder('1. trigger', 'skipped')
-      : (triggerEl ? buildDebugBlock(triggerEl, '1. trigger') : buildDebugPlaceholder('1. trigger', 'failed'));
-    const containerBlock = containerEl
-      ? buildDebugBlock(containerEl, '1. menu container')
-      : buildDebugPlaceholder('1. menu container', 'failed');
+  function buildDebugAnyTwoPayloadFromStored(optionEl) {
+    const firstElement = window.__dropdownExtractorDebugFirstElement;
+    const firstLabel = window.__dropdownExtractorDebugFirstLabel || '1. uncategorized';
+    const firstBlock = firstElement
+      ? buildDebugBlock(firstElement, firstLabel)
+      : buildDebugPlaceholder(firstLabel, 'failed');
     const optionBlock = optionEl
       ? buildDebugBlock(optionEl, '2. menu option')
       : buildDebugPlaceholder('2. menu option', 'not extracted yet');
-    return [triggerBlock, containerBlock, optionBlock].join('\n\n');
+    return [firstBlock, optionBlock].join('\n\n');
+  }
+
+  function getDebugAnyTwoFirstLabel(triggerEl, containerEl, fallbackEl) {
+    if (containerEl) return 'menu container';
+    if (triggerEl) return 'trigger';
+    if (fallbackEl) return 'uncategorized';
+    return 'unknown';
+  }
+
+  function getDebugAnyTwoSecondLabel(optionEl) {
+    return optionEl ? 'option' : 'uncategorized';
   }
 
   function copyDebugHtml(element, label) {
@@ -453,6 +463,7 @@
     window.__dropdownExtractorDebugContainer = null;
     window.__dropdownExtractorLastHover = null;
     window.__dropdownExtractorDebugFirstElement = null;
+    window.__dropdownExtractorDebugFirstLabel = null;
     window.__dropdownExtractorDebugTrigger = null;
     window.__dropdownExtractorDebugOptionCandidate = null;
     window.__dropdownExtractorDebugSuppressClick = false;
@@ -486,6 +497,35 @@
       element.closest('[role="list"]') ||
       element.closest('ul,ol')
     );
+  }
+
+  function findSuggestionContainer(optionEl) {
+    if (!optionEl || !optionEl.closest) return null;
+    const classSelector = getStableClassSelector(getElementClassName(optionEl));
+    let current = optionEl.parentElement;
+    let depth = 0;
+    while (current && depth < 10) {
+      if (current.matches && current.matches('[role="listbox"],[role="menu"],[role="list"],ul,ol')) {
+        return current;
+      }
+      if (classSelector) {
+        const count = current.querySelectorAll(classSelector).length;
+        if (count >= 2) return current;
+      }
+      current = current.parentElement;
+      depth += 1;
+    }
+    return null;
+  }
+
+  function isLikelyContainer(element) {
+    if (!element || !element.matches) return false;
+    if (element.matches('[role="listbox"],[role="menu"],[role="list"],ul,ol')) return true;
+    const option = element.querySelector(OPTION_LIKE_SELECTOR);
+    if (!option) return false;
+    const classSelector = getStableClassSelector(getElementClassName(option));
+    if (!classSelector) return false;
+    return element.querySelectorAll(classSelector).length >= 2;
   }
 
   function getVisibleMenuContainer(point = null) {
@@ -577,6 +617,14 @@
         element = optionCandidate;
       }
     }
+    if (blocks.length === 1 && !window.__dropdownExtractorDebugFirstElement) {
+      window.__dropdownExtractorDebugFirstElement = element;
+      window.__dropdownExtractorDebugFirstLabel = getDebugAnyTwoFirstLabel(
+        window.__dropdownExtractorDebugTrigger,
+        window.__dropdownExtractorDebugContainer,
+        element
+      );
+    }
     if (blocks.length === 1 && storedContainer) {
       const hover = window.__dropdownExtractorLastHover;
       if (hover && hover.nodeType === Node.ELEMENT_NODE && !hover.closest(`.${TOAST_CLASS}`)) {
@@ -605,14 +653,16 @@
           window.__dropdownExtractorDebugBlocks = ['element-1'];
           window.__dropdownExtractorDebugContainer = openMenu;
           window.__dropdownExtractorDebugFirstElement = openMenu;
+          window.__dropdownExtractorDebugFirstLabel = 'menu container';
           clearArmedToast();
           flashElement(openMenu);
-          navigator.clipboard.writeText(buildDebugAnyTwoPayload(
-            window.__dropdownExtractorDebugTrigger || element,
-            openMenu,
-            null
-          ));
-          replaceActiveToast(showToast('Debug: copied HTML (1/2)', {
+          const triggerEl = window.__dropdownExtractorDebugTrigger || element;
+          const fallbackEl = (!openMenu && !triggerEl) ? element : null;
+          const firstLabel = getDebugAnyTwoFirstLabel(triggerEl, openMenu, fallbackEl);
+          window.__dropdownExtractorDebugFirstElement = openMenu || triggerEl || fallbackEl || element;
+          window.__dropdownExtractorDebugFirstLabel = `1. ${firstLabel}`;
+          navigator.clipboard.writeText(buildDebugAnyTwoPayloadFromStored(null));
+          replaceActiveToast(showToast(`Debug: copied HTML (1/2, ${firstLabel})`, {
             position: 'top-right',
             duration: EXTRACTED_TOAST_MS,
             background: TOAST_SUCCESS_BG
@@ -632,10 +682,15 @@
             window.__dropdownExtractorDebugBlocks = ['element-1'];
             window.__dropdownExtractorDebugContainer = containerEl;
             window.__dropdownExtractorDebugFirstElement = element1;
+            window.__dropdownExtractorDebugFirstLabel = getDebugAnyTwoFirstLabel(triggerEl, containerEl, element1);
             clearArmedToast();
             flashElement(element1);
-            navigator.clipboard.writeText(buildDebugAnyTwoPayload(triggerEl, containerEl, null));
-            replaceActiveToast(showToast('Debug: copied HTML (1/2)', {
+            const fallbackEl = (!containerEl && !triggerEl) ? element1 : null;
+            const firstLabel = getDebugAnyTwoFirstLabel(triggerEl, containerEl, fallbackEl);
+            window.__dropdownExtractorDebugFirstElement = containerEl || triggerEl || fallbackEl || element1;
+            window.__dropdownExtractorDebugFirstLabel = `1. ${firstLabel}`;
+            navigator.clipboard.writeText(buildDebugAnyTwoPayloadFromStored(null));
+            replaceActiveToast(showToast(`Debug: copied HTML (1/2, ${firstLabel})`, {
               position: 'top-right',
               duration: EXTRACTED_TOAST_MS,
               background: TOAST_SUCCESS_BG
@@ -646,6 +701,24 @@
     }
 
     if (blocks.length === 1) {
+      if (isLikelyContainer(element) && optionCandidate) {
+        window.__dropdownExtractorDebugBlocks = ['element-1', 'element-2'];
+        clearArmedToast();
+        flashElement(element);
+        const payload = buildDebugAnyTwoPayloadFromStored(optionCandidate);
+        setTimeout(() => {
+          navigator.clipboard.writeText(payload);
+        }, 120);
+        const secondLabel = getDebugAnyTwoSecondLabel(optionCandidate);
+        replaceActiveToast(showToast(`Debug: copied HTML (2/2, ${secondLabel})`, {
+          position: 'top-right',
+          duration: EXTRACTED_TOAST_MS,
+          background: TOAST_SUCCESS_BG
+        }));
+        notifyBackground('done');
+        finalizeDebugCapture();
+        return true;
+      }
       const activeContainer = storedContainer || getVisibleMenuContainer(window.__dropdownExtractorLastPointer || null);
       if (activeContainer && activeContainer !== element) {
         const optionBlock = buildDebugBlock(element, 'element 2');
@@ -653,10 +726,12 @@
           window.__dropdownExtractorDebugBlocks = ['element-1', 'element-2'];
           clearArmedToast();
           flashElement(activeContainer);
+          const payload = buildDebugAnyTwoPayloadFromStored(element);
           setTimeout(() => {
-            navigator.clipboard.writeText(buildDebugAnyTwoPayload(window.__dropdownExtractorDebugTrigger, activeContainer, element));
+            navigator.clipboard.writeText(payload);
           }, 120);
-          replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
+          const secondLabel = getDebugAnyTwoSecondLabel(element);
+          replaceActiveToast(showToast(`Debug: copied HTML (2/2, ${secondLabel})`, {
             position: 'top-right',
             duration: EXTRACTED_TOAST_MS,
             background: TOAST_SUCCESS_BG
@@ -674,14 +749,12 @@
         window.__dropdownExtractorDebugBlocks = ['element-1', 'element-2'];
         clearArmedToast();
         flashElement(element);
+        const payload = buildDebugAnyTwoPayloadFromStored(element);
         setTimeout(() => {
-          navigator.clipboard.writeText(buildDebugAnyTwoPayload(
-            window.__dropdownExtractorDebugTrigger,
-            window.__dropdownExtractorDebugContainer,
-            element
-          ));
+          navigator.clipboard.writeText(payload);
         }, 120);
-        replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
+        const secondLabel = getDebugAnyTwoSecondLabel(element);
+        replaceActiveToast(showToast(`Debug: copied HTML (2/2, ${secondLabel})`, {
           position: 'top-right',
           duration: EXTRACTED_TOAST_MS,
           background: TOAST_SUCCESS_BG
@@ -698,14 +771,12 @@
         window.__dropdownExtractorDebugBlocks = ['element-1', 'element-2'];
         clearArmedToast();
         flashElement(storedContainer);
+        const payload = buildDebugAnyTwoPayloadFromStored(element);
         setTimeout(() => {
-          navigator.clipboard.writeText(buildDebugAnyTwoPayload(
-            window.__dropdownExtractorDebugTrigger,
-            storedContainer,
-            element
-          ));
+          navigator.clipboard.writeText(payload);
         }, 120);
-        replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
+        const secondLabel = getDebugAnyTwoSecondLabel(element);
+        replaceActiveToast(showToast(`Debug: copied HTML (2/2, ${secondLabel})`, {
           position: 'top-right',
           duration: EXTRACTED_TOAST_MS,
           background: TOAST_SUCCESS_BG
@@ -724,14 +795,12 @@
           window.__dropdownExtractorDebugBlocks = ['element-1', 'element-2'];
           clearArmedToast();
           flashElement(container);
+          const payload = buildDebugAnyTwoPayloadFromStored(element);
           setTimeout(() => {
-            navigator.clipboard.writeText(buildDebugAnyTwoPayload(
-              window.__dropdownExtractorDebugTrigger,
-              container,
-              element
-            ));
+            navigator.clipboard.writeText(payload);
           }, 120);
-          replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
+          const secondLabel = getDebugAnyTwoSecondLabel(element);
+          replaceActiveToast(showToast(`Debug: copied HTML (2/2, ${secondLabel})`, {
             position: 'top-right',
             duration: EXTRACTED_TOAST_MS,
             background: TOAST_SUCCESS_BG
@@ -757,14 +826,12 @@
             window.__dropdownExtractorDebugBlocks = ['element-1', 'element-2'];
             clearArmedToast();
             flashElement(container);
+            const payload = buildDebugAnyTwoPayloadFromStored(optionEl);
             setTimeout(() => {
-              navigator.clipboard.writeText(buildDebugAnyTwoPayload(
-                window.__dropdownExtractorDebugTrigger,
-                container,
-                optionEl
-              ));
+              navigator.clipboard.writeText(payload);
             }, 120);
-            replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
+            const secondLabel = getDebugAnyTwoSecondLabel(optionEl);
+            replaceActiveToast(showToast(`Debug: copied HTML (2/2, ${secondLabel})`, {
               position: 'top-right',
               duration: EXTRACTED_TOAST_MS,
               background: TOAST_SUCCESS_BG
@@ -777,6 +844,7 @@
           toCapture.push(container);
           window.__dropdownExtractorDebugContainer = container;
           window.__dropdownExtractorDebugBlocks = null;
+          window.__dropdownExtractorDebugOptionCandidate = optionEl;
         }
       }
     }
@@ -804,8 +872,11 @@
       const element1 = containerEl || toCapture[0] || element;
       if (element1) flashElement(element1);
       window.__dropdownExtractorDebugFirstElement = element1;
-      navigator.clipboard.writeText(buildDebugAnyTwoPayload(triggerEl, containerEl, null));
-      replaceActiveToast(showToast('Debug: copied HTML (1/2)', {
+      const fallbackEl = (!containerEl && !triggerEl) ? element1 : null;
+      const firstLabel = getDebugAnyTwoFirstLabel(triggerEl, containerEl, fallbackEl);
+      window.__dropdownExtractorDebugFirstLabel = `1. ${firstLabel}`;
+      navigator.clipboard.writeText(buildDebugAnyTwoPayloadFromStored(null));
+      replaceActiveToast(showToast(`Debug: copied HTML (1/2, ${firstLabel})`, {
         position: 'top-right',
         duration: EXTRACTED_TOAST_MS,
         background: TOAST_SUCCESS_BG
@@ -824,11 +895,13 @@
         ? optionContext.option
         : (toCapture.find(el => el && el !== containerEl) || element);
       flashElement(containerEl || optionEl || element);
+      const payload = buildDebugAnyTwoPayloadFromStored(optionEl);
       setTimeout(() => {
-        navigator.clipboard.writeText(buildDebugAnyTwoPayload(triggerEl, containerEl, optionEl));
+        navigator.clipboard.writeText(payload);
       }, 120);
     }
-    replaceActiveToast(showToast('Debug: copied HTML (2/2)', {
+    const secondLabel = getDebugAnyTwoSecondLabel(optionEl);
+    replaceActiveToast(showToast(`Debug: copied HTML (2/2, ${secondLabel})`, {
       position: 'top-right',
       duration: EXTRACTED_TOAST_MS,
       background: TOAST_SUCCESS_BG
@@ -975,11 +1048,19 @@
   const FLASH_STYLE_ID = 'dropdown-extractor-flash-style';
   const FEEDBACK_DURATION_MS = 900;
 
+  function getStableClassSelector(className) {
+    if (!className) return null;
+    const classes = className.split(/\s+/).filter(Boolean).filter(cls => cls !== FLASH_CLASS);
+    if (!classes.length) return null;
+    return `.${classes.join('.')}`;
+  }
+
   function getOptionContext(target) {
     if (!target || !target.closest) return null;
     const optionEl = target.closest(OPTION_LIKE_SELECTOR);
     if (optionEl) {
-      return { option: optionEl, container: findDebugContainer(optionEl) };
+      const container = findDebugContainer(optionEl) || findSuggestionContainer(optionEl);
+      return { option: optionEl, container };
     }
     const sallieOption = target.closest('.slm-dropdown-modal [role="button"]');
     if (sallieOption && sallieOption.querySelector('input.slm-btngroup-radio')) {

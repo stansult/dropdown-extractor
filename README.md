@@ -58,11 +58,11 @@ To open Extension Options, right-click the extension button and select Options.
 #### Notes / Limitations
 
 - Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom implementations, virtualized or canvas-rendered menus, Shadow DOM, or cross-origin iframes may not be detectable.
+  - includes support for Google Search suggestions
 - AntD/Select2/Chosen support depends on their default DOM structure; customized themes may not be detectable.
 - Radix menus often omit value/data-value; href is used as a fallback value when present.
 - AliExpress search suggestions use href as value; value/data-value are ignored.
 - MUI options don’t expose value properties on DOM nodes; use data-value if available.
-- Google Search suggestions are supported via standard ARIA listbox/option markup.
 - Safe capture does not apply to native `<select>` dropdowns.
 - Right-click (context menu) cannot be used with Selectize dropdowns because they close immediately on right-mouse events. That’s why right-click wasn’t implemented.
 - Cross-origin iframes cannot be accessed.

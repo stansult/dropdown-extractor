@@ -52,6 +52,7 @@ To open Extension Options, right-click the extension button and select Options.
 | Ant Design Select-style | Yes |
 | Select2-style | Yes |
 | Chosen-style | Yes |
+| AliExpress search suggestions | Yes |
 | Canvas-rendered / virtualized | No |
 | Cross-origin iframes | No |
 

@@ -73,7 +73,9 @@ To open Extension Options, right-click the extension button and select Options.
 
 ### Public version
 
-Install public version from Chrome Web Store:<a href="https://chrome.google.com/webstore/detail/dropdown-extractor/gbocefdbkfckcdbdhmaipklcfhgmeghm"><img src="icon-inline.svg" width="15" hspace="6" alt="Dropdown Extractor extension in Chrome Web Store">Dropdown Extractor</a>. The Web Store listing may lag behind the latest code due to review time.
+Install public version from Chrome Web Store:<a href="https://chrome.google.com/webstore/detail/dropdown-extractor/gbocefdbkfckcdbdhmaipklcfhgmeghm"><img src="icon-inline.svg" width="15" hspace="6" alt="Dropdown Extractor extension in Chrome Web Store">Dropdown Extractor</a>.
+
+The Web Store listing may lag behind the latest code due to review time.
 
 ### Development mode
 

@@ -2,7 +2,7 @@
 
 **Dropdown Extractor** is a Chrome extension that copies items from dropdown lists into your clipboard.
 
-It supports many popular [types of dropboxes](#dropdown-types). Go to any website and try it on any dropbox. You can also try it on our test page: <a href="https://dropdown-extractor.stansult.com" target="_blank" rel="noopener noreferrer">Dropdown Playground</a>
+It supports many popular [types of dropboxes](#dropdown-types). Go to any website and try it on any dropbox. You can also try it on our test page: [Dropdown Playground](https://dropdown-extractor.stansult.com)
 
 ## How it works
 
@@ -73,7 +73,7 @@ To open Extension Options, right-click the extension button and select Options.
 
 ### Public version
 
-Install public version from Chrome Web Store:<a href="https://chrome.google.com/webstore/detail/dropdown-extractor/gbocefdbkfckcdbdhmaipklcfhgmeghm" target="_blank" rel="noopener noreferrer"><img src="icon-inline.svg" width="15" hspace="6" alt="Dropdown Extractor extension in Chrome Web Store">Dropdown Extractor</a>
+Install public version from Chrome Web Store:<a href="https://chrome.google.com/webstore/detail/dropdown-extractor/gbocefdbkfckcdbdhmaipklcfhgmeghm"><img src="icon-inline.svg" width="15" hspace="6" alt="Dropdown Extractor extension in Chrome Web Store">Dropdown Extractor</a>
 
 ### Development mode
 
@@ -98,7 +98,7 @@ Use these commands to build uploadable zip archives:
 
 #### Dropdown Playground
 
-To test the extension, you can use <a href="https://dropdown-extractor.stansult.com" target="_blank" rel="noopener noreferrer">Dropdown Playground</a>. It lets you:
+To test the extension, you can use [Dropdown Playground](https://dropdown-extractor.stansult.com). It lets you:
 
 - pick a dropdown type and value source
 - generate items (text/value/data-value) and mark missing fields

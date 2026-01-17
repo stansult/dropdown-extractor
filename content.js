@@ -1160,6 +1160,32 @@
     return uniqueLinks.filter(link => getOptionLabelText(link));
   }
 
+  function findListItemContainer(listItem) {
+    if (!listItem || !listItem.closest) return null;
+    const roleContainer = listItem.closest('[role="list"],[role="listbox"],[role="menu"],ul,ol');
+    if (roleContainer && isElementVisible(roleContainer)) return roleContainer;
+    let current = listItem.parentElement;
+    let depth = 0;
+    while (current && depth < 6) {
+      const items = current.querySelectorAll('[role="listitem"]');
+      if (items.length >= 2 && isElementVisible(current)) return current;
+      current = current.parentElement;
+      depth += 1;
+    }
+    return null;
+  }
+
+  function isElementVisible(element) {
+    if (!element || !element.getBoundingClientRect) return false;
+    const rect = element.getBoundingClientRect();
+    if (!rect.width || !rect.height) return false;
+    const style = window.getComputedStyle(element);
+    if (!style || style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+      return false;
+    }
+    return true;
+  }
+
   function isOptionLike(target) {
     return !!getOptionContext(target);
   }
@@ -1590,6 +1616,38 @@
       showErrorToast(error || NO_ITEMS_FOUND_TEXT);
       cleanup();
       return;
+    }
+
+    // --- 7) Generic listitem menus ---
+    const genericListItem = target.closest && target.closest('[role="listitem"]');
+    if (genericListItem && !genericListItem.closest('.SelectMenu')) {
+      const listContainer = findListItemContainer(genericListItem);
+      if (listContainer) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (shouldDebugSupported(prefs) && copyDebugHtml(listContainer, 'supported dropdown')) return;
+        const options = [...listContainer.querySelectorAll('[role="listitem"]')];
+        const fields = resolveFields(
+          options,
+          o => getOptionLabelText(o),
+          [
+            o => o.querySelector('input[type="checkbox"], input[type="radio"]')?.value || '',
+            o => o.dataset.value,
+            o => o.getAttribute('value') || ''
+          ]
+        );
+        const { items, note, error } = buildOutput(fields, prefs);
+
+        if (items.length) {
+          completeExtraction(items, note, listContainer, prefs);
+          return;
+        }
+
+        showErrorToast(error || NO_ITEMS_FOUND_TEXT);
+        cleanup();
+        return;
+      }
     }
 
     // --- 7) GitHub SelectMenu lists ---

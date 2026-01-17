@@ -1,6 +1,6 @@
 const ARM_DURATION_MS = 10000; // Keep in sync with content.js.
 const EXTENSION_TITLE = "Dropdown Extractor";
-const FEEDBACK_DURATION_MS = 900;
+const FEEDBACK_DURATION_MS = 1500;
 const ERROR_BADGE_DURATION_MS = 1500;
 const STOP_BADGE_DURATION_MS = 1500;
 let armIntervalId = null;

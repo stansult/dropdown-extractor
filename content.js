@@ -10,7 +10,7 @@
   const ARM_DURATION_MS = 10000; // Keep in sync with background.js.
   const EXTRACTED_PREVIEW_COUNT = 3;
   const EXTRACTED_PREVIEW_MAX_CHARS = 60;
-  const EXTRACTED_TOAST_MS = 5000;
+  const EXTRACTED_TOAST_MS = 3000;
   const ARMED_TOAST_TEXT = 'Click a dropdown, then click any item to copy the full list.';
   const NO_ITEMS_FOUND_TEXT = 'No items found to extract.';
   const TOAST_INFO_BG = 'rgba(20, 40, 70, 0.75)';
@@ -1223,6 +1223,7 @@
   function cleanup(force = false) {
     if (!force && deferCleanup) {
       pendingSafeCleanup = true;
+      extractionPending = false;
       return;
     }
     deferCleanup = false;
@@ -1254,6 +1255,10 @@
     const finish = () => {
       navigator.clipboard.writeText(items.join('\n'));
       clearArmedToast();
+      if (window.__dropdownExtractorCancelTimer) {
+        clearTimeout(window.__dropdownExtractorCancelTimer);
+        window.__dropdownExtractorCancelTimer = null;
+      }
       replaceActiveToast(showToast(buildExtractedMessage(items, note), {
         position: 'top-right',
         duration: EXTRACTED_TOAST_MS,

@@ -13,6 +13,7 @@
   const EXTRACTED_TOAST_MS = 3000;
   const ARMED_TOAST_TEXT = 'Click a dropdown, then click any item to copy the full list.';
   const NO_ITEMS_FOUND_TEXT = 'No items found to extract.';
+  const STOPPED_TOAST_TEXT = 'Dropdown extractor stopped';
   const TOAST_INFO_BG = 'rgba(20, 40, 70, 0.75)';
   const TOAST_SUCCESS_BG = 'rgba(20, 70, 40, 0.75)';
   const TOAST_EXPIRED_BG = 'rgba(60, 60, 60, 0.75)';
@@ -188,6 +189,15 @@
     }
     window.__dropdownExtractorActiveToast = toast;
     return toast;
+  }
+
+  function showStoppedToast(reason) {
+    const suffix = reason ? ` (${reason})` : '';
+    replaceActiveToast(showToast(`${STOPPED_TOAST_TEXT}${suffix}`, {
+      duration: 2000,
+      position: 'top-right',
+      background: TOAST_EXPIRED_BG
+    }));
   }
 
   function clearArmedToast() {
@@ -919,11 +929,7 @@
       clearArmedToast();
       notifyBackground('canceled');
       cleanup(true);
-      replaceActiveToast(showToast('Dropdown extractor canceled', {
-        duration: 1500,
-        position: 'top-right',
-        background: TOAST_EXPIRED_BG
-      }));
+      showStoppedToast('timeout');
     }, ARM_DURATION_MS);
   }
 
@@ -938,15 +944,21 @@
   window.__dropdownExtractorPageHideHandler = () => {
     if (!window.__dropdownExtractorActive) return;
     clearArmedToast();
-    replaceActiveToast(showToast('Dropdown extractor stopped (page navigated)', {
-      duration: 1500,
-      position: 'top-right',
-      background: TOAST_EXPIRED_BG
-    }));
+    showStoppedToast('page navigated');
     notifyBackground('canceled');
     cleanup(true);
   };
   window.addEventListener('pagehide', window.__dropdownExtractorPageHideHandler, true);
+  if (chrome?.storage?.onChanged?.addListener) {
+    window.__dropdownExtractorStorageHandler = () => {
+      if (!window.__dropdownExtractorActive) return;
+      clearArmedToast();
+      showStoppedToast('options changed');
+      notifyBackground('canceled');
+      cleanup(true);
+    };
+    chrome.storage.onChanged.addListener(window.__dropdownExtractorStorageHandler);
+  }
   getPrefs(prefs => {
     window.__dropdownExtractorPrefs = prefs;
   });
@@ -1237,6 +1249,10 @@
     if (window.__dropdownExtractorPageHideHandler) {
       window.removeEventListener('pagehide', window.__dropdownExtractorPageHideHandler, true);
       window.__dropdownExtractorPageHideHandler = null;
+    }
+    if (window.__dropdownExtractorStorageHandler && chrome?.storage?.onChanged?.removeListener) {
+      chrome.storage.onChanged.removeListener(window.__dropdownExtractorStorageHandler);
+      window.__dropdownExtractorStorageHandler = null;
     }
     window.__dropdownExtractorActive = false;
     resetDebugCapture();

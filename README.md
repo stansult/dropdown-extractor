@@ -52,6 +52,7 @@ To open Extension Options, right-click the extension button and select Options.
 | Ant Design Select-style | Yes |
 | Select2-style | Yes |
 | Chosen-style | Yes |
+| GitHub SelectMenu (checkbox list) | Yes |
 | AliExpress search suggestions | Yes |
 | Canvas-rendered / virtualized | No |
 | Cross-origin iframes | No |
@@ -62,6 +63,7 @@ To open Extension Options, right-click the extension button and select Options.
   - includes support for Google Search suggestions
 - AntD/Select2/Chosen support depends on their default DOM structure; customized themes may not be detectable.
 - Radix menus often omit value/data-value; href is used as a fallback value when present.
+- GitHub SelectMenu items use checkbox values as the extracted value.
 - AliExpress search suggestions use href as value; value/data-value are ignored.
 - MUI options don’t expose value properties on DOM nodes; use data-value if available.
 - Safe capture does not apply to native `<select>` dropdowns.

@@ -272,6 +272,72 @@ p {
   background: #f8fafc;
 }
 
+.gh-selectmenu {
+  position: relative;
+  width: 100%;
+}
+
+.gh-selectmenu-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: left;
+}
+
+.gh-caret {
+  margin-left: auto;
+  color: #64748b;
+}
+
+.gh-selectmenu .SelectMenu {
+  margin-top: 6px;
+  display: none;
+}
+
+.gh-selectmenu.open .SelectMenu {
+  display: block;
+}
+
+.SelectMenu-list {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+.SelectMenu-list [role="list"] {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-checkbox {
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.form-checkbox:hover {
+  background: #f8fafc;
+}
+
+.form-checkbox input {
+  margin: 0 8px 0 0;
+}
+
+.Truncate-text {
+  color: #0f172a;
+  font-size: 14px;
+}
+
 .selected {
   background: #e8f0fe;
 }

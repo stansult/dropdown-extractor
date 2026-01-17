@@ -1227,8 +1227,18 @@
   function shouldBlockOptionClick(prefs, target) {
     if (!prefs || !prefs.safeCapture) return false;
     if (target && target.closest && target.closest('select')) return false;
-    if (isOptionLike(target)) return true;
+    const triggerEl = target && target.closest
+      ? target.closest('button,[role="button"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]')
+      : null;
+    const triggerExpanded = triggerEl && triggerEl.getAttribute && triggerEl.getAttribute('aria-expanded');
+    const triggerHasPopup = triggerEl && triggerEl.getAttribute && triggerEl.getAttribute('aria-haspopup');
+    const isMenuTrigger = !!(triggerExpanded || triggerHasPopup);
+    if (isMenuTrigger) return false;
+
     const menuContainer = getVisibleMenuContainer(window.__dropdownExtractorLastPointer || null);
+    if (isOptionLike(target)) {
+      return !!menuContainer;
+    }
     return !!(menuContainer && menuContainer.contains(target));
   }
 
@@ -1301,7 +1311,16 @@
   }
 
   function handleSupportedClick(e, prefs) {
-    const target = e._dropdownExtractorTarget || e.target;
+    let target = e._dropdownExtractorTarget || e.target;
+    const elementTarget = target && target.nodeType === Node.ELEMENT_NODE ? target : target?.parentElement;
+    if (elementTarget && elementTarget.closest) {
+      const ghList = elementTarget.closest('.SelectMenu-list');
+      if (ghList) {
+        target = elementTarget.closest('[role="listitem"]') || ghList || elementTarget;
+      } else {
+        target = elementTarget;
+      }
+    }
     // --- 1) Native <select> support ---
     const selectEl = target.closest('select');
     if (selectEl) {
@@ -1419,7 +1438,14 @@
 
     // --- 4) Radix / role="menu" support ---
     const menu = getVisibleDropdownContainer('[role="menu"]', target);
-    if (menu && menu.contains(target)) {
+    const isGitHubMenu = !!(
+      menu
+      && (
+        (menu.classList && menu.classList.contains('SelectMenu-list'))
+        || (menu.closest && menu.closest('.SelectMenu'))
+      )
+    );
+    if (!isGitHubMenu && menu && menu.contains(target)) {
       e.preventDefault();
       e.stopPropagation();
 
@@ -1566,6 +1592,49 @@
       return;
     }
 
+    // --- 7) GitHub SelectMenu lists ---
+    const ghRoot = target.getRootNode && target.getRootNode();
+    const ghListItem = target.closest && target.closest('[role="listitem"]');
+    const ghMenuFromTarget = (ghListItem && ghListItem.closest && ghListItem.closest('[role="list"]'))
+      || (ghListItem && ghListItem.closest && ghListItem.closest('.SelectMenu-list'))
+      || (target.closest && target.closest('.SelectMenu-list'));
+    const ghMenu = ghMenuFromTarget
+      || (ghRoot && ghRoot.querySelector && ghRoot.querySelector('.SelectMenu-list'))
+      || [...document.querySelectorAll('.SelectMenu-list')].find(el => {
+        const rect = el.getBoundingClientRect();
+        if (!rect.width || !rect.height) return false;
+        const style = window.getComputedStyle(el);
+        if (!style || style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+          return false;
+        }
+        return true;
+      });
+    if (ghMenu && (ghMenuFromTarget || (ghMenu.contains && ghMenu.contains(target)))) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (shouldDebugSupported(prefs) && copyDebugHtml(ghMenu, 'supported dropdown')) return;
+      const options = [...ghMenu.querySelectorAll('[role="listitem"]')];
+      const fields = resolveFields(
+        options,
+        o => getOptionLabelText(o),
+        [
+          o => o.querySelector('input[type="checkbox"], input[type="radio"]')?.value || '',
+          o => o.dataset.value
+        ]
+      );
+      const { items, note, error } = buildOutput(fields, prefs);
+
+      if (items.length) {
+        completeExtraction(items, note, ghMenu, prefs);
+        return;
+      }
+
+      showErrorToast(error || NO_ITEMS_FOUND_TEXT);
+      cleanup();
+      return;
+    }
+
     const listbox = [...document.querySelectorAll('[role="listbox"]')]
       .find(el => el.offsetParent !== null);
 
@@ -1605,7 +1674,14 @@
     if (extractionPending) return;
     window.__dropdownExtractorLastPointer = { x: e.clientX, y: e.clientY };
     const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
-    const target = pathTarget || e.target;
+    const rawTarget = pathTarget || e.target;
+    let target = rawTarget;
+    if (rawTarget && rawTarget.closest) {
+      const ghList = rawTarget.closest('.SelectMenu-list');
+      if (ghList) {
+        target = rawTarget.closest('[role="listitem"]') || ghList || rawTarget;
+      }
+    }
     const prefs = window.__dropdownExtractorPrefs;
     if (prefs) {
       e._dropdownExtractorTarget = target;
@@ -1676,7 +1752,11 @@
     const prefs = window.__dropdownExtractorPrefs;
     if (!prefs) return;
     const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
-    const target = pathTarget || e.target;
+    const rawTarget = pathTarget || e.target;
+    let target = rawTarget;
+    if (rawTarget && rawTarget.closest && rawTarget.closest('.SelectMenu-list')) {
+      target = rawTarget.closest('[role="listitem"]') || rawTarget.closest('.SelectMenu-list') || rawTarget;
+    }
     if (shouldBlockOptionClick(prefs, target)) {
       e.preventDefault();
       e.stopPropagation();

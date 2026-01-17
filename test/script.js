@@ -18,6 +18,7 @@ const nativeNote = document.getElementById('note-native');
 const libsNote = document.getElementById('note-libs');
 const radixNote = document.getElementById('note-radix');
 const muiNote = document.getElementById('note-mui');
+const ghNote = document.getElementById('note-gh');
 const aliNote = document.getElementById('note-ali');
 const notesTitle = document.getElementById('notes-title');
 
@@ -36,6 +37,7 @@ const supportedTypes = new Set([
   'select2',
   'chosen',
   'slm-modal',
+  'github-selectmenu',
   'aliexpress'
 ]);
 
@@ -67,17 +69,19 @@ function updateRenderedTypeDisplay() {
 }
 
 function updateNotesVisibility() {
-  if (!muiNote || !libsNote || !nativeNote || !radixNote || !aliNote) return;
+  if (!muiNote || !libsNote || !nativeNote || !radixNote || !aliNote || !ghNote) return;
   const showNative = typeSelect.value === 'native' || (lastRenderSnapshot && lastRenderSnapshot.type === 'native');
   const showMui = typeSelect.value === 'mui' || (lastRenderSnapshot && lastRenderSnapshot.type === 'mui');
   const showLibs = ['antd', 'select2', 'chosen'].includes(typeSelect.value)
     || (lastRenderSnapshot && ['antd', 'select2', 'chosen'].includes(lastRenderSnapshot.type));
   const showRadix = typeSelect.value === 'radix-menu' || (lastRenderSnapshot && lastRenderSnapshot.type === 'radix-menu');
+  const showGh = typeSelect.value === 'github-selectmenu' || (lastRenderSnapshot && lastRenderSnapshot.type === 'github-selectmenu');
   const showAli = typeSelect.value === 'aliexpress' || (lastRenderSnapshot && lastRenderSnapshot.type === 'aliexpress');
   nativeNote.style.display = showNative ? 'list-item' : 'none';
   muiNote.style.display = showMui ? 'list-item' : 'none';
   libsNote.style.display = showLibs ? 'list-item' : 'none';
   radixNote.style.display = showRadix ? 'list-item' : 'none';
+  ghNote.style.display = showGh ? 'list-item' : 'none';
   aliNote.style.display = showAli ? 'list-item' : 'none';
   if (itemsTable) {
     itemsTable.classList.toggle('hide-href', !(showRadix || showAli));
@@ -337,6 +341,100 @@ function createAliExpressSearchDropdown(items, selectedText) {
   document.addEventListener('click', (event) => {
     if (!shell.contains(event.target)) {
       closeSuggestions();
+    }
+  });
+
+  return { shell };
+}
+
+function createGitHubSelectMenuDropdown(items) {
+  const shell = document.createElement('div');
+  shell.className = 'gh-selectmenu';
+
+  const summary = document.createElement('button');
+  summary.type = 'button';
+  summary.className = 'gh-selectmenu-summary';
+
+  const summaryLabel = document.createElement('span');
+  summaryLabel.textContent = 'Select lists';
+
+  const caret = document.createElement('span');
+  caret.className = 'gh-caret';
+  caret.textContent = '▾';
+
+  summary.appendChild(summaryLabel);
+  summary.appendChild(caret);
+
+  const menuWrap = document.createElement('div');
+  menuWrap.className = 'SelectMenu';
+
+  const list = document.createElement('div');
+  list.className = 'SelectMenu-list SelectMenu-list--borderless';
+  list.setAttribute('role', 'menu');
+
+  const listInner = document.createElement('div');
+  listInner.setAttribute('role', 'list');
+
+  items.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'form-checkbox mt-1 mb-0 p-1';
+    row.setAttribute('role', 'listitem');
+    if (item.dataValue) row.dataset.value = item.dataValue;
+
+    const label = document.createElement('label');
+    label.className = 'd-flex';
+
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.className = 'mx-0 js-user-list-menu-item';
+    input.name = 'list_ids[]';
+    if (item.value) {
+      input.value = item.value;
+    }
+
+    const wrap = document.createElement('span');
+    wrap.className = 'Truncate ml-2 text-normal f5';
+
+    const text = document.createElement('span');
+    text.className = 'Truncate-text';
+    text.textContent = item.text || '';
+
+    wrap.appendChild(text);
+    label.appendChild(input);
+    label.appendChild(wrap);
+    row.appendChild(label);
+    listInner.appendChild(row);
+  });
+
+  list.appendChild(listInner);
+  menuWrap.appendChild(list);
+  shell.appendChild(summary);
+  shell.appendChild(menuWrap);
+
+  const setOpen = (open) => {
+    shell.classList.toggle('open', open);
+  };
+
+  summary.addEventListener('click', () => {
+    setOpen(!shell.classList.contains('open'));
+  });
+
+  listInner.addEventListener('click', event => {
+    const option = event.target.closest('[role="listitem"]');
+    if (!option) return;
+    const checkbox = option.querySelector('input[type="checkbox"]');
+    const clickedCheckbox = event.target.closest('input[type="checkbox"]');
+    const clickedLabel = event.target.closest('label');
+    if (checkbox && !clickedCheckbox && !clickedLabel) {
+      checkbox.checked = !checkbox.checked;
+    }
+    summaryLabel.textContent = option.textContent.trim();
+    setOpen(false);
+  });
+
+  document.addEventListener('click', event => {
+    if (!shell.contains(event.target)) {
+      setOpen(false);
     }
   });
 
@@ -854,6 +952,13 @@ function renderDropdown() {
 
   if (type === 'aliexpress') {
     const { shell } = createAliExpressSearchDropdown(items, items[0]?.text);
+    dropdownContainer.appendChild(shell);
+    pulsePanel();
+    return;
+  }
+
+  if (type === 'github-selectmenu') {
+    const { shell } = createGitHubSelectMenuDropdown(items);
     dropdownContainer.appendChild(shell);
     pulsePanel();
     return;

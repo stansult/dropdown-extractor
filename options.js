@@ -84,6 +84,7 @@ function showInlineToast(target, message) {
     padding: '6px 8px',
     background: TOAST_ERROR_BG,
     color: '#fff',
+    fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif',
     fontSize: '13px',
     borderRadius: '4px',
     zIndex: 999999,

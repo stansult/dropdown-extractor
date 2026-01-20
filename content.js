@@ -80,6 +80,7 @@
       padding: '8px 12px',
       background,
       color: '#fff',
+      fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif',
       fontSize: '13px',
       lineHeight: '1.3',
       whiteSpace: 'pre-line',

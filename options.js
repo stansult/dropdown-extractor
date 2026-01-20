@@ -8,37 +8,44 @@ const debugOptions = document.getElementById('debug-options');
 const debugModeOptions = document.querySelectorAll('input[name="debug-mode"]');
 const debugAllFrames = document.getElementById('debug-all-frames');
 const safeCapture = document.getElementById('safe-capture');
+const resetOptions = document.getElementById('reset-options');
 const TOAST_ERROR_BG = 'rgba(120, 30, 30, 0.85)';
 
-chrome.storage.sync.get(
-  {
-    extractText: true,
-    extractValue: false,
-    format: 'text-tab-value',
-    debug: false,
-    debugMode: false,
-    debugModeTarget: 'supported',
-    debugAllFrames: false,
-    safeCapture: false
-  },
-  prefs => {
-    text.checked = prefs.extractText;
-    value.checked = prefs.extractValue;
-    debug.checked = prefs.debugMode ?? prefs.debug ?? false;
-    safeCapture.checked = prefs.safeCapture;
+const DEFAULT_PREFS = {
+  extractText: true,
+  extractValue: false,
+  format: 'text-tab-value',
+  debug: false,
+  debugMode: false,
+  debugModeTarget: 'supported',
+  debugAllFrames: false,
+  safeCapture: true
+};
+
+function applyPrefs(prefs) {
+  text.checked = !!prefs.extractText;
+  value.checked = !!prefs.extractValue;
+  debug.checked = prefs.debugMode ?? prefs.debug ?? false;
+  safeCapture.checked = !!prefs.safeCapture;
+  if (debugAllFrames) {
     debugAllFrames.checked = !!prefs.debugAllFrames;
-    const debugTarget = prefs.debugModeTarget || 'supported';
-    debugModeOptions.forEach(option => {
-      option.checked = option.value === debugTarget;
-    });
-    const selected = prefs.format || 'text-tab-value';
-    formatOptions.forEach(option => {
-      option.checked = option.value === selected;
-    });
-    updateDebugVisibility();
-    updateFormatVisibility();
   }
-);
+  const debugTarget = prefs.debugModeTarget || 'supported';
+  debugModeOptions.forEach(option => {
+    option.checked = option.value === debugTarget;
+  });
+  const selected = prefs.format || 'text-tab-value';
+  formatOptions.forEach(option => {
+    option.checked = option.value === selected;
+  });
+  updateDebugVisibility();
+  updateFormatVisibility();
+  updateResetButtonState();
+}
+
+chrome.storage.sync.get(DEFAULT_PREFS, prefs => {
+  applyPrefs(prefs);
+});
 
 function updateFormatVisibility() {
   const show = text.checked && value.checked && !debug.checked;
@@ -96,18 +103,39 @@ function showInlineToast(target, message) {
 }
 
 function save() {
-  const selectedFormat = [...formatOptions].find(option => option.checked)?.value || 'text-tab-value';
-  const selectedDebugMode = [...debugModeOptions].find(option => option.checked)?.value || 'supported';
-  chrome.storage.sync.set({
+  const currentPrefs = getCurrentPrefs();
+  chrome.storage.sync.set(currentPrefs);
+  updateResetButtonState();
+}
+
+function getSelectedFormat() {
+  return [...formatOptions].find(option => option.checked)?.value || 'text-tab-value';
+}
+
+function getSelectedDebugMode() {
+  return [...debugModeOptions].find(option => option.checked)?.value || 'supported';
+}
+
+function getCurrentPrefs() {
+  return {
     extractText: text.checked,
     extractValue: value.checked,
-    format: selectedFormat,
+    format: getSelectedFormat(),
     debug: debug.checked,
     debugMode: debug.checked,
-    debugModeTarget: selectedDebugMode,
+    debugModeTarget: getSelectedDebugMode(),
     debugAllFrames: debugAllFrames ? debugAllFrames.checked : false,
     safeCapture: safeCapture.checked
-  });
+  };
+}
+
+function updateResetButtonState() {
+  if (!resetOptions) {
+    return;
+  }
+  const currentPrefs = getCurrentPrefs();
+  const isDefault = Object.keys(DEFAULT_PREFS).every(key => currentPrefs[key] === DEFAULT_PREFS[key]);
+  resetOptions.disabled = isDefault;
 }
 
 function handleToggle(target) {
@@ -138,3 +166,11 @@ if (debugAllFrames) {
   debugAllFrames.onchange = save;
 }
 safeCapture.onchange = save;
+
+if (resetOptions) {
+  resetOptions.addEventListener('click', () => {
+    chrome.storage.sync.set(DEFAULT_PREFS, () => {
+      applyPrefs(DEFAULT_PREFS);
+    });
+  });
+}

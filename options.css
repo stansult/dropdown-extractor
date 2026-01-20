@@ -88,6 +88,30 @@ label {
   margin-top: var(--space-7);
 }
 
+.reset-button {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+}
+
+.reset-button:hover {
+  background: #f3f6fb;
+}
+
+.reset-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.reset-button:focus-visible {
+  outline: 2px solid #8bb7e3;
+  outline-offset: 2px;
+}
+
 .debug-options {
   margin: var(--space-5) 0 0 0;
   font-size: 0.9em;

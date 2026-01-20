@@ -16,6 +16,11 @@ function resetDebugFlag() {
 
 chrome.runtime.onInstalled.addListener(() => {
   resetDebugFlag();
+  chrome.storage.sync.get({ safeCapture: null }, prefs => {
+    if (prefs.safeCapture === null) {
+      chrome.storage.sync.set({ safeCapture: true });
+    }
+  });
 });
 
 chrome.runtime.onStartup.addListener(() => {

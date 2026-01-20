@@ -3,6 +3,9 @@ Project: dropdown-extractor (Chrome extension)
 Goal of this handoff:
 Give a new thread enough context (beyond code) to continue work.
 
+Git workflow:
+- Default push target is `origin/main` unless specified otherwise.
+
 Current behavior highlights:
 - Arm via extension button; click a menu option to extract items.
 - Safe capture blocks option clicks while armed, but does NOT block menu triggers

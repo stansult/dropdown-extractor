@@ -8,7 +8,7 @@ It supports many popular [types of dropboxes](#dropdown-types). Go to any websit
 
 1. Click the extension icon → extractor becomes **armed**  
 1. Open a dropdown on the page  
-1. Click one of its options
+1. Click one of its options (not needed for native `<select>` dropdowns)
 1. All dropdown items are copied to the clipboard  
 
 The extractor automatically expires after a short timeout if no dropdown items are extracted.
@@ -54,6 +54,7 @@ To open Extension Options, right-click the extension button and select Options.
 | Chosen-style | Yes |
 | GitHub SelectMenu (checkbox list) | Yes |
 | AliExpress search suggestions | Yes |
+| Google Search suggestions | Yes |
 | Canvas-rendered / virtualized | No |
 | Cross-origin iframes | No |
 

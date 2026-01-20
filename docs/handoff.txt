@@ -1,0 +1,50 @@
+Project: dropdown-extractor (Chrome extension)
+
+Goal of this handoff:
+Give a new thread enough context (beyond code) to continue work.
+
+Current behavior highlights:
+- Arm via extension button; click a menu option to extract items.
+- Safe capture blocks option clicks while armed, but does NOT block menu triggers
+  (aria-expanded/aria-haspopup), so menus can open while Safe capture is on.
+- Debug "Any two" mode: 1/2 captures trigger/container/uncategorized; 2/2 captures option.
+  Toasts include the captured type. 1/2 payload persists when 2/2 completes.
+
+Defaults + options:
+- Safe capture default is ON for new installs. Background onInstalled sets it true if unset.
+- Options page includes a "Reset to defaults" button under Safe capture.
+- Safe capture label has a tooltip explaining: clicking a menu option won’t select it.
+
+Supported dropdown types (README/test page are updated):
+- Native <select>, ARIA listbox, Selectize, React Select (incl. Atlassian variant),
+  Downshift-style, MUI Autocomplete-style, Radix menu, Ant Design Select,
+  Select2, Chosen, GitHub SelectMenu (checkbox list), AliExpress search suggestions.
+- Google search suggestions work via ARIA listbox/option.
+
+Recent fixes/features:
+- GitHub SelectMenu extraction fixed. Handler triggers only within .SelectMenu list items.
+  Non-debug now extracts checkbox text/value (e.g., "Future ideas [7075802]").
+- Generic listitem menu support added (containers with role="listitem") for popup menus
+  lacking list/listbox/menu roles; visibility uses rect + computed style (not offsetParent),
+  which fixes fixed-position popups like Quora.
+- AliExpress suggestions support added (history/discover more + productlist suggestions).
+  Uses href as value; value/data-value are ignored. Safe capture uses mousedown.
+- Safe capture blocking logic only triggers when a visible menu container exists, and avoids
+  blocking likely menu triggers.
+
+Test page:
+- Includes GitHub SelectMenu mock and AliExpress suggestions mock.
+- GitHub SelectMenu test mock toggle logic avoids double toggles on checkbox/label.
+- AliExpress test note: href is treated as value; value/data-value ignored.
+
+Notes for future work:
+- If adding a new dropdown type, prefer creating a test page mock + README entry.
+- For debugging unsupported menus, use Debug -> Any two to capture trigger/container/option.
+- Before committing, review the full diff and draft a commit message that covers all changes.
+
+Description file:
+- Source: `docs/description.txt` (short Chrome Web Store description).
+- Update it when README’s supported dropdown list or key wording changes.
+- Packaging: writes `dist/description-to-upload.txt` only if the description changed
+  since last upload (tracked in `dist/.description-last`). The file is not removed
+  automatically; delete it manually after you upload.

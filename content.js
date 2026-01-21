@@ -1260,12 +1260,19 @@
     const triggerExpanded = triggerEl && triggerEl.getAttribute && triggerEl.getAttribute('aria-expanded');
     const triggerHasPopup = triggerEl && triggerEl.getAttribute && triggerEl.getAttribute('aria-haspopup');
     const isMenuTrigger = !!(triggerExpanded || triggerHasPopup);
-    if (isMenuTrigger) return false;
+    const isSallieOption = triggerEl && triggerEl.querySelector
+      ? !!triggerEl.querySelector('input.slm-btngroup-radio')
+      : false;
+    const optionContext = getOptionContext(target);
+    if (isMenuTrigger && !isSallieOption) {
+      if (!optionContext || !optionContext.container || !isElementVisible(optionContext.container)) {
+        return false;
+      }
+    }
 
     const aliContainer = getAliExpressSuggestionContainer(target);
     if (aliContainer && isElementVisible(aliContainer)) return true;
 
-    const optionContext = getOptionContext(target);
     if (optionContext && optionContext.container && isElementVisible(optionContext.container)) {
       return true;
     }

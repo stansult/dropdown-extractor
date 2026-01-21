@@ -44,6 +44,7 @@ Notes for future work:
 - If adding a new dropdown type, prefer creating a test page mock + README entry.
 - For debugging unsupported menus, use Debug -> Any two to capture trigger/container/option.
 - Before committing, review the full diff and draft a commit message that covers all changes.
+- Safe capture regressions: use Any two on the option click to inspect DOM/ARIA; if an option is misclassified as a trigger (e.g., `aria-expanded` on the option), adjust `shouldBlockOptionClick` to treat it as an option (often via a distinctive child selector).
 
 Description file:
 - Source: `docs/description.txt` (short Chrome Web Store description).

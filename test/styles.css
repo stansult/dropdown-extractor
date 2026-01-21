@@ -121,6 +121,11 @@ p {
   text-align: left;
 }
 
+.dropdown-type-name {
+  font-weight: 600;
+  color: #1f4d7a;
+}
+
 .dropdown-panel #dropdown {
   text-align: left;
 }
@@ -197,6 +202,23 @@ p {
 }
 
 .slm-dropdown-modal [role="button"]:hover {
+  background: #eef4ff;
+}
+
+.dropbox-menu {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.dropbox-menuitem {
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.dropbox-menuitem:hover,
+.dropbox-menuitem.selected {
   background: #eef4ff;
 }
 

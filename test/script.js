@@ -14,12 +14,14 @@ const dropdownContainer = document.getElementById('dropdown');
 const dropdownType = document.getElementById('dropdown-type');
 const dropdownPanel = document.querySelector('.dropdown-panel');
 const valueModeSelect = document.getElementById('value-mode');
-const nativeNote = document.getElementById('note-native');
-const libsNote = document.getElementById('note-libs');
-const radixNote = document.getElementById('note-radix');
-const muiNote = document.getElementById('note-mui');
-const ghNote = document.getElementById('note-gh');
-const aliNote = document.getElementById('note-ali');
+const noteNative = document.getElementById('note-native');
+const noteLibs = document.getElementById('note-libs');
+const noteRadixRole = document.getElementById('note-radix-role');
+const noteRadixValue = document.getElementById('note-radix-value');
+const noteDropbox = document.getElementById('note-dropbox');
+const noteMui = document.getElementById('note-mui');
+const noteGh = document.getElementById('note-gh');
+const noteAli = document.getElementById('note-ali');
 const notesTitle = document.getElementById('notes-title');
 
 let lastRenderSnapshot = null;
@@ -29,10 +31,11 @@ const supportedTypes = new Set([
   'aria',
   'selectize',
   'react',
-  'react-variant',
+  'react-atlassian',
   'downshift',
   'mui',
   'radix-menu',
+  'dropbox-menu',
   'antd',
   'select2',
   'chosen',
@@ -61,7 +64,11 @@ function updateRenderedTypeDisplay() {
   if (!lastRenderSnapshot) return;
   const label = lastRenderSnapshot.typeLabel || typeSelect.options[typeSelect.selectedIndex].textContent.trim();
   dropdownType.textContent = '';
-  dropdownType.appendChild(document.createTextNode(`Type: ${label}`));
+  dropdownType.appendChild(document.createTextNode('Type: '));
+  const name = document.createElement('span');
+  name.className = 'dropdown-type-name';
+  name.textContent = label;
+  dropdownType.appendChild(name);
   const pill = document.createElement('span');
   pill.className = `type-support ${isTypeSupported(lastRenderSnapshot.type) ? 'supported' : 'unsupported'}`;
   pill.textContent = isTypeSupported(lastRenderSnapshot.type) ? 'Supported' : 'Not supported';
@@ -69,22 +76,41 @@ function updateRenderedTypeDisplay() {
 }
 
 function updateNotesVisibility() {
-  if (!muiNote || !libsNote || !nativeNote || !radixNote || !aliNote || !ghNote) return;
-  const showNative = typeSelect.value === 'native' || (lastRenderSnapshot && lastRenderSnapshot.type === 'native');
-  const showMui = typeSelect.value === 'mui' || (lastRenderSnapshot && lastRenderSnapshot.type === 'mui');
-  const showLibs = ['antd', 'select2', 'chosen'].includes(typeSelect.value)
-    || (lastRenderSnapshot && ['antd', 'select2', 'chosen'].includes(lastRenderSnapshot.type));
-  const showRadix = typeSelect.value === 'radix-menu' || (lastRenderSnapshot && lastRenderSnapshot.type === 'radix-menu');
-  const showGh = typeSelect.value === 'github-selectmenu' || (lastRenderSnapshot && lastRenderSnapshot.type === 'github-selectmenu');
-  const showAli = typeSelect.value === 'aliexpress' || (lastRenderSnapshot && lastRenderSnapshot.type === 'aliexpress');
-  nativeNote.style.display = showNative ? 'list-item' : 'none';
-  muiNote.style.display = showMui ? 'list-item' : 'none';
-  libsNote.style.display = showLibs ? 'list-item' : 'none';
-  radixNote.style.display = showRadix ? 'list-item' : 'none';
-  ghNote.style.display = showGh ? 'list-item' : 'none';
-  aliNote.style.display = showAli ? 'list-item' : 'none';
+  const noteMap = {
+    native: [noteNative],
+    mui: [noteMui],
+    'radix-menu': [noteRadixRole, noteRadixValue],
+    'dropbox-menu': [noteDropbox],
+    'github-selectmenu': [noteGh],
+    aliexpress: [noteAli],
+    antd: [noteLibs],
+    select2: [noteLibs],
+    chosen: [noteLibs]
+  };
+
+  const visibleTypes = new Set([typeSelect.value]);
+  if (lastRenderSnapshot && lastRenderSnapshot.type) {
+    visibleTypes.add(lastRenderSnapshot.type);
+  }
+
+  const visibleNotes = new Set();
+  visibleTypes.forEach(type => {
+    (noteMap[type] || []).forEach(note => {
+      if (note) visibleNotes.add(note);
+    });
+  });
+
+  document.querySelectorAll('.notes-list .note').forEach(note => {
+    if (!note.id) {
+      note.style.display = 'list-item';
+      return;
+    }
+    note.style.display = visibleNotes.has(note) ? 'list-item' : 'none';
+  });
+
   if (itemsTable) {
-    itemsTable.classList.toggle('hide-href', !(showRadix || showAli));
+    const showHref = visibleTypes.has('radix-menu') || visibleTypes.has('aliexpress');
+    itemsTable.classList.toggle('hide-href', !showHref);
   }
   if (notesTitle) {
     const visibleNotes = document.querySelectorAll('.notes-list .note')
@@ -175,6 +201,37 @@ function createDropdownShell(selectedText) {
       menu.classList.remove('open');
     }
   });
+
+  return { shell, trigger, menu };
+}
+
+function createDropboxMenuDropdown(items, selectedText) {
+  const { shell, trigger, menu } = createDropdownShell(selectedText);
+  const list = document.createElement('div');
+  list.className = 'dropbox-menu';
+  list.setAttribute('role', 'menu');
+  list.setAttribute('aria-orientation', 'vertical');
+
+  items.forEach(item => {
+    const option = document.createElement('div');
+    option.className = 'dropbox-menuitem';
+    option.setAttribute('role', 'menuitem');
+    option.textContent = item.text;
+    applyValueTarget(option, item.value);
+    if (item.dataValue) option.dataset.value = item.dataValue;
+    list.appendChild(option);
+  });
+
+  menu.appendChild(list);
+
+  list.addEventListener('mousedown', event => {
+    const option = event.target.closest('[role="menuitem"]');
+    if (!option) return;
+    list.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+    option.classList.add('selected');
+    trigger.textContent = option.textContent.trim();
+    menu.classList.remove('open');
+  }, true);
 
   return { shell, trigger, menu };
 }
@@ -801,7 +858,7 @@ function renderDropdown() {
     return;
   }
 
-  if (type === 'react-variant') {
+  if (type === 'react-atlassian') {
     const { shell, trigger, menu } = createDropdownShell(items[0]?.text);
     const listbox = document.createElement('div');
     listbox.className = 'react-select-variant-MenuList';
@@ -907,6 +964,13 @@ function renderDropdown() {
     });
     menu.appendChild(list);
     wireSelection(menu, list, trigger);
+    dropdownContainer.appendChild(shell);
+    pulsePanel();
+    return;
+  }
+
+  if (type === 'dropbox-menu') {
+    const { shell } = createDropboxMenuDropdown(items, items[0]?.text);
     dropdownContainer.appendChild(shell);
     pulsePanel();
     return;

@@ -47,17 +47,18 @@
               <select id="type" class="type-select">
                 <option value="native">Native &lt;select&gt;</option>
                 <option value="aria">ARIA listbox</option>
-                <option value="selectize">Selectize-style</option>
-                <option value="react">React Select-style</option>
-                <option value="react-variant">React Select (Atlassian variant)</option>
-                <option value="downshift">Downshift-style</option>
-                <option value="mui">MUI Autocomplete-style</option>
-                <option value="radix-menu">Radix menu (role="menu")</option>
-                <option value="antd">Ant Design Select-style</option>
-                <option value="select2">Select2-style</option>
-                <option value="chosen">Chosen-style</option>
-                <option value="slm-modal">Sallie Mae modal-style</option>
-                <option value="github-selectmenu">GitHub SelectMenu (checkbox list)</option>
+                <option value="selectize">Selectize</option>
+                <option value="react">React Select</option>
+                <option value="react-atlassian">React Select (Atlassian)</option>
+                <option value="downshift">Downshift</option>
+                <option value="mui">MUI Autocomplete</option>
+                <option value="radix-menu">Radix menu</option>
+                <option value="dropbox-menu">Dropbox-style menu</option>
+                <option value="antd">Ant Design Select</option>
+                <option value="select2">Select2</option>
+                <option value="chosen">Chosen</option>
+                <option value="slm-modal">Sallie Mae modal</option>
+                <option value="github-selectmenu">GitHub SelectMenu</option>
                 <option value="aliexpress">AliExpress search suggestions</option>
               </select>
             </div>
@@ -87,7 +88,9 @@
           <li class="note">Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom or virtualized menus may not be detectable.</li>
           <li id="note-native" class="note">Safe capture doesn’t apply to native &lt;select&gt; dropdowns.</li>
           <li id="note-libs" class="note">AntD/Select2/Chosen support depends on default DOM structure; customized themes may not be detectable.</li>
-          <li id="note-radix" class="note">Radix menus often omit value/data-value; use href to test value extraction.</li>
+          <li id="note-radix-role" class="note">Radix menus are detected via role="menu".</li>
+          <li id="note-radix-value" class="note">Radix menu items often omit value/data-value; use href to test value extraction.</li>
+          <li id="note-dropbox" class="note">Dropbox-style menus close on mousedown; Safe capture should keep them open.</li>
           <li id="note-gh" class="note">GitHub SelectMenu items use checkbox values for value extraction.</li>
           <li id="note-ali" class="note">AliExpress suggestions use href as value; value/data-value are ignored.</li>
           <li id="note-mui" class="note">MUI options don’t expose value properties on DOM nodes; use data-value for testing.</li>

@@ -1270,6 +1270,13 @@
       }
     }
 
+    const menuItem = target && target.closest
+      ? target.closest('[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]')
+      : null;
+    if (menuItem && isElementVisible(menuItem)) {
+      return true;
+    }
+
     const aliContainer = getAliExpressSuggestionContainer(target);
     if (aliContainer && isElementVisible(aliContainer)) return true;
 
@@ -1295,9 +1302,13 @@
     extractionPending = false;
     document.removeEventListener('mousedown', onMouseDown, true);
     document.removeEventListener('pointerdown', onPointerDown, true);
+    document.removeEventListener('pointerup', onPointerUp, true);
     document.removeEventListener('mousemove', onMouseMove, true);
     document.removeEventListener('click', onClick, true);
     document.removeEventListener('mouseup', onMouseUp, true);
+    window.removeEventListener('pointerdown', onWindowPointerDown, true);
+    window.removeEventListener('mousedown', onWindowMouseDown, true);
+    window.removeEventListener('click', onWindowClick, true);
     if (window.__dropdownExtractorPageHideHandler) {
       window.removeEventListener('pagehide', window.__dropdownExtractorPageHideHandler, true);
       window.__dropdownExtractorPageHideHandler = null;
@@ -1855,10 +1866,38 @@
     }
   }
 
+  function onPointerUp(e) {
+    const prefs = window.__dropdownExtractorPrefs;
+    if (!prefs) return;
+    const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
+    const target = pathTarget || e.target;
+    if (shouldBlockOptionClick(prefs, target)) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
   function onPointerDown(e) {
     if (!window.__dropdownExtractorActive) return;
     const prefs = window.__dropdownExtractorPrefs;
-    if (!prefs || !shouldDebugAnyTwo(prefs)) return;
+    if (!prefs) return;
+    if (prefs.safeCapture && !prefs.debugMode) {
+      const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
+      const rawTarget = pathTarget || e.target;
+      const menuItem = rawTarget && rawTarget.closest
+        ? rawTarget.closest('[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]')
+        : null;
+      if (menuItem && shouldBlockOptionClick(prefs, menuItem)) {
+        deferCleanup = true;
+        e.preventDefault();
+        e.stopPropagation();
+        e._dropdownExtractorTarget = menuItem;
+        handleSupportedClick(e, prefs);
+        skipMouseDown = true;
+        return;
+      }
+    }
+    if (!shouldDebugAnyTwo(prefs)) return;
     if (window.__dropdownExtractorDebugBlocks?.length !== 1) return;
     const path = e.composedPath ? e.composedPath() : [];
     const storedContainer = window.__dropdownExtractorDebugContainer;
@@ -1887,11 +1926,73 @@
     }
   }
 
+  function handlePreemptiveMenuBlock(e, menuItem, prefs) {
+    if (!menuItem || !shouldBlockOptionClick(prefs, menuItem)) return false;
+    deferCleanup = true;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    e.stopPropagation();
+    e._dropdownExtractorTarget = menuItem;
+    window.__dropdownExtractorLastPointer = { x: e.clientX, y: e.clientY };
+    if (shouldDebugAnyTwo(prefs)) {
+      if (prefs.safeCapture) {
+        window.__dropdownExtractorDebugSuppressClick = true;
+      }
+      if (captureDebugElement(menuItem)) {
+        skipMouseDown = true;
+        return true;
+      }
+    }
+    handleSupportedClick(e, prefs);
+    skipMouseDown = true;
+    return true;
+  }
+
+  function onWindowPointerDown(e) {
+    if (!window.__dropdownExtractorActive) return;
+    const prefs = window.__dropdownExtractorPrefs;
+    if (!prefs || !prefs.safeCapture) return;
+    const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
+    const rawTarget = pathTarget || e.target;
+    const menuItem = rawTarget && rawTarget.closest
+      ? rawTarget.closest('[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]')
+      : null;
+    handlePreemptiveMenuBlock(e, menuItem, prefs);
+  }
+
+  function onWindowMouseDown(e) {
+    if (!window.__dropdownExtractorActive) return;
+    const prefs = window.__dropdownExtractorPrefs;
+    if (!prefs || !prefs.safeCapture) return;
+    const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
+    const rawTarget = pathTarget || e.target;
+    const menuItem = rawTarget && rawTarget.closest
+      ? rawTarget.closest('[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]')
+      : null;
+    handlePreemptiveMenuBlock(e, menuItem, prefs);
+  }
+
+  function onWindowClick(e) {
+    if (!window.__dropdownExtractorActive) return;
+    const prefs = window.__dropdownExtractorPrefs;
+    if (!prefs || !prefs.safeCapture) return;
+    const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
+    const rawTarget = pathTarget || e.target;
+    const menuItem = rawTarget && rawTarget.closest
+      ? rawTarget.closest('[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]')
+      : null;
+    handlePreemptiveMenuBlock(e, menuItem, prefs);
+  }
+
   document.addEventListener('mousedown', onMouseDown, true);
   document.addEventListener('pointerdown', onPointerDown, true);
+  document.addEventListener('pointerup', onPointerUp, true);
   document.addEventListener('mousemove', onMouseMove, true);
   document.addEventListener('click', onClick, true);
   document.addEventListener('mouseup', onMouseUp, true);
+  window.addEventListener('pointerdown', onWindowPointerDown, true);
+  window.addEventListener('mousedown', onWindowMouseDown, true);
+  window.addEventListener('click', onWindowClick, true);
 
   showArmedToast();
   notifyBackground('armed');

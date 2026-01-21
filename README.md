@@ -45,14 +45,15 @@ To open Extension Options, right-click the extension button and select Options.
 | ARIA listbox (`role="listbox"`) | Yes |
 | Selectize | Yes |
 | React Select | Yes |
-| React Select (Atlassian variant) | Yes |
-| Downshift-style | Yes |
-| MUI Autocomplete-style | Yes |
-| Radix menu (role="menu") | Yes |
-| Ant Design Select-style | Yes |
-| Select2-style | Yes |
-| Chosen-style | Yes |
-| GitHub SelectMenu (checkbox list) | Yes |
+| React Select (Atlassian) | Yes |
+| Downshift | Yes |
+| MUI Autocomplete | Yes |
+| Radix menu | Yes |
+| Dropbox-style menu | Yes |
+| Ant Design Select | Yes |
+| Select2 | Yes |
+| Chosen | Yes |
+| GitHub SelectMenu | Yes |
 | AliExpress search suggestions | Yes |
 | Google Search suggestions | Yes |
 | Canvas-rendered / virtualized | No |
@@ -63,13 +64,14 @@ To open Extension Options, right-click the extension button and select Options.
 - Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom implementations, virtualized or canvas-rendered menus, Shadow DOM, or cross-origin iframes may not be detectable.
   - includes support for Google Search suggestions
 - AntD/Select2/Chosen support depends on their default DOM structure; customized themes may not be detectable.
-- Radix menus often omit value/data-value; href is used as a fallback value when present.
+- Radix menus are detected via role="menu".
+- Radix menu items often omit value/data-value; href is used as a fallback value when present.
+- Dropbox-style menus can close on mousedown; Safe capture keeps them open while extracting.
 - GitHub SelectMenu items use checkbox values as the extracted value.
 - AliExpress search suggestions use href as value; value/data-value are ignored.
 - MUI options don’t expose value properties on DOM nodes; use data-value if available.
 - Safe capture does not apply to native `<select>` dropdowns.
 - Right-click (context menu) cannot be used with Selectize dropdowns because they close immediately on right-mouse events. That’s why right-click wasn’t implemented.
-- Cross-origin iframes cannot be accessed.
 
 
 ## How to Install

@@ -27,14 +27,15 @@ Supported dropdown types:
 – ARIA listbox (role="listbox")
 – Selectize
 – React Select
-– React Select (Atlassian variant)
-– Downshift-style
-– MUI Autocomplete-style
-– Radix menu (role="menu")
-– Ant Design Select-style
-– Select2-style
-– Chosen-style
-– GitHub SelectMenu (checkbox list)
+– React Select (Atlassian)
+– Downshift
+– MUI Autocomplete
+– Radix menu
+– Dropbox-style menu
+– Ant Design Select
+– Select2
+– Chosen
+– GitHub SelectMenu
 – AliExpress search suggestions
 – Google Search suggestions
 

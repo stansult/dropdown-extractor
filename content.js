@@ -1262,6 +1262,14 @@
     const isMenuTrigger = !!(triggerExpanded || triggerHasPopup);
     if (isMenuTrigger) return false;
 
+    const aliContainer = getAliExpressSuggestionContainer(target);
+    if (aliContainer && isElementVisible(aliContainer)) return true;
+
+    const optionContext = getOptionContext(target);
+    if (optionContext && optionContext.container && isElementVisible(optionContext.container)) {
+      return true;
+    }
+
     const menuContainer = getVisibleMenuContainer(window.__dropdownExtractorLastPointer || null);
     if (isOptionLike(target)) {
       return !!menuContainer;

@@ -32,6 +32,8 @@ p {
   cursor: pointer;
   color: #1f4d7a;
   font-weight: 600;
+  display: list-item;
+  width: fit-content;
 }
 
 .howto summary::-webkit-details-marker {

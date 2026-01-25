@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Dropdown Extractor",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Click any dropdown option to extract its list",
   "permissions": [
     "activeTab",

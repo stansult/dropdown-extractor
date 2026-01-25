@@ -442,7 +442,7 @@
   function getDebugAnyTwoFirstLabel(triggerEl, containerEl, fallbackEl) {
     if (containerEl) return 'menu container';
     if (triggerEl) return 'trigger';
-    if (fallbackEl) return 'uncategorized';
+    if (fallbackEl) return isLikelyContainer(fallbackEl) ? 'menu container' : 'uncategorized';
     return 'unknown';
   }
 
@@ -511,6 +511,8 @@
       element.closest('[role="listbox"]') ||
       element.closest('[role="menu"]') ||
       element.closest('[role="list"]') ||
+      element.closest('[role="dialog"]') ||
+      element.closest('.selectize-dropdown-content') ||
       element.closest('ul,ol')
     );
   }
@@ -521,7 +523,7 @@
     let current = optionEl.parentElement;
     let depth = 0;
     while (current && depth < 10) {
-      if (current.matches && current.matches('[role="listbox"],[role="menu"],[role="list"],ul,ol')) {
+      if (current.matches && current.matches('[role="listbox"],[role="menu"],[role="list"],[role="dialog"],.selectize-dropdown-content,ul,ol')) {
         return current;
       }
       if (classSelector) {
@@ -536,7 +538,7 @@
 
   function isLikelyContainer(element) {
     if (!element || !element.matches) return false;
-    if (element.matches('[role="listbox"],[role="menu"],[role="list"],ul,ol')) return true;
+    if (element.matches('[role="listbox"],[role="menu"],[role="list"],[role="dialog"],.selectize-dropdown-content,ul,ol')) return true;
     const option = element.querySelector(OPTION_LIKE_SELECTOR);
     if (!option) return false;
     const classSelector = getStableClassSelector(getElementClassName(option));
@@ -545,7 +547,10 @@
   }
 
   function getVisibleMenuContainer(point = null) {
-    const candidates = [...document.querySelectorAll('[role="menu"], [role="listbox"], [role="list"]')]
+    const candidates = [
+      ...document.querySelectorAll('[role="menu"], [role="listbox"], [role="list"], [role="dialog"]'),
+      ...document.querySelectorAll('.selectize-dropdown-content')
+    ]
       .filter(el => el && el.offsetParent !== null);
     if (!candidates.length) return null;
 
@@ -1832,12 +1837,7 @@
         return;
       }
       if (shouldDebugAnyTwo(prefs) && isMenuTriggerLike(target)) {
-        const debugBlocks = window.__dropdownExtractorDebugBlocks || [];
-        if (prefs.safeCapture && debugBlocks.length === 0) {
-          return;
-        }
-        captureDebugElement(target);
-        skipMouseDown = true;
+        window.__dropdownExtractorDebugTrigger = target;
         return;
       }
       const debugBlocks = window.__dropdownExtractorDebugBlocks || [];
@@ -1927,7 +1927,7 @@
         if (pendingSafeCleanup) cleanup(true);
       }
       const debugBlocks = window.__dropdownExtractorDebugBlocks || [];
-      if (prefs.safeCapture && debugBlocks.length === 0 && !window.__dropdownExtractorDebugJustCompleted) {
+      if (debugBlocks.length === 0 && !window.__dropdownExtractorDebugJustCompleted) {
         const point = { x: e.clientX, y: e.clientY };
         const triggerTarget = e._dropdownExtractorTarget || e.target;
         scheduleAnyTwoFirstCapture(point, triggerTarget);
@@ -1958,7 +1958,7 @@
       const startTime = Date.now();
       const findVisibleNestedMenu = menuRoot => {
         if (!menuRoot || !menuRoot.querySelectorAll) return null;
-        const nested = [...menuRoot.querySelectorAll('[role="menu"], [role="listbox"], [role="list"]')]
+        const nested = [...menuRoot.querySelectorAll('[role="menu"], [role="listbox"], [role="list"], [role="dialog"]')]
           .filter(el => el !== menuRoot && isElementVisible(el));
         return nested.find(el =>
           [...el.querySelectorAll(OPTION_LIKE_SELECTOR)].some(opt => opt && opt.offsetParent !== null)
@@ -1968,7 +1968,7 @@
         if (window.__dropdownExtractorDebugBlocks?.length) return;
         const menu =
           getVisibleMenuContainer(point) ||
-          getVisibleDropdownContainer('[role="menu"], [role="listbox"], [role="list"]', triggerTarget);
+          getVisibleDropdownContainer('[role="menu"], [role="listbox"], [role="list"], [role="dialog"]', triggerTarget);
         const hasVisibleOption = menu
           ? [...menu.querySelectorAll(OPTION_LIKE_SELECTOR)].some(el => el && el.offsetParent !== null)
           : false;
@@ -1992,7 +1992,7 @@
     if (!prefs) return;
     if (shouldDebugAnyTwo(prefs)) {
       const debugBlocks = window.__dropdownExtractorDebugBlocks || [];
-      if (prefs.safeCapture && debugBlocks.length === 0) {
+      if (debugBlocks.length === 0) {
         const point = { x: e.clientX, y: e.clientY };
         const triggerTarget = e._dropdownExtractorTarget || e.target;
         scheduleAnyTwoFirstCapture(point, triggerTarget);

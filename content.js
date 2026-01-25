@@ -478,6 +478,11 @@
     window.__dropdownExtractorDebugTrigger = null;
     window.__dropdownExtractorDebugOptionCandidate = null;
     window.__dropdownExtractorDebugSuppressClick = false;
+    window.__dropdownExtractorDebugPendingTrigger = null;
+    if (window.__dropdownExtractorDebugPendingTriggerTimer) {
+      clearTimeout(window.__dropdownExtractorDebugPendingTriggerTimer);
+      window.__dropdownExtractorDebugPendingTriggerTimer = null;
+    }
     if (window.__dropdownExtractorDebugCleanupTimer) {
       clearTimeout(window.__dropdownExtractorDebugCleanupTimer);
       window.__dropdownExtractorDebugCleanupTimer = null;
@@ -604,6 +609,10 @@
   function finalizeDebugCapture() {
     const prefs = window.__dropdownExtractorPrefs;
     if (prefs && prefs.safeCapture && prefs.debugMode && prefs.debugModeTarget === 'any-two') {
+      window.__dropdownExtractorDebugJustCompleted = true;
+      window.setTimeout(() => {
+        window.__dropdownExtractorDebugJustCompleted = false;
+      }, 200);
       deferCleanup = true;
       pendingSafeCleanup = true;
       window.__dropdownExtractorDebugSuppressClick = true;
@@ -655,6 +664,13 @@
       const isTriggerButton = element.matches('button,[role="button"]');
       const isTriggerLike = isTriggerButton || !!getMenuContainerFromTrigger(element);
       if (isTriggerLike) {
+        if (window.__dropdownExtractorDebugPendingTrigger) {
+          window.__dropdownExtractorDebugPendingTrigger = null;
+          if (window.__dropdownExtractorDebugPendingTriggerTimer) {
+            clearTimeout(window.__dropdownExtractorDebugPendingTriggerTimer);
+            window.__dropdownExtractorDebugPendingTriggerTimer = null;
+          }
+        }
         const point = window.__dropdownExtractorLastPointer || null;
         const triggerContainer = getMenuContainerFromTrigger(element);
         const openMenu = getVisibleDropdownContainer('[role="menu"], [role="listbox"], [role="list"]', element)
@@ -680,6 +696,13 @@
           }));
           return true;
         } else if (!window.__dropdownExtractorDebugPendingTimeout) {
+          if (window.__dropdownExtractorDebugPendingTrigger) {
+            window.__dropdownExtractorDebugPendingTrigger = null;
+            if (window.__dropdownExtractorDebugPendingTriggerTimer) {
+              clearTimeout(window.__dropdownExtractorDebugPendingTriggerTimer);
+              window.__dropdownExtractorDebugPendingTriggerTimer = null;
+            }
+          }
           const triggerFallback = element;
           window.__dropdownExtractorDebugPendingTimeout = setTimeout(() => {
             if (window.__dropdownExtractorDebugBlocks && window.__dropdownExtractorDebugBlocks.length) return;
@@ -1254,6 +1277,7 @@
   function shouldBlockOptionClick(prefs, target) {
     if (!prefs || !prefs.safeCapture) return false;
     if (target && target.closest && target.closest('select')) return false;
+    if (isMenuTriggerLike(target)) return false;
     const triggerEl = target && target.closest
       ? target.closest('button,[role="button"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]')
       : null;
@@ -1291,6 +1315,36 @@
     return !!(menuContainer && menuContainer.contains(target));
   }
 
+  function isMenuTriggerLike(target) {
+    if (!target || !target.closest) return false;
+    const trigger = target.closest('button,[role="button"],[role="combobox"]');
+    if (trigger) {
+      const expanded = trigger.getAttribute('aria-expanded');
+      const hasPopup = trigger.getAttribute('aria-haspopup');
+      if (expanded !== null || hasPopup) return true;
+    }
+    const triggerContainer = target.closest('[role="menu"],[role="listbox"],[role="list"]');
+    if (triggerContainer) {
+      const triggerButton = triggerContainer.querySelector(
+        'button[aria-haspopup],button[aria-expanded],[role="button"][aria-haspopup],[role="button"][aria-expanded]'
+      );
+      const nestedMenu = Array.from(
+        triggerContainer.querySelectorAll('[role="menu"],[role="listbox"],[role="list"]')
+      ).find(el => el !== triggerContainer);
+      if (triggerButton && nestedMenu && !isElementVisible(nestedMenu)) {
+        return true;
+      }
+    }
+    const menuItem = target.closest('[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]');
+    if (!menuItem) return false;
+    const nestedMenu = menuItem.querySelector('[role="menu"],[role="listbox"],[role="list"]');
+    if (nestedMenu) return true;
+    const nestedTrigger = menuItem.querySelector(
+      'button[aria-haspopup],button[aria-expanded],[role="button"][aria-haspopup],[role="button"][aria-expanded]'
+    );
+    return !!nestedTrigger;
+  }
+
   function cleanup(force = false) {
     if (!force && deferCleanup) {
       pendingSafeCleanup = true;
@@ -1300,6 +1354,10 @@
     deferCleanup = false;
     pendingSafeCleanup = false;
     extractionPending = false;
+    if (window.__dropdownExtractorSafeCleanupTimer) {
+      clearTimeout(window.__dropdownExtractorSafeCleanupTimer);
+      window.__dropdownExtractorSafeCleanupTimer = null;
+    }
     document.removeEventListener('mousedown', onMouseDown, true);
     document.removeEventListener('pointerdown', onPointerDown, true);
     document.removeEventListener('pointerup', onPointerUp, true);
@@ -1770,7 +1828,22 @@
     const prefs = window.__dropdownExtractorPrefs;
     if (prefs) {
       e._dropdownExtractorTarget = target;
-      if (shouldBlockOptionClick(prefs, target)) {
+      if (isMenuTriggerLike(target) && !shouldDebugAnyTwo(prefs)) {
+        return;
+      }
+      if (shouldDebugAnyTwo(prefs) && isMenuTriggerLike(target)) {
+        const debugBlocks = window.__dropdownExtractorDebugBlocks || [];
+        if (prefs.safeCapture && debugBlocks.length === 0) {
+          return;
+        }
+        captureDebugElement(target);
+        skipMouseDown = true;
+        return;
+      }
+      const debugBlocks = window.__dropdownExtractorDebugBlocks || [];
+      if (shouldDebugAnyTwo(prefs) && debugBlocks.length === 0) {
+        // Allow 1/2 to open the menu even if it looks option-like.
+      } else if (shouldBlockOptionClick(prefs, target)) {
         deferCleanup = true;
         e.preventDefault();
         e.stopPropagation();
@@ -1781,6 +1854,10 @@
       }
       if (shouldDebugAnyTwo(prefs)) {
         const debugTarget = document.elementFromPoint(e.clientX, e.clientY) || target;
+        const debugBlocks = window.__dropdownExtractorDebugBlocks || [];
+        if (prefs.safeCapture && debugBlocks.length === 0) {
+          return;
+        }
         if (
           prefs.safeCapture
           && window.__dropdownExtractorDebugBlocks?.length === 1
@@ -1791,8 +1868,9 @@
           e.stopPropagation();
           window.__dropdownExtractorDebugSuppressClick = true;
         }
-      if (captureDebugElement(debugTarget)) return;
-    }
+        captureDebugElement(debugTarget);
+        return;
+      }
       handleSupportedClick(e, prefs);
       return;
     }
@@ -1807,6 +1885,10 @@
       }
       if (shouldDebugAnyTwo(loadedPrefs)) {
         const debugTarget = document.elementFromPoint(e.clientX, e.clientY) || target;
+        const debugBlocks = window.__dropdownExtractorDebugBlocks || [];
+        if (loadedPrefs.safeCapture && debugBlocks.length === 0) {
+          return;
+        }
         if (
           loadedPrefs.safeCapture
           && window.__dropdownExtractorDebugBlocks?.length === 1
@@ -1817,8 +1899,9 @@
           e.stopPropagation();
           window.__dropdownExtractorDebugSuppressClick = true;
         }
-      if (captureDebugElement(debugTarget)) return;
-    }
+        captureDebugElement(debugTarget);
+        return;
+      }
       handleSupportedClick(e, loadedPrefs);
     });
   }
@@ -1836,6 +1919,21 @@
   function onClick(e) {
     const prefs = window.__dropdownExtractorPrefs;
     if (!prefs) return;
+    if (shouldDebugAnyTwo(prefs)) {
+      if (window.__dropdownExtractorDebugSuppressClick) {
+        window.__dropdownExtractorDebugSuppressClick = false;
+        e.preventDefault();
+        e.stopPropagation();
+        if (pendingSafeCleanup) cleanup(true);
+      }
+      const debugBlocks = window.__dropdownExtractorDebugBlocks || [];
+      if (prefs.safeCapture && debugBlocks.length === 0 && !window.__dropdownExtractorDebugJustCompleted) {
+        const point = { x: e.clientX, y: e.clientY };
+        const triggerTarget = e._dropdownExtractorTarget || e.target;
+        scheduleAnyTwoFirstCapture(point, triggerTarget);
+      }
+      return;
+    }
     const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
     const rawTarget = pathTarget || e.target;
     let target = rawTarget;
@@ -1846,18 +1944,61 @@
       e.preventDefault();
       e.stopPropagation();
       if (pendingSafeCleanup) cleanup(true);
+      return;
     }
-    if (shouldDebugAnyTwo(prefs) && window.__dropdownExtractorDebugSuppressClick) {
-      window.__dropdownExtractorDebugSuppressClick = false;
-      e.preventDefault();
-      e.stopPropagation();
-      if (pendingSafeCleanup) cleanup(true);
-    }
+    if (pendingSafeCleanup) cleanup(true);
+  }
+
+  function scheduleAnyTwoFirstCapture(point, triggerTarget) {
+    if (window.__dropdownExtractorDebugDeferredCapture) return;
+    window.__dropdownExtractorDebugDeferredCapture = true;
+    window.setTimeout(() => {
+      window.__dropdownExtractorDebugDeferredCapture = false;
+      if (window.__dropdownExtractorDebugBlocks?.length) return;
+      const startTime = Date.now();
+      const findVisibleNestedMenu = menuRoot => {
+        if (!menuRoot || !menuRoot.querySelectorAll) return null;
+        const nested = [...menuRoot.querySelectorAll('[role="menu"], [role="listbox"], [role="list"]')]
+          .filter(el => el !== menuRoot && isElementVisible(el));
+        return nested.find(el =>
+          [...el.querySelectorAll(OPTION_LIKE_SELECTOR)].some(opt => opt && opt.offsetParent !== null)
+        ) || null;
+      };
+      const pollForMenu = () => {
+        if (window.__dropdownExtractorDebugBlocks?.length) return;
+        const menu =
+          getVisibleMenuContainer(point) ||
+          getVisibleDropdownContainer('[role="menu"], [role="listbox"], [role="list"]', triggerTarget);
+        const hasVisibleOption = menu
+          ? [...menu.querySelectorAll(OPTION_LIKE_SELECTOR)].some(el => el && el.offsetParent !== null)
+          : false;
+        if (menu && hasVisibleOption) {
+          const candidateMenu = findVisibleNestedMenu(menu) || menu;
+          if (captureDebugElement(candidateMenu)) return;
+          return;
+        }
+        if (Date.now() - startTime >= 500) {
+          captureDebugElement(triggerTarget);
+          return;
+        }
+        window.__dropdownExtractorDebugPendingTriggerTimer = window.setTimeout(pollForMenu, 50);
+      };
+      pollForMenu();
+    }, 50);
   }
 
   function onMouseUp(e) {
     const prefs = window.__dropdownExtractorPrefs;
     if (!prefs) return;
+    if (shouldDebugAnyTwo(prefs)) {
+      const debugBlocks = window.__dropdownExtractorDebugBlocks || [];
+      if (prefs.safeCapture && debugBlocks.length === 0) {
+        const point = { x: e.clientX, y: e.clientY };
+        const triggerTarget = e._dropdownExtractorTarget || e.target;
+        scheduleAnyTwoFirstCapture(point, triggerTarget);
+      }
+      return;
+    }
     const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
     const target = pathTarget || e.target;
     if (shouldBlockOptionClick(prefs, target)) {
@@ -1869,6 +2010,7 @@
   function onPointerUp(e) {
     const prefs = window.__dropdownExtractorPrefs;
     if (!prefs) return;
+    if (shouldDebugAnyTwo(prefs)) return;
     const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
     const target = pathTarget || e.target;
     if (shouldBlockOptionClick(prefs, target)) {
@@ -1915,7 +2057,31 @@
     const target = pathOption || document.elementFromPoint(e.clientX, e.clientY) || e.target;
     if (target && target.closest && target.closest(`.${TOAST_CLASS}`)) return;
     window.__dropdownExtractorLastPointer = { x: e.clientX, y: e.clientY };
+    const debugBlocks = window.__dropdownExtractorDebugBlocks || [];
+    if (prefs.safeCapture && debugBlocks.length === 0) {
+      return;
+    }
+    if (prefs.safeCapture && isMenuTriggerLike(target)) {
+      if (captureDebugElement(target)) {
+        skipMouseDown = true;
+      }
+      return;
+    }
+    if (prefs.safeCapture && debugBlocks.length === 0) {
+      captureDebugElement(target);
+      return;
+    }
     if (prefs.safeCapture) {
+      const optionContext = getOptionContext(target);
+      const visibleContainer = optionContext && optionContext.container && isElementVisible(optionContext.container)
+        ? optionContext.container
+        : getVisibleMenuContainer(window.__dropdownExtractorLastPointer || null);
+      const isOptionTarget = isOptionLike(target) || !!(visibleContainer && visibleContainer.contains(target));
+      if (!isOptionTarget) {
+        captureDebugElement(target);
+        return;
+      }
+      // Only block on option capture; allow trigger/menu open on 1/2.
       deferCleanup = true;
       e.preventDefault();
       e.stopPropagation();
@@ -1951,7 +2117,7 @@
   function onWindowPointerDown(e) {
     if (!window.__dropdownExtractorActive) return;
     const prefs = window.__dropdownExtractorPrefs;
-    if (!prefs || !prefs.safeCapture) return;
+    if (!prefs || !prefs.safeCapture || shouldDebugAnyTwo(prefs)) return;
     const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
     const rawTarget = pathTarget || e.target;
     const menuItem = rawTarget && rawTarget.closest
@@ -1963,7 +2129,7 @@
   function onWindowMouseDown(e) {
     if (!window.__dropdownExtractorActive) return;
     const prefs = window.__dropdownExtractorPrefs;
-    if (!prefs || !prefs.safeCapture) return;
+    if (!prefs || !prefs.safeCapture || shouldDebugAnyTwo(prefs)) return;
     const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
     const rawTarget = pathTarget || e.target;
     const menuItem = rawTarget && rawTarget.closest
@@ -1975,7 +2141,7 @@
   function onWindowClick(e) {
     if (!window.__dropdownExtractorActive) return;
     const prefs = window.__dropdownExtractorPrefs;
-    if (!prefs || !prefs.safeCapture) return;
+    if (!prefs || !prefs.safeCapture || shouldDebugAnyTwo(prefs)) return;
     const pathTarget = e.composedPath ? e.composedPath().find(el => el && el.nodeType === Node.ELEMENT_NODE) : null;
     const rawTarget = pathTarget || e.target;
     const menuItem = rawTarget && rawTarget.closest

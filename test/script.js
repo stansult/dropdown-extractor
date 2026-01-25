@@ -22,6 +22,7 @@ const noteDropbox = document.getElementById('note-dropbox');
 const noteMui = document.getElementById('note-mui');
 const noteGh = document.getElementById('note-gh');
 const noteAli = document.getElementById('note-ali');
+const noteExpedia = document.getElementById('note-expedia');
 const notesTitle = document.getElementById('notes-title');
 
 let lastRenderSnapshot = null;
@@ -41,7 +42,8 @@ const supportedTypes = new Set([
   'chosen',
   'slm-modal',
   'github-selectmenu',
-  'aliexpress'
+  'aliexpress',
+  'expedia'
 ]);
 
 function isTypeSupported(type) {
@@ -83,6 +85,7 @@ function updateNotesVisibility() {
     'dropbox-menu': [noteDropbox],
     'github-selectmenu': [noteGh],
     aliexpress: [noteAli],
+    expedia: [noteExpedia],
     antd: [noteLibs],
     select2: [noteLibs],
     chosen: [noteLibs]
@@ -404,6 +407,35 @@ function createAliExpressSearchDropdown(items, selectedText) {
   return { shell };
 }
 
+function createExpediaSearchDropdown(items, selectedText) {
+  const { shell, trigger, menu } = createDropdownShell(selectedText || 'Where to?');
+  trigger.setAttribute('data-stid', 'destination_form_field-menu-trigger');
+
+  const list = document.createElement('ul');
+  list.className = 'uitk-action-list';
+  list.setAttribute('role', 'list');
+
+  items.forEach(item => {
+    const entry = document.createElement('li');
+    entry.className = 'uitk-action-list-item';
+    entry.setAttribute('data-stid', 'destination_form_field-result-item');
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'uitk-action-list-item-link';
+    button.setAttribute('data-stid', 'destination_form_field-result-item-button');
+    button.setAttribute('aria-label', item.text || '');
+    button.textContent = item.text || '';
+
+    entry.appendChild(button);
+    list.appendChild(entry);
+  });
+
+  menu.appendChild(list);
+  wireSelection(menu, list, trigger);
+  return { shell };
+}
+
 function createGitHubSelectMenuDropdown(items) {
   const shell = document.createElement('div');
   shell.className = 'gh-selectmenu';
@@ -500,7 +532,7 @@ function createGitHubSelectMenuDropdown(items) {
 
 function wireSelection(menuWrapper, listEl, trigger) {
   listEl.addEventListener('click', (event) => {
-    const option = event.target.closest('[role="option"], [role="listitem"], [role="menuitem"], .option, .react-select__option, .react-select-variant-option, .mui-option, .ant-option, .select2-results__option, .chosen-option, .downshift-option, .mock-option, .radix-menuitem');
+    const option = event.target.closest('[role="option"], [role="listitem"], [role="menuitem"], .option, .react-select__option, .react-select-variant-option, .mui-option, .ant-option, .select2-results__option, .chosen-option, .downshift-option, .mock-option, .radix-menuitem, .uitk-action-list-item-link');
     if (!option) return;
     listEl.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
     option.classList.add('selected');
@@ -1016,6 +1048,13 @@ function renderDropdown() {
 
   if (type === 'aliexpress') {
     const { shell } = createAliExpressSearchDropdown(items, items[0]?.text);
+    dropdownContainer.appendChild(shell);
+    pulsePanel();
+    return;
+  }
+
+  if (type === 'expedia') {
+    const { shell } = createExpediaSearchDropdown(items, items[0]?.text);
     dropdownContainer.appendChild(shell);
     pulsePanel();
     return;

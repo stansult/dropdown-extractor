@@ -698,7 +698,8 @@ button.changed:focus-visible {
 .ant-select-dropdown,
 .select2-results__options,
 .chosen-results,
-.downshift-listbox {
+.downshift-listbox,
+.uitk-action-list {
   border: 1px solid #bbb;
   border-radius: 6px;
   padding: 6px;
@@ -713,7 +714,8 @@ button.changed:focus-visible {
 
 .select2-results__options,
 .chosen-results,
-.downshift-listbox {
+.downshift-listbox,
+.uitk-action-list {
   list-style: none;
   margin: 0;
 }
@@ -726,7 +728,8 @@ button.changed:focus-visible {
 .ant-option,
 .select2-results__option,
 .chosen-option,
-.downshift-option {
+.downshift-option,
+.uitk-action-list-item-link {
   padding: 6px 8px;
   border-radius: 4px;
   cursor: pointer;
@@ -739,6 +742,16 @@ button.changed:focus-visible {
 .ant-option:hover,
 .select2-results__option:hover,
 .chosen-option:hover,
-.downshift-option:hover {
+.downshift-option:hover,
+.uitk-action-list-item-link:hover {
   background: #f2f2f2;
+}
+
+.uitk-action-list-item-link {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  width: 100%;
 }

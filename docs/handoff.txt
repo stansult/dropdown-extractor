@@ -12,6 +12,10 @@ Current behavior highlights:
   (aria-expanded/aria-haspopup), so menus can open while Safe capture is on.
 - Debug "Any two" mode: 1/2 captures trigger/container/uncategorized; 2/2 captures option.
   Toasts include the captured type. 1/2 payload persists when 2/2 completes.
+- Any-two approach: the trigger click is only used to locate the menu. It waits briefly
+  for a visible container and captures that as 1/2, then captures the clicked option as 2/2.
+  Containers include role="menu"/"listbox"/"list"/"dialog" and Selectize
+  `.selectize-dropdown-content`; labels use the same container logic (isLikelyContainer).
 
 Defaults + options:
 - Safe capture default is ON for new installs. Background onInstalled sets it true if unset.

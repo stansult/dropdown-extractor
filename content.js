@@ -1097,6 +1097,7 @@
     '[role="menuitem"]',
     '[role^="menuitem"]',
     '.menuitem',
+    '.uitk-action-list-item-link',
     '[id^="react-select-"][id*="-option-"]'
   ].join(',');
 
@@ -1133,6 +1134,14 @@
     if (!buttonEl) return null;
     const container = findDebugContainer(buttonEl);
     if (container && container.contains(buttonEl) && container.offsetParent !== null) {
+      const containerRole = container.getAttribute && container.getAttribute('role');
+      const isDialogContainer = containerRole === 'dialog';
+      const isExplicitOption = buttonEl.matches(OPTION_LIKE_SELECTOR)
+        || !!buttonEl.closest('[role="list"],[role="listbox"],[role="menu"]')
+        || buttonEl.hasAttribute('data-stid');
+      if (isDialogContainer && !isExplicitOption) {
+        return null;
+      }
       return { option: buttonEl, container };
     }
     return null;
@@ -1316,6 +1325,9 @@
     const menuContainer = getVisibleMenuContainer(window.__dropdownExtractorLastPointer || null);
     if (isOptionLike(target)) {
       return !!menuContainer;
+    }
+    if (menuContainer && menuContainer.getAttribute('role') === 'dialog') {
+      return false;
     }
     return !!(menuContainer && menuContainer.contains(target));
   }
@@ -1544,6 +1556,38 @@
 
       if (items.length) {
         completeExtraction(items, note, aliSuggestions, prefs);
+        return;
+      }
+
+      showErrorToast(error || NO_ITEMS_FOUND_TEXT);
+      cleanup();
+      return;
+    }
+
+    // --- 4) Expedia destination suggestions ---
+    const expediaList = getVisibleDropdownContainer('ul.uitk-action-list[role="list"]', target);
+    if (expediaList && expediaList.contains(target)) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (shouldDebugSupported(prefs) && copyDebugHtml(expediaList, 'supported dropdown')) return;
+      const options = [
+        ...expediaList.querySelectorAll('button[data-stid="destination_form_field-result-item-button"]')
+      ];
+      const textGetter = o => o.getAttribute('aria-label') || getOptionLabelText(o);
+      const valueGetters = (prefs.extractText && prefs.extractValue)
+        ? [
+          o => o.value || o.getAttribute('value'),
+          o => o.dataset.value
+        ]
+        : [
+          o => o.getAttribute('aria-label') || getOptionLabelText(o)
+        ];
+      const fields = resolveFields(options, textGetter, valueGetters);
+      const { items, note, error } = buildOutput(fields, prefs);
+
+      if (items.length) {
+        completeExtraction(items, note, expediaList, prefs);
         return;
       }
 

@@ -56,6 +56,7 @@ To open Extension Options, right-click the extension button and select Options.
 | GitHub SelectMenu | Yes |
 | AliExpress search suggestions | Yes |
 | Google Search suggestions | Yes |
+| Expedia search suggestions | Yes |
 | Canvas-rendered / virtualized | No |
 | Cross-origin iframes | No |
 
@@ -69,6 +70,7 @@ To open Extension Options, right-click the extension button and select Options.
 - Dropbox-style menus can close on mousedown; Safe capture keeps them open while extracting.
 - GitHub SelectMenu items use checkbox values as the extracted value.
 - AliExpress search suggestions use href as value; value/data-value are ignored.
+- Expedia search suggestions expose text via aria-label; value/data-value are not provided.
 - MUI options don’t expose value properties on DOM nodes; use data-value if available.
 - Safe capture does not apply to native `<select>` dropdowns.
 - Right-click (context menu) cannot be used with Selectize dropdowns because they close immediately on right-mouse events. That’s why right-click wasn’t implemented.

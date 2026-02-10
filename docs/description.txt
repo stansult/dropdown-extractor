@@ -21,23 +21,13 @@ Safe capture
 
 If enabled in the options, Safe capture prevents option clicks from triggering actions while extracting. This lets you copy dropdown items without selecting an option. Safe capture does not apply to native <select> dropdowns.
 
-Supported dropdown types:
+Supported dropdown types (examples):
 
 – Native <select>
 – ARIA listbox (role="listbox")
-– Selectize
 – React Select
-– React Select (Atlassian)
-– Downshift
 – MUI Autocomplete
 – Radix menu
-– Dropbox-style menu
-– Ant Design Select
-– Select2
-– Chosen
-– GitHub SelectMenu
-– AliExpress search suggestions
-– Google Search suggestions
-– Expedia search suggestions
+…and many others
 
 We are constantly adding new supported types. If you found one that’s not yet supported, please let us know!

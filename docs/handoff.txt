@@ -6,6 +6,14 @@ Give a new thread enough context (beyond code) to continue work.
 Git workflow:
 - Default push target is `origin/main` unless specified otherwise.
 
+Workflow rules:
+- Don't start implementing / changing code unless you got request from me, or you suggested changes and I told you to start.
+- Keep this handoff file updated whenever process changes so a fresh thread can resume without context loss.
+- Before committing, review the full diff and draft a commit message that covers all included changes.
+- Do not commit immediately after a reported fix until key regressions are rechecked.
+- When labels/terminology change, keep docs in sync (at minimum `README.md` and `docs/description.txt`).
+- Re-read edited files after changes to confirm final file content is correct.
+
 Current behavior highlights:
 - Arm via extension button; click a menu option to extract items.
 - Safe capture blocks option clicks while armed, but does NOT block menu triggers

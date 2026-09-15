@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Bug reporting process
+    url: https://github.com/stansult/dropdown-extractor/blob/main/docs/bug-reporting.md
+    about: Read how reports are reproduced, fixed, and released.
+  - name: Dropdown Playground
+    url: https://dropdown-extractor.stansult.com
+    about: Build a safe reproduction and copy its snapshot.

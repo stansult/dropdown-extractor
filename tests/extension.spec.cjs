@@ -61,7 +61,7 @@ async function armExtension(worker, page, context) {
   } finally {
     await browserSession.detach();
   }
-  await expect(page.locator('.dropdown-extractor-toast')).toContainText('Click a dropdown');
+  await expect(page.locator('.dropdown-extractor-toast', { hasText: 'Click a dropdown' })).toBeVisible();
 }
 
 async function clipboardText(page) {
@@ -72,6 +72,16 @@ const items = [
   { text: 'Alpha', value: '101' },
   { text: 'Beta', value: '202' },
   { text: 'Gamma', value: '303' },
+];
+
+const combinedFormats = [
+  ['space', 'text-space-value', 'Alpha 101\nBeta 202\nGamma 303'],
+  ['dash', 'text-dash-value', 'Alpha - 101\nBeta - 202\nGamma - 303'],
+  ['pipe', 'text-pipe-value', 'Alpha | 101\nBeta | 202\nGamma | 303'],
+  ['tab', 'text-tab-value', 'Alpha\t101\nBeta\t202\nGamma\t303'],
+  ['line break', 'text-linebreak-value', 'Alpha\n101\nBeta\n202\nGamma\n303'],
+  ['parentheses', 'text-parens-value', 'Alpha (101)\nBeta (202)\nGamma (303)'],
+  ['brackets', 'text-brackets-value', 'Alpha [101]\nBeta [202]\nGamma [303]'],
 ];
 
 test('extracts all items from a native select', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
@@ -171,4 +181,123 @@ test('Expedia extraction prefers aria-label and handles absent values', async ({
 
   await expect.poll(() => clipboardText(page)).toBe('Alpha\nBeta\nGamma');
   await expect(page.locator('.dropdown-extractor-toast', { hasText: 'Only text extracted, no values found.' })).toBeVisible();
+});
+
+test('extracts native values without text', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+  await renderFixture(page, { type: 'native', items });
+  await setPrefs(worker, { extractText: false, extractValue: true, safeCapture: true, debugMode: false });
+  await armExtension(worker, page, context);
+  await page.locator('#dropdown select').click();
+
+  await expect.poll(() => clipboardText(page)).toBe('101\n202\n303');
+});
+
+for (const [label, format, expected] of combinedFormats) {
+  test(`formats text and values with ${label}`, async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+    await renderFixture(page, { type: 'native', items });
+    await setPrefs(worker, {
+      extractText: true,
+      extractValue: true,
+      format,
+      safeCapture: true,
+      debugMode: false,
+    });
+    await armExtension(worker, page, context);
+    await page.locator('#dropdown select').click();
+    await expect.poll(() => clipboardText(page)).toBe(expected);
+  });
+}
+
+test('reports an error when neither text nor value is selected', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+  await renderFixture(page, { type: 'native', items });
+  await page.evaluate(() => navigator.clipboard.writeText('unchanged'));
+  await setPrefs(worker, { extractText: false, extractValue: false, safeCapture: true, debugMode: false });
+  await armExtension(worker, page, context);
+  await page.locator('#dropdown select').click();
+
+  await expect(page.locator('.dropdown-extractor-toast', { hasText: 'No extract option selected.' })).toBeVisible();
+  await expect.poll(() => clipboardText(page)).toBe('unchanged');
+});
+
+test('falls back to values when item text is absent', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+  const valueOnlyItems = items.map(item => ({ text: '', value: item.value }));
+  await renderFixture(page, { type: 'native', items: valueOnlyItems });
+  await setPrefs(worker, {
+    extractText: true,
+    extractValue: true,
+    format: 'text-brackets-value',
+    safeCapture: true,
+    debugMode: false,
+  });
+  await armExtension(worker, page, context);
+  await page.locator('#dropdown select').click();
+
+  await expect.poll(() => clipboardText(page)).toBe('101\n202\n303');
+  await expect(page.locator('.dropdown-extractor-toast', { hasText: 'Only values extracted, no text found.' })).toBeVisible();
+});
+
+test('Safe Capture off allows normal ARIA selection', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+  await renderFixture(page, { type: 'aria', items });
+  await setPrefs(worker, { extractText: true, extractValue: false, safeCapture: false, debugMode: false });
+  await armExtension(worker, page, context);
+  const trigger = page.locator('#dropdown .dropdown-trigger');
+  await trigger.click();
+  await page.locator('#dropdown [role="option"]').nth(1).click();
+
+  await expect.poll(() => clipboardText(page)).toBe('Alpha\nBeta\nGamma');
+  await expect(trigger).toHaveText('Beta');
+  await expect(page.locator('#dropdown .dropdown-menu')).not.toHaveClass(/open/);
+});
+
+test('Safe Capture off allows Dropbox mousedown selection', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+  await renderFixture(page, { type: 'dropbox-menu', items });
+  await setPrefs(worker, { extractText: true, extractValue: false, safeCapture: false, debugMode: false });
+  await armExtension(worker, page, context);
+  const trigger = page.locator('#dropdown .dropdown-trigger');
+  await trigger.click();
+  await page.locator('#dropdown [role="menuitem"]').nth(1).dispatchEvent('mousedown');
+
+  await expect.poll(() => clipboardText(page)).toBe('Alpha\nBeta\nGamma');
+  await expect(trigger).toHaveText('Beta');
+  await expect(page.locator('#dropdown .dropdown-menu')).not.toHaveClass(/open/);
+});
+
+test('supported-dropdown debug copies raw dropdown HTML', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+  await renderFixture(page, { type: 'native', items });
+  await setPrefs(worker, {
+    extractText: true,
+    extractValue: false,
+    safeCapture: true,
+    debugMode: true,
+    debugModeTarget: 'supported',
+  });
+  await armExtension(worker, page, context);
+  await page.locator('#dropdown select').click();
+
+  await expect.poll(() => clipboardText(page)).toContain('--- dropdown-extractor: supported dropdown ---');
+  await expect.poll(() => clipboardText(page)).toContain('tag: SELECT');
+  await expect.poll(() => clipboardText(page)).toContain('<option value="202">Beta</option>');
+  await expect(page.locator('.dropdown-extractor-toast', { hasText: 'Debug: copied dropdown HTML' })).toBeVisible();
+});
+
+test('Any two debug captures the menu container and selected option', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+  await renderFixture(page, { type: 'aria', items });
+  await setPrefs(worker, {
+    extractText: true,
+    extractValue: false,
+    safeCapture: true,
+    debugMode: true,
+    debugModeTarget: 'any-two',
+  });
+  await armExtension(worker, page, context);
+  const trigger = page.locator('#dropdown .dropdown-trigger');
+  await trigger.click();
+  await expect(page.locator('.dropdown-extractor-toast', { hasText: 'Debug: copied HTML (1/2, menu container)' })).toBeVisible();
+  await page.locator('#dropdown [role="option"]').nth(1).click();
+
+  await expect.poll(() => clipboardText(page)).toContain('--- dropdown-extractor: 1. menu container ---');
+  await expect.poll(() => clipboardText(page)).toContain('--- dropdown-extractor: 2. menu option ---');
+  await expect.poll(() => clipboardText(page)).toContain('text: "Beta"');
+  await expect(page.locator('.dropdown-extractor-toast', { hasText: 'Debug: copied HTML (2/2, option)' })).toBeVisible();
+  await expect(trigger).toHaveText('Alpha');
 });

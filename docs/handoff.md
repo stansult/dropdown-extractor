@@ -18,11 +18,15 @@ Workflow rules:
 - Every fixture-dependent extension test must have an independent playground contract
   test that verifies the relevant DOM structure, data sources, and unmodified interaction
   behavior on which the extension assertion depends.
+- `docs/bug-reporting.md` defines the canonical GitHub Issues lifecycle. Runtime bugs fixed
+  on `main` remain open as `status: fixed-unreleased` until their Web Store version is live.
 
 Current behavior highlights:
 - Arm via extension button; click a menu option to extract items.
 - Safe capture blocks option clicks while armed, but does NOT block menu triggers
   (aria-expanded/aria-haspopup), so menus can open while Safe capture is on.
+- With Safe capture off, extraction must not suppress the page's normal selection event,
+  including dropdowns such as Dropbox that select on `mousedown`.
 - Debug "Any two" mode: 1/2 captures trigger/container/uncategorized; 2/2 captures option.
   Toasts include the captured type. 1/2 payload persists when 2/2 completes.
 - Any-two approach: the trigger click is only used to locate the menu. It waits briefly
@@ -59,9 +63,18 @@ Test page:
 
 Notes for future work:
 - If adding a new dropdown type, prefer creating a test page mock + README entry.
+- Rapidly changing options and immediately rearming on the same tab can briefly reuse the
+  previous in-page preferences before the new asynchronous storage read finishes. Format
+  tests use fresh contexts; track repeated-activation preference loading in GitHub issue #2.
 - For debugging unsupported menus, use Debug -> Any two to capture trigger/container/option.
 - Before committing, review the full diff and draft a commit message that covers all changes.
 - Safe capture regressions: use Any two on the option click to inspect DOM/ARIA; if an option is misclassified as a trigger (e.g., `aria-expanded` on the option), adjust `shouldBlockOptionClick` to treat it as an option (often via a distinctive child selector).
+
+Active bugs:
+- GitHub issue #1: Safe Capture off suppressed Dropbox-style `mousedown` selection. Fixed
+  locally and verified, but not yet committed or released; keep open through Web Store release.
+- GitHub issue #2: immediate reactivation can briefly reuse previous option values.
+  Confirmed; no fix yet.
 
 Description file:
 - Source: `docs/description.txt` (short Chrome Web Store description).
@@ -92,8 +105,9 @@ Automated testing:
   `http://127.0.0.1:4173`.
 - Playground contract tests cover every fixture currently used by extension tests:
   native, ARIA, GitHub SelectMenu, Dropbox, AliExpress, and Expedia. Extension coverage
-  includes native extraction, ARIA and Dropbox Safe capture, GitHub checkbox values,
-  AliExpress href values, and Expedia aria-label text.
+  includes text-only, value-only, text/value fallback, every combined-output format,
+  Safe Capture on and off for click and mousedown menus, both debug modes, native
+  extraction, GitHub checkbox values, AliExpress href values, and Expedia aria-label text.
 - `.github/workflows/playwright.yml` is the canonical CI and deployment workflow. It runs
   unit/release-tool and Playwright tests for main pushes, main pull requests, and manual
   dispatches. CI retries browser failures twice, uses two workers, and retains the HTML

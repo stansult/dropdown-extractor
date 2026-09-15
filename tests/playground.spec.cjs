@@ -28,6 +28,13 @@ test('native fixture renders options and supports normal selection', async ({ pa
     .toEqual(['101', '202', '303']);
   await select.selectOption('202');
   await expect(select).toHaveValue('202');
+
+  const valueOnlyItems = items.map(item => ({ text: '', value: item.value }));
+  await renderFixture(page, { type: 'native', items: valueOnlyItems });
+  const valueOnlyOptions = page.locator('#dropdown select option');
+  await expect(valueOnlyOptions).toHaveText(['', '', '']);
+  expect(await valueOnlyOptions.evaluateAll(elements => elements.map(element => element.value)))
+    .toEqual(['101', '202', '303']);
   expect(errors).toEqual([]);
 });
 

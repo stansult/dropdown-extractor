@@ -11,6 +11,10 @@ Use this workflow for an update to the existing Dropdown Extractor listing.
 7. From the same clean, synchronized `main` commit, run `npm run release:record`. This creates and pushes the annotated tag `webstore-v<version>`.
 8. Run `npm run release:status`; runtime files and the store description should both report `unchanged`.
 
+For fixes tracked as `status: fixed-unreleased`, add the live version, release tag, date,
+and verification result to each issue, remove the status label, and close the issue only
+after the Chrome Web Store version is live. See `docs/bug-reporting.md`.
+
 `release:record` is the explicit confirmation that a version became public. Do not run it when a package is merely built, uploaded, or awaiting review. If its tag push fails after the local tag is created, push that tag with `git push origin refs/tags/webstore-v<version>`.
 
 The status command tracks extension runtime files separately from `docs/description.txt`. Changes to the test playground and general project documentation are outside the Chrome Web Store release comparison.

@@ -1,0 +1,129 @@
+name: Bug report
+description: Report a reproducible problem with Dropdown Extractor
+title: "[Bug]: "
+labels:
+  - bug
+  - "status: needs-repro"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Debug HTML can contain private page data; sanitize it before sharing.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the actual behavior and its impact.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: User impact and workaround
+      description: Explain who is affected, what cannot be completed, and whether a workaround exists. Maintainers assign severity after reproduction.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the affected website and dropdown type when known.
+      placeholder: |
+        1. Open ...
+        2. Configure ...
+        3. Click ...
+    validations:
+      required: true
+  - type: input
+    id: frequency
+    attributes:
+      label: Reproduction frequency
+      placeholder: Always, intermittent, or one time
+    validations:
+      required: true
+  - type: input
+    id: extension-version
+    attributes:
+      label: Extension version
+      placeholder: 1.0.15
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Chrome and operating system
+      placeholder: Chrome 140 on macOS 15
+    validations:
+      required: true
+  - type: checkboxes
+    id: extract-options
+    attributes:
+      label: Extraction options
+      description: Select the options that were enabled.
+      options:
+        - label: Text
+        - label: Value
+  - type: dropdown
+    id: format
+    attributes:
+      label: Text and value format
+      options:
+        - Not applicable
+        - Space
+        - Dash
+        - Pipe
+        - Tab
+        - Line break
+        - Parentheses
+        - Brackets
+    validations:
+      required: true
+  - type: dropdown
+    id: safe-capture
+    attributes:
+      label: Safe Capture
+      options:
+        - "On"
+        - "Off"
+    validations:
+      required: true
+  - type: dropdown
+    id: debug-mode
+    attributes:
+      label: Debug mode
+      options:
+        - "Off"
+        - Supported dropdown
+        - Any two
+    validations:
+      required: true
+  - type: textarea
+    id: playground
+    attributes:
+      label: Dropdown Playground snapshot
+      description: Paste a text or JSON snapshot when the problem can be reproduced on the playground.
+      render: shell
+  - type: textarea
+    id: debug-html
+    attributes:
+      label: Sanitized debug HTML
+      description: Remove account details, entered text, identifiers, and other private information.
+      render: html
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy confirmation
+      options:
+        - label: I reviewed all attached or pasted content and removed sensitive information.
+          required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add screenshots, console errors, or anything else that may help.

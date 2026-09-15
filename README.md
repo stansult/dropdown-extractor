@@ -128,6 +128,13 @@ npm run test:e2e
 The unit suite checks packaging, release bookkeeping, and the popup/background entrypoints.
 Use `npm run test:e2e:headed` to watch the browser tests run.
 
+## Reporting bugs
+
+Use the repository's [Bug report](https://github.com/stansult/dropdown-extractor/issues/new?template=bug_report.yml)
+form. The [bug reporting process](docs/bug-reporting.md) explains the evidence, status,
+privacy, and Chrome Web Store release workflow. Debug HTML may contain private page data;
+sanitize it before sharing.
+
 ## License
 
 MIT. See `LICENSE`.

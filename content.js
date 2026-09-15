@@ -1438,6 +1438,12 @@
     return prefs.debugMode && prefs.debugModeTarget === 'any-two';
   }
 
+  function suppressSupportedEvent(e, prefs) {
+    if (!prefs.safeCapture) return;
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
   function handleSupportedClick(e, prefs) {
     let target = e._dropdownExtractorTarget || e.target;
     const elementTarget = target && target.nodeType === Node.ELEMENT_NODE ? target : target?.parentElement;
@@ -1477,8 +1483,7 @@
     // --- 2) Selectize support ---
     const selectizeContent = getVisibleSelectizeContent();
     if (selectizeContent && selectizeContent.contains(target)) {
-      e.preventDefault();
-      e.stopPropagation();
+      suppressSupportedEvent(e, prefs);
 
       if (shouldDebugSupported(prefs) && copyDebugHtml(selectizeContent, 'supported dropdown')) return;
       const options = [...selectizeContent.querySelectorAll('.option')];
@@ -1505,8 +1510,7 @@
     // --- 3) React Select support ---
     const reactSelectMenuList = getVisibleReactSelectMenuList();
     if (reactSelectMenuList) {
-      e.preventDefault();
-      e.stopPropagation();
+      suppressSupportedEvent(e, prefs);
 
       if (shouldDebugSupported(prefs) && copyDebugHtml(reactSelectMenuList, 'supported dropdown')) return;
         const options = [
@@ -1540,8 +1544,7 @@
     // --- 4) AliExpress search suggestions ---
     const aliSuggestions = getAliExpressSuggestionContainer(target);
     if (aliSuggestions && aliSuggestions.contains(target)) {
-      e.preventDefault();
-      e.stopPropagation();
+      suppressSupportedEvent(e, prefs);
 
       if (shouldDebugSupported(prefs) && copyDebugHtml(aliSuggestions, 'supported dropdown')) return;
       const links = getAliExpressSuggestionLinks(aliSuggestions);
@@ -1567,8 +1570,7 @@
     // --- 4) Expedia destination suggestions ---
     const expediaList = getVisibleDropdownContainer('ul.uitk-action-list[role="list"]', target);
     if (expediaList && expediaList.contains(target)) {
-      e.preventDefault();
-      e.stopPropagation();
+      suppressSupportedEvent(e, prefs);
 
       if (shouldDebugSupported(prefs) && copyDebugHtml(expediaList, 'supported dropdown')) return;
       const options = [
@@ -1606,8 +1608,7 @@
       )
     );
     if (!isGitHubMenu && menu && menu.contains(target)) {
-      e.preventDefault();
-      e.stopPropagation();
+      suppressSupportedEvent(e, prefs);
 
       if (shouldDebugSupported(prefs) && copyDebugHtml(menu, 'supported dropdown')) return;
       const options = [
@@ -1637,8 +1638,7 @@
     // --- 4) Ant Design support ---
     const antDropdown = getVisibleDropdownContainer('.ant-select-dropdown', target);
     if (antDropdown && antDropdown.contains(target)) {
-      e.preventDefault();
-      e.stopPropagation();
+      suppressSupportedEvent(e, prefs);
 
       if (shouldDebugSupported(prefs) && copyDebugHtml(antDropdown, 'supported dropdown')) return;
       const options = [
@@ -1668,8 +1668,7 @@
     // --- 5) Select2 support ---
     const select2Results = getVisibleDropdownContainer('.select2-results__options, .select2-results', target);
     if (select2Results && select2Results.contains(target)) {
-      e.preventDefault();
-      e.stopPropagation();
+      suppressSupportedEvent(e, prefs);
 
       if (shouldDebugSupported(prefs) && copyDebugHtml(select2Results, 'supported dropdown')) return;
       const options = [...select2Results.querySelectorAll('.select2-results__option')];
@@ -1696,8 +1695,7 @@
     // --- 7) Sallie Mae modal dropdowns ---
     const sallieModal = getVisibleSallieMaeModal(target);
     if (sallieModal && sallieModal.contains(target)) {
-      e.preventDefault();
-      e.stopPropagation();
+      suppressSupportedEvent(e, prefs);
 
       if (shouldDebugSupported(prefs) && copyDebugHtml(sallieModal, 'supported dropdown')) return;
       const optionButtons = [...sallieModal.querySelectorAll('input.slm-btngroup-radio')]
@@ -1727,8 +1725,7 @@
     // --- 6) Chosen support ---
     const chosenResults = getVisibleDropdownContainer('.chosen-results', target);
     if (chosenResults && chosenResults.contains(target)) {
-      e.preventDefault();
-      e.stopPropagation();
+      suppressSupportedEvent(e, prefs);
 
       if (shouldDebugSupported(prefs) && copyDebugHtml(chosenResults, 'supported dropdown')) return;
       const options = [...chosenResults.querySelectorAll('.chosen-option')];
@@ -1757,8 +1754,7 @@
     if (genericListItem && !genericListItem.closest('.SelectMenu')) {
       const listContainer = findListItemContainer(genericListItem);
       if (listContainer) {
-        e.preventDefault();
-        e.stopPropagation();
+        suppressSupportedEvent(e, prefs);
 
         if (shouldDebugSupported(prefs) && copyDebugHtml(listContainer, 'supported dropdown')) return;
         const options = [...listContainer.querySelectorAll('[role="listitem"]')];
@@ -1802,8 +1798,7 @@
         return true;
       });
     if (ghMenu && (ghMenuFromTarget || (ghMenu.contains && ghMenu.contains(target)))) {
-      e.preventDefault();
-      e.stopPropagation();
+      suppressSupportedEvent(e, prefs);
 
       if (shouldDebugSupported(prefs) && copyDebugHtml(ghMenu, 'supported dropdown')) return;
       const options = [...ghMenu.querySelectorAll('[role="listitem"]')];
@@ -1831,8 +1826,7 @@
       .find(el => el.offsetParent !== null);
 
     if (listbox && listbox.contains(target)) {
-      e.preventDefault();
-      e.stopPropagation();
+      suppressSupportedEvent(e, prefs);
 
       if (shouldDebugSupported(prefs) && copyDebugHtml(listbox, 'supported dropdown')) return;
       const options = [...listbox.querySelectorAll('[role="option"]')];

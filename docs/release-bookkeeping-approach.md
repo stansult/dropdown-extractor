@@ -6,40 +6,49 @@ This project uses Git tags to record exactly which repository commit is live in 
 
 A manifest version or locally generated ZIP does not prove that a release was published. Packaging may happen several times, an upload may remain under review, and ignored `dist/` files are local to one machine.
 
-The durable publication record is an annotated Git tag:
+The durable records are annotated Git tags:
 
 ```text
+webstore-submitted-v<manifest version>
 webstore-v<manifest version>
 ```
 
-For example, Chrome Web Store version `0.1.5` is recorded by `webstore-v0.1.5` on the exact commit that produced the published package.
+The submission tag identifies the uploaded commit and records the ZIP SHA-256. The shorter
+publication tag identifies which submitted version was later confirmed live.
 
 ## Core rule
 
-Create the tag only after the Chrome Developer Dashboard confirms that the version is live. Building a ZIP, uploading it, or submitting it for review is not publication and must not create the tag.
+Create the submission tag immediately after uploading. Create the publication tag only
+after the Chrome Developer Dashboard confirms that version is live. Neither building nor
+submitting a ZIP is publication.
 
 ## Commands
 
-Two npm commands wrap the bookkeeping:
+Three npm commands wrap the bookkeeping:
 
 ```bash
 npm run release:status
-npm run release:record
+npm run release:submit
+npm run release:record -- <version>
 ```
 
 `release:status` finds the highest `webstore-v*` tag and compares it with `HEAD`. It reports separately whether extension runtime files and store-listing source files have changed since the recorded release.
 
-`release:record` reads the version from `manifest.json`, creates the corresponding annotated tag, and pushes that tag to `origin`.
+`release:submit` records the submitted commit and ZIP checksum. `release:record` resolves
+the requested version's submission tag, creates the publication tag at that preserved
+commit, and pushes it to `origin`.
 
 ## Safety checks
 
-Before recording a release, the script requires:
+Submission and publication checks require:
 
 - A valid one-to-four-part Chrome extension version
 - A clean working tree
-- The current branch to be `main`
-- `HEAD` to match the local `origin/main` tracking reference
-- No existing tag for the current version
+- The submitted commit to be contained in the local `origin/main` tracking reference
+- The submitted commit's manifest version to match the requested version
+- A valid ZIP SHA-256 stored in a unique annotated submission tag
+- An annotated submission tag before publication can be recorded
+- No existing submission or publication tag for that version
 - A version newer than every previously recorded Web Store version
 
 If the tag is created locally but its push fails, retry only the tag push:
@@ -55,15 +64,18 @@ git push origin refs/tags/webstore-v<version>
 3. Confirm CI passes on the versioned release commit.
 4. Generate and verify the upload package from that commit.
 5. Upload the package, update any listing metadata, and submit it for review.
-6. Wait until the new version is shown as published/live.
-7. Run `npm run release:record` from the same clean, synchronized commit.
-8. Run `npm run release:status`; runtime and listing files should report `unchanged`.
+6. Run `npm run release:submit` to tag the submitted commit and record the ZIP checksum.
+7. Continue normal development while review is pending.
+8. Wait until the new version is shown as published/live.
+9. Run `npm run release:record -- <version>`; it tags the previously submitted commit.
+10. Run `npm run release:status`; it now reports any post-submission work relative to the
+    newly recorded live release.
 
-## Files used in Album Filter
+## Files used in Dropdown Extractor
 
-- `scripts/release-bookkeeping.cjs`: status and record implementation
+- `scripts/release-bookkeeping.cjs`: status, submission, and publication implementation
 - `scripts/release-bookkeeping.test.cjs`: version, comparison, tagging, and safety-check tests
-- `package.json`: `release:status` and `release:record` commands
+- `package.json`: `release:status`, `release:submit`, and `release:record` commands
 - `docs/chrome-web-store-release.md`: project-specific operational release workflow
 - `manifest.json`: authoritative Chrome extension version
 - `docs/description.txt`: source for the Web Store description
@@ -73,5 +85,7 @@ To adopt this in another extension, copy the bookkeeping script and tests, add t
 ## Limitations
 
 - The tag records a human-confirmed publication; it does not query the Chrome Web Store API.
-- The `origin/main` check uses the local remote-tracking reference. Fetch before recording if it may be stale.
-- A tag proves which commit was declared published, not which ZIP bytes were uploaded. An artifact checksum can be added later if byte-level provenance is required.
+- The `origin/main` containment check uses the local remote-tracking reference. Fetch before
+  recording a submission or publication if it may be stale.
+- The submission tag records the uploaded ZIP's SHA-256, but the workflow still relies on
+  the maintainer to upload that exact file and confirm publication in the Web Store.

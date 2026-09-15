@@ -15,20 +15,31 @@ Use this workflow for an update to the existing Dropdown Extractor listing.
    its contents.
 8. In the Chrome Developer Dashboard, upload the ZIP from `dist/`. If present, copy the
    updated listing text from `dist/description-to-upload.txt`.
-9. Submit the update for review and wait until that version is live.
-10. From the same clean, synchronized `main` commit, run `npm run release:record`. This
-    creates and pushes the annotated tag `webstore-v<version>`.
-11. Run `npm run release:status`; runtime files and the Store description should both
-    report `unchanged`.
+9. From a clean working tree, run `npm run release:submit`. This calculates the ZIP's
+   SHA-256 and creates and pushes `webstore-submitted-v<version>` at the uploaded commit.
+   Record this marker before allowing `main` to advance.
+10. Submit the update for review. Normal development may continue on `main` while review
+    is pending because the submission tag preserves the uploaded commit.
+11. After that version is live, run `npm run release:record -- <version>`. This creates and
+    pushes `webstore-v<version>` at the commit recorded by the submission tag, regardless
+    of the current `main` tip.
+12. Run `npm run release:status`. If `main` has not changed since submission, runtime and
+    listing files should report `unchanged`; otherwise its results describe legitimate
+    post-submission work relative to the newly recorded live baseline.
 
 For fixes tracked as `status: fixed-unreleased`, add the live version, release tag, date,
 and verification result to each issue, remove the status label, and close the issue only
 after the Chrome Web Store version is live. See the
 [bug reporting process](bug-reporting.md).
 
-`release:record` is the explicit confirmation that a version became public. Do not run it
-when a package is merely built, uploaded, or awaiting review. If its tag push fails after
-the local tag is created, push that tag with
+`release:submit` records what was uploaded; it does not mean the version is public. Its
+annotated tag contains the ZIP SHA-256 and must point to a commit contained in `origin/main`
+whose manifest has the submitted version. By default it uses the current manifest, `HEAD`,
+and `dist/dropdown-extractor-<version>.zip`; optional arguments are version, commit, and ZIP.
+
+`release:record` is the explicit confirmation that a submitted version became public. Do
+not run it while the package is awaiting review. If its tag push fails after the local tag
+is created, push that tag with
 `git push origin refs/tags/webstore-v<version>`.
 
 ## Changelog and Store description

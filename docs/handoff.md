@@ -83,13 +83,17 @@ Chrome Web Store release bookkeeping:
 - Canonical workflow: `docs/chrome-web-store-release.md`.
 - `CHANGELOG.md` is the canonical user-visible release history. Add notable runtime changes
   under `Unreleased`; version that section together with the manifest bump.
-- Version 1.0.16 is prepared for Chrome Web Store upload but is not yet published or tagged.
+- Version 1.0.16 was submitted from commit `ee5f300` with ZIP SHA-256
+  `d3665731a1fd6b1f92076e613014265b361f6e4ba6f216f9e6e64514ca28f091`; it is not yet
+  published. The submission marker is `webstore-submitted-v1.0.16`.
 - Current published baseline: `webstore-v1.0.15` at commit `12a2d56`.
 - `npm run release:status` compares extension runtime files and `docs/description.txt`
   against the highest `webstore-v*` tag.
-- Run `npm run release:record` only after the Developer Dashboard shows that version
-  as live. It requires clean, synchronized `main`, then creates and pushes an annotated
-  `webstore-v<manifest version>` tag.
+- Run `npm run release:submit` immediately after uploading a ZIP. It records the submitted
+  commit and ZIP checksum so `main` may continue advancing during review.
+- Run `npm run release:record -- <version>` only after the Developer Dashboard shows that
+  version as live. It creates `webstore-v<version>` at the commit preserved by the
+  corresponding `webstore-submitted-v<version>` tag.
 - Web Store upload/review remains manual. A built or submitted ZIP is not a published
   release and must not be tagged.
 

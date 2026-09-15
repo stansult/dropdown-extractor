@@ -104,6 +104,8 @@ Use these commands to build uploadable zip archives:
 - This runs a clean step and generates `dist/dropdown-extractor-<version>.zip`.
 
 - To bump the patch version and package in one step: `npm run package:patch`
+- After uploading, record the exact submitted commit and ZIP: `npm run release:submit`
+- After that version is live, record publication: `npm run release:record -- <version>`
 
 #### Dropdown Playground
 

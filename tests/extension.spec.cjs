@@ -112,3 +112,63 @@ test('extracts GitHub checkbox values with the configured format', async ({ exte
 
   await expect.poll(() => clipboardText(page)).toBe('Alpha [101]\nBeta [202]\nGamma [303]');
 });
+
+test('safe capture handles Dropbox menus that select on mousedown', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+  await renderFixture(page, { type: 'dropbox-menu', items });
+  await setPrefs(worker, { extractText: true, extractValue: false, safeCapture: true, debugMode: false });
+  await armExtension(worker, page, context);
+  const trigger = page.locator('#dropdown .dropdown-trigger');
+  await expect(trigger).toHaveText('Alpha');
+  await trigger.click();
+  await page.locator('#dropdown [role="menuitem"]').nth(1).click();
+
+  await expect.poll(() => clipboardText(page)).toBe('Alpha\nBeta\nGamma');
+  await expect(trigger).toHaveText('Alpha');
+  await expect(page.locator('#dropdown .dropdown-menu')).toHaveClass(/open/);
+});
+
+test('AliExpress extraction uses href and ignores other value fields', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+  const aliItems = [
+    { text: 'Alpha', value: 'wrong-101', dataValue: 'also-wrong-101', href: 'https://example.com/alpha' },
+    { text: 'Beta', value: 'wrong-202', dataValue: 'also-wrong-202', href: 'https://example.com/beta' },
+    { text: 'Gamma', value: 'wrong-303', dataValue: 'also-wrong-303', href: 'https://example.com/gamma' },
+  ];
+  await renderFixture(page, { type: 'aliexpress', items: aliItems });
+  await setPrefs(worker, {
+    extractText: true,
+    extractValue: true,
+    format: 'text-brackets-value',
+    safeCapture: true,
+    debugMode: false,
+  });
+  await armExtension(worker, page, context);
+  await page.locator('#dropdown #search-words').click();
+  await page.locator('#dropdown .ali-suggestions a').nth(1).click();
+
+  await expect.poll(() => clipboardText(page)).toBe([
+    'Alpha [https://example.com/alpha]',
+    'Beta [https://example.com/beta]',
+    'Gamma [https://example.com/gamma]',
+  ].join('\n'));
+});
+
+test('Expedia extraction prefers aria-label and handles absent values', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+  await renderFixture(page, { type: 'expedia', items });
+  const options = page.locator('#dropdown [data-stid="destination_form_field-result-item-button"]');
+  await options.nth(0).evaluate(button => { button.textContent = 'Wrong visible Alpha'; });
+  await options.nth(1).evaluate(button => { button.textContent = 'Wrong visible Beta'; });
+  await options.nth(2).evaluate(button => { button.textContent = 'Wrong visible Gamma'; });
+  await setPrefs(worker, {
+    extractText: true,
+    extractValue: true,
+    format: 'text-brackets-value',
+    safeCapture: true,
+    debugMode: false,
+  });
+  await armExtension(worker, page, context);
+  await page.locator('#dropdown .dropdown-trigger').click();
+  await options.nth(1).click();
+
+  await expect.poll(() => clipboardText(page)).toBe('Alpha\nBeta\nGamma');
+  await expect(page.locator('.dropdown-extractor-toast', { hasText: 'Only text extracted, no values found.' })).toBeVisible();
+});

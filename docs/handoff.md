@@ -11,6 +11,8 @@ Workflow rules:
 - Keep this handoff file updated whenever process changes so a fresh thread can resume without context loss.
 - Before committing, review the full diff and draft a commit message that covers all included changes.
 - Do not commit immediately after a reported fix until key regressions are rechecked.
+- Before every push, run both `npm run test:unit` and `npm run test:e2e`; push only
+  after both suites pass.
 - When labels/terminology change, keep docs in sync (at minimum `README.md` and `docs/description.txt`).
 - Re-read edited files after changes to confirm final file content is correct.
 
@@ -85,8 +87,9 @@ Automated testing:
   action through CDP, exercising popup, background, `activeTab`, and content injection.
   Tests use a temporary browser profile and the local playground at
   `http://127.0.0.1:4173`.
-- Keep the initial suite focused on default rendering, representative ARIA/GitHub fixture
-  structure, native extraction, Safe capture, and GitHub checkbox value extraction.
+- Current browser coverage includes default playground rendering, representative
+  ARIA/GitHub fixture structure, native extraction, ARIA and Dropbox Safe capture,
+  GitHub checkbox values, AliExpress href values, and Expedia aria-label text.
 - `.github/workflows/playwright.yml` is the canonical CI and deployment workflow. It runs
   unit/release-tool and Playwright tests for main pushes, main pull requests, and manual
   dispatches. CI retries browser failures twice, uses two workers, and retains the HTML

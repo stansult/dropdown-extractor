@@ -1,32 +1,20 @@
 const { test: base, expect, chromium } = require('@playwright/test');
-const { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } = require('node:fs');
+const { mkdtempSync, rmSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const { join } = require('node:path');
 const { renderFixture } = require('./helpers.cjs');
 
 const extensionPath = join(__dirname, '..');
-const extensionFiles = [
-  'manifest.json', 'background.js', 'content.js', 'popup.html', 'popup.js',
-  'options.html', 'options.css', 'options.js', 'icon16.png', 'icon32.png',
-  'icon48.png', 'icon128.png',
-];
 const test = base.extend({
   extensionContext: async ({}, use) => {
     const userDataDir = mkdtempSync(join(tmpdir(), 'dropdown-playwright-'));
-    const testExtensionDir = mkdtempSync(join(tmpdir(), 'dropdown-extension-'));
-    for (const file of extensionFiles) {
-      copyFileSync(join(extensionPath, file), join(testExtensionDir, file));
-    }
-    const manifestPath = join(testExtensionDir, 'manifest.json');
-    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-    manifest.host_permissions = ['http://127.0.0.1/*'];
-    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
     const context = await chromium.launchPersistentContext(userDataDir, {
       channel: 'chromium',
       headless: true,
       args: [
-        `--disable-extensions-except=${testExtensionDir}`,
-        `--load-extension=${testExtensionDir}`,
+        `--disable-extensions-except=${extensionPath}`,
+        `--load-extension=${extensionPath}`,
+        '--enable-unsafe-extension-debugging',
       ],
     });
     await context.grantPermissions(['clipboard-read', 'clipboard-write'], {
@@ -35,7 +23,6 @@ const test = base.extend({
     await use(context);
     await context.close();
     rmSync(userDataDir, { recursive: true, force: true });
-    rmSync(testExtensionDir, { recursive: true, force: true });
   },
   extensionWorker: async ({ extensionContext }, use) => {
     let [worker] = extensionContext.serviceWorkers();
@@ -55,13 +42,25 @@ async function setPrefs(worker, values) {
   await worker.evaluate(prefs => new Promise(resolve => chrome.storage.sync.set(prefs, resolve)), values);
 }
 
-async function armExtension(worker, page) {
+async function armExtension(worker, page, context) {
   await page.bringToFront();
-  await worker.evaluate(async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || tab.id === undefined) throw new Error('Could not find the active test tab.');
-    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
-  });
+  const extensionId = new URL(worker.url()).hostname;
+  const browser = context.browser();
+  if (!browser) throw new Error('Browser connection is unavailable.');
+  const browserSession = await browser.newBrowserCDPSession();
+  try {
+    const { targetInfos } = await browserSession.send('Target.getTargets', {
+      filter: [{ type: 'tab' }],
+    });
+    const target = targetInfos.find(candidate => candidate.url === page.url());
+    if (!target) throw new Error('Playground tab target not found.');
+    await browserSession.send('Extensions.triggerAction', {
+      id: extensionId,
+      targetId: target.targetId,
+    });
+  } finally {
+    await browserSession.detach();
+  }
   await expect(page.locator('.dropdown-extractor-toast')).toContainText('Click a dropdown');
 }
 
@@ -75,20 +74,20 @@ const items = [
   { text: 'Gamma', value: '303' },
 ];
 
-test('extracts all items from a native select', async ({ extensionPage: page, extensionWorker: worker }) => {
+test('extracts all items from a native select', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
   await renderFixture(page, { type: 'native', items });
   await setPrefs(worker, { extractText: true, extractValue: false, safeCapture: true, debugMode: false });
-  await armExtension(worker, page);
+  await armExtension(worker, page, context);
   await page.locator('#dropdown select').click();
 
   await expect.poll(() => clipboardText(page)).toBe('Alpha\nBeta\nGamma');
   await expect(page.locator('.dropdown-extractor-toast', { hasText: 'Extracted 3 items' })).toBeVisible();
 });
 
-test('safe capture extracts an ARIA list without selecting the clicked option', async ({ extensionPage: page, extensionWorker: worker }) => {
+test('safe capture extracts an ARIA list without selecting the clicked option', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
   await renderFixture(page, { type: 'aria', items });
   await setPrefs(worker, { extractText: true, extractValue: false, safeCapture: true, debugMode: false });
-  await armExtension(worker, page);
+  await armExtension(worker, page, context);
   const trigger = page.locator('#dropdown .dropdown-trigger');
   await expect(trigger).toHaveText('Alpha');
   await trigger.click();
@@ -98,7 +97,7 @@ test('safe capture extracts an ARIA list without selecting the clicked option', 
   await expect(trigger).toHaveText('Alpha');
 });
 
-test('extracts GitHub checkbox values with the configured format', async ({ extensionPage: page, extensionWorker: worker }) => {
+test('extracts GitHub checkbox values with the configured format', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
   await renderFixture(page, { type: 'github-selectmenu', items });
   await setPrefs(worker, {
     extractText: true,
@@ -107,7 +106,7 @@ test('extracts GitHub checkbox values with the configured format', async ({ exte
     safeCapture: true,
     debugMode: false,
   });
-  await armExtension(worker, page);
+  await armExtension(worker, page, context);
   await page.locator('#dropdown .gh-selectmenu-summary').click();
   await page.locator('#dropdown [role="listitem"]').nth(1).click();
 

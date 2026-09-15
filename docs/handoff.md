@@ -67,6 +67,7 @@ Description file:
 
 Chrome Web Store release bookkeeping:
 - Canonical workflow: `docs/chrome-web-store-release.md`.
+- Current published baseline: `webstore-v1.0.15` at commit `12a2d56`.
 - `npm run release:status` compares extension runtime files and `docs/description.txt`
   against the highest `webstore-v*` tag.
 - Run `npm run release:record` only after the Developer Dashboard shows that version
@@ -75,19 +76,21 @@ Chrome Web Store release bookkeeping:
 - Web Store upload/review remains manual. A built or submitted ZIP is not a published
   release and must not be tagged.
 
-Automated browser tests:
-- `npm run test:e2e` runs the local Dropdown Playground and Playwright tests.
-- Playground tests cover fixture rendering without the extension. Extension tests copy
-  the runtime files into an isolated temporary directory, add localhost host access to
-  that test-only manifest, and load it in Playwright's bundled Chromium. The production
-  manifest remains unchanged. Tests use a temporary browser profile and the local
-  playground at `http://127.0.0.1:4173`.
+Automated testing:
+- Local setup and commands: see `README.md`, "Automated browser tests."
+- Run all tests with `npm run test:unit`, then `npm run test:e2e`.
+- `npm run test:e2e:headed` runs Playwright visibly for debugging.
+- Playground tests cover fixture rendering without the extension. Extension tests load
+  the actual unpacked extension in Playwright's bundled Chromium and invoke its toolbar
+  action through CDP, exercising popup, background, `activeTab`, and content injection.
+  Tests use a temporary browser profile and the local playground at
+  `http://127.0.0.1:4173`.
 - Keep the initial suite focused on default rendering, representative ARIA/GitHub fixture
   structure, native extraction, Safe capture, and GitHub checkbox value extraction.
-- `.github/workflows/playwright.yml` is the canonical test-only CI workflow. It runs
+- `.github/workflows/playwright.yml` is the canonical CI and deployment workflow. It runs
   unit/release-tool and Playwright tests for main pushes, main pull requests, and manual
   dispatches. CI retries browser failures twice, uses two workers, and retains the HTML
-  Playwright report for 30 days. It does not deploy the playground or extension.
+  Playwright report for 30 days.
 - `npm run test:unit` includes isolated packaging checks, release bookkeeping tests, and
   mocked coverage of popup retry and background injection/error paths. Packaging tests
   never modify the real manifest or `dist/`.

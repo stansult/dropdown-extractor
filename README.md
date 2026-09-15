@@ -114,6 +114,18 @@ To test the extension, you can use [Dropdown Playground](https://dropdown-extrac
 - render a mock dropdown and extract from it
 - copy a snapshot (text/JSON) to easily share a repro setup
 
+#### Automated browser tests
+
+Install dependencies and Playwright's bundled Chromium once, then run the playground and extension tests:
+
+```bash
+npm install
+npx playwright install chromium
+npm run test:e2e
+```
+
+Use `npm run test:e2e:headed` to watch the tests run in browser windows.
+
 ## License
 
 MIT. See `LICENSE`.

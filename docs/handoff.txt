@@ -74,3 +74,13 @@ Chrome Web Store release bookkeeping:
   `webstore-v<manifest version>` tag.
 - Web Store upload/review remains manual. A built or submitted ZIP is not a published
   release and must not be tagged.
+
+Automated browser tests:
+- `npm run test:e2e` runs the local Dropdown Playground and Playwright tests.
+- Playground tests cover fixture rendering without the extension. Extension tests copy
+  the runtime files into an isolated temporary directory, add localhost host access to
+  that test-only manifest, and load it in Playwright's bundled Chromium. The production
+  manifest remains unchanged. Tests use a temporary browser profile and the local
+  playground at `http://127.0.0.1:4173`.
+- Keep the initial suite focused on default rendering, representative ARIA/GitHub fixture
+  structure, native extraction, Safe capture, and GitHub checkbox value extraction.

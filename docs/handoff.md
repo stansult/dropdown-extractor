@@ -87,6 +87,7 @@ Chrome Web Store release bookkeeping:
 - Canonical workflow: `docs/chrome-web-store-release.md`.
 - `CHANGELOG.md` is the canonical user-visible release history. Add notable runtime changes
   under `Unreleased`; version that section together with the manifest bump.
+- Version 1.0.16 is prepared for Chrome Web Store upload but is not yet published or tagged.
 - Current published baseline: `webstore-v1.0.15` at commit `12a2d56`.
 - `npm run release:status` compares extension runtime files and `docs/description.txt`
   against the highest `webstore-v*` tag.

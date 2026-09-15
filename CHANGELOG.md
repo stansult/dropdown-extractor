@@ -5,6 +5,8 @@ documentation, and internal refactoring changes are omitted unless they affect u
 
 ## Unreleased
 
+## 1.0.16 — 2026-09-15
+
 ### Fixed
 
 - Safe Capture off now allows normal selection in dropdowns that select on `mousedown`.

@@ -64,3 +64,13 @@ Description file:
 - Packaging: writes `dist/description-to-upload.txt` only if the description changed
   since last upload (tracked in `dist/.description-last`). The file is not removed
   automatically; delete it manually after you upload.
+
+Chrome Web Store release bookkeeping:
+- Canonical workflow: `docs/chrome-web-store-release.md`.
+- `npm run release:status` compares extension runtime files and `docs/description.txt`
+  against the highest `webstore-v*` tag.
+- Run `npm run release:record` only after the Developer Dashboard shows that version
+  as live. It requires clean, synchronized `main`, then creates and pushes an annotated
+  `webstore-v<manifest version>` tag.
+- Web Store upload/review remains manual. A built or submitted ZIP is not a published
+  release and must not be tagged.

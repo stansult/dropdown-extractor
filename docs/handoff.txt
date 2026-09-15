@@ -85,6 +85,9 @@ Automated browser tests:
 - Keep the initial suite focused on default rendering, representative ARIA/GitHub fixture
   structure, native extraction, Safe capture, and GitHub checkbox value extraction.
 - `.github/workflows/playwright.yml` is the canonical test-only CI workflow. It runs
-  release-tool and Playwright tests for main pushes, main pull requests, and manual
+  unit/release-tool and Playwright tests for main pushes, main pull requests, and manual
   dispatches. CI retries browser failures twice, uses two workers, and retains the HTML
   Playwright report for 30 days. It does not deploy the playground or extension.
+- `npm run test:unit` includes isolated packaging checks, release bookkeeping tests, and
+  mocked coverage of popup retry and background injection/error paths. Packaging tests
+  never modify the real manifest or `dist/`.

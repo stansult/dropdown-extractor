@@ -9,6 +9,7 @@
     "release:status": "node scripts/release-bookkeeping.cjs status",
     "release:record": "node scripts/release-bookkeeping.cjs record",
     "test:release": "node --test scripts/release-bookkeeping.test.cjs",
+    "test:unit": "node --test scripts/*.test.cjs",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed"
   },

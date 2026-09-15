@@ -24,8 +24,8 @@ jobs:
         run: npm ci
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
-      - name: Test extension release tooling
-        run: npm run test:release
+      - name: Run unit and release-tool tests
+        run: npm run test:unit
       - name: Run Playwright tests
         run: npm run test:e2e
       - name: Upload Playwright report

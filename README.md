@@ -121,10 +121,12 @@ Install dependencies and Playwright's bundled Chromium once, then run the playgr
 ```bash
 npm install
 npx playwright install chromium
+npm run test:unit
 npm run test:e2e
 ```
 
-Use `npm run test:e2e:headed` to watch the tests run in browser windows.
+The unit suite checks packaging, release bookkeeping, and the popup/background entrypoints.
+Use `npm run test:e2e:headed` to watch the browser tests run.
 
 ## License
 

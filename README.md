@@ -116,17 +116,26 @@ To test the extension, you can use [Dropdown Playground](https://dropdown-extrac
 - render a mock dropdown and extract from it
 - copy a snapshot (text/JSON) to easily share a repro setup
 
-#### Automated tests
+## Engineering and QA process
 
-See the [automated testing guide](tests/README.md) for setup, local commands, test
-architecture, coverage matrices, reports, traces, and instructions for adding coverage.
+Dropdown Extractor uses a documented quality workflow from bug report through production
+verification:
 
-## Reporting bugs
-
-Use the repository's [Bug report](https://github.com/stansult/dropdown-extractor/issues/new?template=bug_report.yml)
-form. The [bug reporting process](docs/bug-reporting.md) explains the evidence, status,
-privacy, and Chrome Web Store release workflow. Debug HTML may contain private page data;
-sanitize it before sharing.
+- **Testing strategy:** Playwright tests exercise the real unpacked extension, while
+  independent playground contracts validate the fixtures those tests depend on. See the
+  [automated testing guide](tests/README.md) for setup, local commands, coverage matrices,
+  reports, traces, and instructions for adding coverage.
+- **Bug lifecycle:** Reports move through reproduction, severity classification, regression
+  coverage, release tracking, and live verification. Use the repository's
+  [Bug report](https://github.com/stansult/dropdown-extractor/issues/new?template=bug_report.yml)
+  form and follow the [bug reporting process](docs/bug-reporting.md). Debug HTML may contain
+  private page data; sanitize it before sharing.
+- **CI and deployment:** [GitHub Actions](.github/workflows/playwright.yml) runs unit and
+  browser tests before eligible playground changes are deployed to Netlify. The
+  [deployment guide](docs/deployment.md) documents ownership, safeguards, and recovery.
+- **Release traceability:** Submission and publication tags connect each Chrome Web Store
+  release to its exact source commit and uploaded ZIP checksum. See the
+  [Chrome Web Store release workflow](docs/chrome-web-store-release.md).
 
 ## License
 

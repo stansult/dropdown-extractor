@@ -13,12 +13,16 @@ Use the repository's Bug report issue form. Include:
 - the affected website and dropdown type;
 - the extension, Chrome, and operating-system versions;
 - the Text/Value, output format, Safe Capture, and Debug settings;
-- a Dropdown Playground snapshot when the problem can be reproduced there; and
+- a [Dropdown Playground](https://dropdown-extractor.stansult.com/) snapshot when the
+  problem can be reproduced there; and
 - sanitized Debug HTML when DOM evidence is needed.
 
 Debug HTML can contain account details, entered text, identifiers, and private page data.
 Remove sensitive information before attaching or pasting it. If a safe reproduction cannot
 be shared publicly, describe the structure and behavior without disclosing private content.
+
+Whenever issue instructions or verification steps tell someone to open the playground,
+write [Dropdown Playground](https://dropdown-extractor.stansult.com/) as a link.
 
 ## Lifecycle
 

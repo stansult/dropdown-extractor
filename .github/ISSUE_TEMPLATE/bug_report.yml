@@ -8,7 +8,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a problem. Debug HTML can contain private page data; sanitize it before sharing.
+        Thanks for reporting a problem. Use the [Dropdown Playground](https://dropdown-extractor.stansult.com/) for a safe reproduction when possible. Debug HTML can contain private page data; sanitize it before sharing.
   - type: textarea
     id: summary
     attributes:
@@ -33,9 +33,9 @@ body:
     id: steps
     attributes:
       label: Steps to reproduce
-      description: Include the affected website and dropdown type when known.
+      description: Include the affected website and dropdown type when known. Link to the Dropdown Playground when the steps use it.
       placeholder: |
-        1. Open ...
+        1. Open the [Dropdown Playground](https://dropdown-extractor.stansult.com/) ...
         2. Configure ...
         3. Click ...
     validations:
@@ -107,7 +107,7 @@ body:
     id: playground
     attributes:
       label: Dropdown Playground snapshot
-      description: Paste a text or JSON snapshot when the problem can be reproduced on the playground.
+      description: Paste a text or JSON snapshot when the problem can be reproduced on the linked Dropdown Playground.
       render: shell
   - type: textarea
     id: debug-html

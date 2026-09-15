@@ -64,6 +64,7 @@ Before applying `status: fixed-unreleased`, record:
 - a regression test that failed before the fix and passes afterward;
 - the fixture contract and complete local suite required by the
   [automated testing guide](../tests/README.md);
+- a linked entry under `Unreleased` in [CHANGELOG.md](../CHANGELOG.md) for a user-visible fix;
 - the fix commit; and
 - whether an extension runtime file changed.
 
@@ -77,7 +78,9 @@ fix: allow mousedown selection with Safe Capture off (#123)
 ## Release closure
 
 Bug fixes that change extension runtime files remain open with `status: fixed-unreleased`
-until their Chrome Web Store version is live. Follow `docs/chrome-web-store-release.md`.
+until their Chrome Web Store version is live. Follow the
+[Chrome Web Store release workflow](chrome-web-store-release.md) and move their
+[CHANGELOG.md](../CHANGELOG.md) entries into the prepared version section.
 Then add a final issue comment containing:
 
 ```text

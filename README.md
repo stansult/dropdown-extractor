@@ -114,19 +114,10 @@ To test the extension, you can use [Dropdown Playground](https://dropdown-extrac
 - render a mock dropdown and extract from it
 - copy a snapshot (text/JSON) to easily share a repro setup
 
-#### Automated browser tests
+#### Automated tests
 
-Install dependencies and Playwright's bundled Chromium once, then run the playground and extension tests:
-
-```bash
-npm install
-npx playwright install chromium
-npm run test:unit
-npm run test:e2e
-```
-
-The unit suite checks packaging, release bookkeeping, and the popup/background entrypoints.
-Use `npm run test:e2e:headed` to watch the browser tests run.
+See the [automated testing guide](tests/README.md) for setup, local commands, test
+architecture, coverage matrices, reports, traces, and instructions for adding coverage.
 
 ## Reporting bugs
 

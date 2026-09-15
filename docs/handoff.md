@@ -95,26 +95,9 @@ Chrome Web Store release bookkeeping:
   release and must not be tagged.
 
 Automated testing:
-- Local setup and commands: see `README.md`, "Automated browser tests."
-- Run all tests with `npm run test:unit`, then `npm run test:e2e`.
-- `npm run test:e2e:headed` runs Playwright visibly for debugging.
-- Playground tests cover fixture rendering without the extension. Extension tests load
-  the actual unpacked extension in Playwright's bundled Chromium and invoke its toolbar
-  action through CDP, exercising popup, background, `activeTab`, and content injection.
-  Tests use a temporary browser profile and the local playground at
-  `http://127.0.0.1:4173`.
-- Playground contract tests cover every fixture currently used by extension tests:
-  native, ARIA, GitHub SelectMenu, Dropbox, AliExpress, and Expedia. Extension coverage
-  includes text-only, value-only, text/value fallback, every combined-output format,
-  Safe Capture on and off for click and mousedown menus, both debug modes, native
-  extraction, GitHub checkbox values, AliExpress href values, and Expedia aria-label text.
-- `.github/workflows/playwright.yml` is the canonical CI and deployment workflow. It runs
-  unit/release-tool and Playwright tests for main pushes, main pull requests, and manual
-  dispatches. CI retries browser failures twice, uses two workers, and retains the HTML
-  Playwright report for 30 days.
-- `npm run test:unit` includes isolated packaging checks, release bookkeeping tests, and
-  mocked coverage of popup retry and background injection/error paths. Packaging tests
-  never modify the real manifest or `dist/`.
+- Canonical public guide: `tests/README.md`. Keep its commands, architecture, coverage
+  matrices, reports, gaps, and contribution workflow current whenever tests change.
+- `.github/workflows/playwright.yml` remains the canonical CI and deployment workflow.
 
 Playground deployment:
 - Canonical setup and recovery guide: `docs/deployment.md`.

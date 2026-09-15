@@ -62,8 +62,8 @@ without maintaining a second classification system.
 Before applying `status: fixed-unreleased`, record:
 
 - a regression test that failed before the fix and passes afterward;
-- an independent playground contract when the regression test relies on a fixture;
-- passing `npm run test:unit` and `npm run test:e2e` results;
+- the fixture contract and complete local suite required by the
+  [automated testing guide](../tests/README.md);
 - the fix commit; and
 - whether an extension runtime file changed.
 

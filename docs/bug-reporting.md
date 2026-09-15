@@ -1,8 +1,8 @@
 # Bug Reporting and Lifecycle
 
 GitHub Issues is the canonical bug tracker for Dropdown Extractor. This document defines
-how reports move from an observation to a verified release. `docs/handoff.md` may reference
-active issue numbers, but it must not duplicate their full history.
+how reports move from an observation to a verified release. Project documentation may link
+to active issues, but must not duplicate their full history.
 
 ## Reporting a bug
 

@@ -9,3 +9,6 @@ dist/
 # Playwright output
 playwright-report/
 test-results/
+
+# Local project/thread continuity notes
+docs/handoff.local.md

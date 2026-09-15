@@ -84,3 +84,7 @@ Automated browser tests:
   playground at `http://127.0.0.1:4173`.
 - Keep the initial suite focused on default rendering, representative ARIA/GitHub fixture
   structure, native extraction, Safe capture, and GitHub checkbox value extraction.
+- `.github/workflows/playwright.yml` is the canonical test-only CI workflow. It runs
+  release-tool and Playwright tests for main pushes, main pull requests, and manual
+  dispatches. CI retries browser failures twice, uses two workers, and retains the HTML
+  Playwright report for 30 days. It does not deploy the playground or extension.

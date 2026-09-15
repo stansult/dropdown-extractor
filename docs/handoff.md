@@ -11,8 +11,12 @@ Workflow rules:
 - Keep this handoff file updated whenever process changes so a fresh thread can resume without context loss.
 - Before committing, review the full diff and draft a commit message that covers all included changes.
 - Do not commit immediately after a reported fix until key regressions are rechecked.
-- Before every push, run both `npm run test:unit` and `npm run test:e2e`; push only
-  after both suites pass.
+- Before pushing executable, configuration, workflow, manifest, package, fixture, or test
+  changes, run both `npm run test:unit` and `npm run test:e2e`; push only after both pass.
+- A change containing only Markdown files may skip both suites after running
+  `git diff --check`, confirming the changed-file list is Markdown-only, reviewing the full
+  diff and rendered wording, and verifying referenced local links. Markdown that drives
+  automation or generated output does not qualify for this exception.
 - When labels/terminology change, keep docs in sync (at minimum `README.md` and `docs/description.txt`).
 - Re-read edited files after changes to confirm final file content is correct.
 - Every fixture-dependent extension test must have an independent playground contract

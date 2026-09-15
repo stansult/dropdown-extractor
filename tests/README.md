@@ -20,7 +20,8 @@ npm run test:unit
 npm run test:e2e
 ```
 
-Both commands must pass before every push. Useful focused and diagnostic commands include:
+Both commands must pass before pushing executable, configuration, workflow, manifest,
+package, fixture, or test changes. Useful focused and diagnostic commands include:
 
 ```bash
 npx playwright test tests/playground.spec.cjs
@@ -35,6 +36,12 @@ a current local HTML report:
 npx playwright test --reporter=html
 npx playwright show-report
 ```
+
+Changes containing only Markdown files may skip both test suites. Before pushing one, run
+`git diff --check`, confirm the changed-file list is Markdown-only, review the full diff and
+rendered wording, and verify referenced local links exist. Markdown used as automation input
+or to generate another artifact does not qualify for this exception. GitHub Actions remains
+the repository-wide check after the push.
 
 The report entry point is `playwright-report/index.html`. On failure, screenshots, error
 context, and retained traces are written under `test-results/`; Playwright prints the exact

@@ -70,6 +70,10 @@ content-script injection, page interaction, clipboard output, and notifications.
 tests run serially because they operate through extension state and persistent browser
 contexts; playground contracts may run in parallel.
 
+The activation helper marks any existing armed toast before triggering the toolbar action
+and waits for a newly created armed toast. This prevents a fading toast from a previous
+activation from making repeated-activation tests continue before reinjection is ready.
+
 ## Fixture coverage
 
 A fixture type counts as covered only when it has both an independent playground contract
@@ -104,6 +108,7 @@ shared. Type-specific tests cover distinct value sources and event models.
 | Neither selected | Error notification and unchanged clipboard |
 | Text present, values absent | Expedia text-only fallback and notification |
 | Text absent, values present | Native values-only fallback and notification |
+| Immediate reactivation after an option change | Same-context space-to-dash preference refresh |
 
 When both Text and Value are selected, the native fixture verifies every supported format:
 
@@ -158,9 +163,7 @@ before the workflow may deploy the playground.
 - Ten supported fixture families do not yet have extension end-to-end scenarios.
 - The Options page UI, persistence, and reset workflow are not exercised directly in a
   browser; extension tests set stored preferences and verify their runtime effects.
-- Immediate reactivation can briefly reuse previous option values; see
-  [GitHub issue #2](https://github.com/stansult/dropdown-extractor/issues/2).
-- Expiration, explicit cancellation, repeated activation, and all-frame debug behavior lack
-  browser-level coverage.
+- Expiration, explicit cancellation, rearming while already active, and all-frame debug
+  behavior lack browser-level coverage.
 - Canvas-rendered, virtualized, Shadow DOM, and cross-origin iframe limitations are not
   represented as successful extraction fixtures.

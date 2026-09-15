@@ -41,6 +41,10 @@ regression test pass locally. This is evidence, not a status label: the issue re
 For playground, CI, documentation, or other changes that do not ship in the extension,
 close the issue after the fix reaches the applicable production system or `main`.
 
+If investigation shows that a report is expected behavior, an environment problem, or a
+test-harness false positive, record the evidence, remove lifecycle and severity labels,
+apply `invalid` (or `duplicate`/`wontfix` when appropriate), and close the issue.
+
 ## Severity
 
 Severity describes user impact, not when work will be scheduled. Assign one severity after

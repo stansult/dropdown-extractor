@@ -43,6 +43,8 @@ async function setPrefs(worker, values) {
 }
 
 async function armExtension(worker, page, context) {
+  await page.locator('.dropdown-extractor-toast', { hasText: 'Click a dropdown' })
+    .evaluateAll(toasts => toasts.forEach(toast => { toast.dataset.playwrightPreviousArm = 'true'; }));
   await page.bringToFront();
   const extensionId = new URL(worker.url()).hostname;
   const browser = context.browser();
@@ -61,7 +63,10 @@ async function armExtension(worker, page, context) {
   } finally {
     await browserSession.detach();
   }
-  await expect(page.locator('.dropdown-extractor-toast', { hasText: 'Click a dropdown' })).toBeVisible();
+  await expect(page.locator(
+    '.dropdown-extractor-toast:not([data-playwright-previous-arm])',
+    { hasText: 'Click a dropdown' }
+  )).toBeVisible();
 }
 
 async function clipboardText(page) {
@@ -207,6 +212,26 @@ for (const [label, format, expected] of combinedFormats) {
     await expect.poll(() => clipboardText(page)).toBe(expected);
   });
 }
+
+test('immediate reactivation uses newly stored preferences', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+  await renderFixture(page, { type: 'native', items });
+  await setPrefs(worker, {
+    extractText: true,
+    extractValue: true,
+    format: 'text-space-value',
+    safeCapture: true,
+    debugMode: false,
+  });
+  await armExtension(worker, page, context);
+  await page.locator('#dropdown select').click();
+  await expect.poll(() => clipboardText(page)).toBe('Alpha 101\nBeta 202\nGamma 303');
+
+  await setPrefs(worker, { format: 'text-dash-value' });
+  await armExtension(worker, page, context);
+  await page.locator('#dropdown select').click();
+
+  await expect.poll(() => clipboardText(page)).toBe('Alpha - 101\nBeta - 202\nGamma - 303');
+});
 
 test('reports an error when neither text nor value is selected', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
   await renderFixture(page, { type: 'native', items });

@@ -63,18 +63,14 @@ Test page:
 
 Notes for future work:
 - If adding a new dropdown type, prefer creating a test page mock + README entry.
-- Rapidly changing options and immediately rearming on the same tab can briefly reuse the
-  previous in-page preferences before the new asynchronous storage read finishes. Format
-  tests use fresh contexts; track repeated-activation preference loading in GitHub issue #2.
 - For debugging unsupported menus, use Debug -> Any two to capture trigger/container/option.
 - Before committing, review the full diff and draft a commit message that covers all changes.
 - Safe capture regressions: use Any two on the option click to inspect DOM/ARIA; if an option is misclassified as a trigger (e.g., `aria-expanded` on the option), adjust `shouldBlockOptionClick` to treat it as an option (often via a distinctive child selector).
 
 Active bugs:
 - GitHub issue #1: Safe Capture off suppressed Dropbox-style `mousedown` selection. Fixed
-  locally and verified, but not yet committed or released; keep open through Web Store release.
-- GitHub issue #2: immediate reactivation can briefly reuse previous option values.
-  Confirmed; no fix yet.
+  on `main`; version 1.0.16 is submitted and awaiting Chrome Web Store publication. Keep
+  the issue open as `fixed-unreleased` until live verification and release tagging.
 
 Description file:
 - Source: `docs/description.txt` (short Chrome Web Store description).

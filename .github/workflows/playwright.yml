@@ -36,3 +36,73 @@ jobs:
           path: playwright-report/
           retention-days: 30
           if-no-files-found: ignore
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      deployments: write
+    concurrency:
+      group: netlify-playground-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Check for undeployed playground changes
+        id: plan
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { planDeployment } = require('./scripts/deployment-plan.cjs');
+            const plan = await planDeployment({ github, context });
+            core.setOutput('needed', String(plan.needed));
+            core.info(plan.reason);
+            await core.summary.addHeading('Playground deployment').addRaw(plan.reason).write();
+      - name: Validate Netlify secrets
+        if: steps.plan.outputs.needed == 'true'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          test -n "$NETLIFY_AUTH_TOKEN" || { echo 'Missing NETLIFY_AUTH_TOKEN repository secret'; exit 1; }
+          test -n "$NETLIFY_SITE_ID" || { echo 'Missing NETLIFY_SITE_ID repository secret'; exit 1; }
+      - name: Install pinned Netlify CLI
+        if: steps.plan.outputs.needed == 'true'
+        run: npm install --global netlify-cli@27.5.1
+      - name: Confirm commit is still current
+        if: steps.plan.outputs.needed == 'true'
+        id: current
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { data } = await github.rest.repos.getBranch({ ...context.repo, branch: 'main' });
+            core.setOutput('ready', String(data.commit.sha === context.sha));
+      - name: Publish tested playground
+        if: steps.current.outputs.ready == 'true'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: netlify deploy --dir=test --prod --no-build --message "GitHub Actions $GITHUB_SHA" --json
+      - name: Record successful deployment baseline
+        if: steps.current.outputs.ready == 'true'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { environment } = require('./scripts/deployment-plan.cjs');
+            const { data } = await github.rest.repos.createDeployment({
+              ...context.repo, ref: context.sha, environment,
+              auto_merge: false, required_contexts: [], production_environment: true,
+              description: 'Playground published by test-gated workflow',
+            });
+            await github.rest.repos.createDeploymentStatus({
+              ...context.repo, deployment_id: data.id, state: 'success', auto_inactive: false,
+              environment_url: 'https://dropdown-extractor.stansult.com',
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });

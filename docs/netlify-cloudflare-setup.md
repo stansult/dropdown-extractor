@@ -17,6 +17,9 @@ This project hosts the test playground as a static site from the `test/` folder.
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- test/ netlify.toml"
 ```
 
+After GitHub Actions deployment is configured, stop Netlify's independent Git
+builds so untested commits cannot bypass CI. See `docs/deployment.md`.
+
 ### What this does
 
 - Serves static files directly from `test/`.
@@ -50,8 +53,9 @@ In Cloudflare DNS for `stansult.com` (or your domain):
 
 ## 5. Deploy Workflow
 
-- Changes under `test/` trigger deploys.
-- Changes outside `test/` and `netlify.toml` do not trigger deploys due to the `ignore` rule.
+- GitHub Actions tests every push and pull request to `main`.
+- After tests pass on `main`, changes under `test/` or to `netlify.toml` trigger a production deployment.
+- Other changes skip deployment after the initial successful workflow baseline.
 
 ## 6. Quick Troubleshooting
 

@@ -91,3 +91,13 @@ Automated browser tests:
 - `npm run test:unit` includes isolated packaging checks, release bookkeeping tests, and
   mocked coverage of popup retry and background injection/error paths. Packaging tests
   never modify the real manifest or `dist/`.
+
+Playground deployment:
+- Canonical setup and recovery guide: `docs/deployment.md`.
+- The deploy job runs only after tests pass on the current tip of `main`; pull requests
+  never deploy. It publishes `test/` with Netlify CLI and records successful baselines
+  in the GitHub environment `netlify-playground-production`.
+- Deployment decisions compare `test/` and `netlify.toml` with the last successful
+  workflow deployment, preserving pending changes across failures.
+- GitHub requires repository secrets `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID`.
+- Netlify's independent Git builds must remain stopped while Actions owns deployment.

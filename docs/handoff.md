@@ -15,6 +15,9 @@ Workflow rules:
   after both suites pass.
 - When labels/terminology change, keep docs in sync (at minimum `README.md` and `docs/description.txt`).
 - Re-read edited files after changes to confirm final file content is correct.
+- Every fixture-dependent extension test must have an independent playground contract
+  test that verifies the relevant DOM structure, data sources, and unmodified interaction
+  behavior on which the extension assertion depends.
 
 Current behavior highlights:
 - Arm via extension button; click a menu option to extract items.
@@ -87,9 +90,10 @@ Automated testing:
   action through CDP, exercising popup, background, `activeTab`, and content injection.
   Tests use a temporary browser profile and the local playground at
   `http://127.0.0.1:4173`.
-- Current browser coverage includes default playground rendering, representative
-  ARIA/GitHub fixture structure, native extraction, ARIA and Dropbox Safe capture,
-  GitHub checkbox values, AliExpress href values, and Expedia aria-label text.
+- Playground contract tests cover every fixture currently used by extension tests:
+  native, ARIA, GitHub SelectMenu, Dropbox, AliExpress, and Expedia. Extension coverage
+  includes native extraction, ARIA and Dropbox Safe capture, GitHub checkbox values,
+  AliExpress href values, and Expedia aria-label text.
 - `.github/workflows/playwright.yml` is the canonical CI and deployment workflow. It runs
   unit/release-tool and Playwright tests for main pushes, main pull requests, and manual
   dispatches. CI retries browser failures twice, uses two workers, and retains the HTML

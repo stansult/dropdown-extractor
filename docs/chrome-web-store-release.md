@@ -46,7 +46,9 @@ is created, push that tag with
 
 [CHANGELOG.md](../CHANGELOG.md) is the versioned history for existing users.
 `docs/description.txt` is the current Chrome Web Store listing copy for prospective users.
-Treat them independently:
+It may prepare an implemented type for the next submission even while the public Playground
+and README label that type **Coming in next release**. Treat the changelog and listing source
+independently:
 
 | Change | Changelog | Store description |
 | --- | --- | --- |

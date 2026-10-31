@@ -81,6 +81,14 @@ The activation helper marks any existing armed toast before triggering the toolb
 and waits for a newly created armed toast. This prevents a fading toast from a previous
 activation from making repeated-activation tests continue before reinjection is ready.
 
+## Playground publication status
+
+The Playground distinguishes types available in the current Chrome Web Store release from
+types implemented on `main` for the next release. A contract verifies that a published type
+is labeled **Supported** and that an implemented but unpublished type is labeled **Coming in
+next release** in the picker, configuration state, and rendered fixture. Publication status
+does not change the fixture contract or development-extension behavior.
+
 ## Fixture coverage
 
 A fixture type counts as covered only when it has both an independent playground contract
@@ -90,12 +98,13 @@ and at least one extension end-to-end scenario.
 | --- | --- | --- |
 | Native `<select>` | Option text/value, missing text, normal selection | Text, value, fallbacks, formats, errors, and supported debug |
 | ARIA listbox | Roles, values, selection, and menu closing | Safe Capture on/off and Any-two debug |
+| ARIA grid dropdown | Grid/row/cell roles, nested text, absent values, selection, and menu closing | Text-only fallback and Safe Capture on |
 | GitHub SelectMenu | Checkbox values, checking, summary update, and closing | Checkbox value extraction and combined formatting |
 | Dropbox-style menu | `mousedown` selection and menu closing | Safe Capture on/off for `mousedown` behavior |
 | AliExpress suggestions | Link text, `href`, ignored competing fields, and opening | `href` value precedence |
 | Expedia suggestions | `aria-label`, absent value fields, selection, and closing | `aria-label` precedence and text-only fallback |
 
-This covers 6 of the 16 supported playground fixture families. Fixture families without an
+This covers 7 of the 17 implemented playground fixture families. Fixture families without an
 extension scenario are Selectize, React Select, React Select Atlassian, Downshift, MUI,
 Radix, Ant Design, Select2, Chosen, and SLM modal. This count measures fixture-family
 coverage, not source-code line or branch coverage; no numeric code-coverage instrumentation
@@ -109,11 +118,11 @@ shared. Type-specific tests cover distinct value sources and event models.
 
 | Selection | Coverage |
 | --- | --- |
-| Text only | Native, ARIA, and Dropbox |
+| Text only | Native, ARIA listbox, ARIA grid, and Dropbox |
 | Value only | Native |
 | Text and value | Native format matrix plus GitHub and AliExpress semantics |
 | Neither selected | Error notification and unchanged clipboard |
-| Text present, values absent | Expedia text-only fallback and notification |
+| Text present, values absent | Expedia and ARIA-grid text-only fallback and notification |
 | Text absent, values present | Native values-only fallback and notification |
 | Immediate reactivation after an option change | Same-context space-to-dash preference refresh |
 
@@ -133,7 +142,7 @@ When both Text and Value are selected, the native fixture verifies every support
 
 | Option | Coverage |
 | --- | --- |
-| Safe Capture on | ARIA click selection is blocked; Dropbox `mousedown` selection is blocked |
+| Safe Capture on | ARIA listbox and grid click selection is blocked; Dropbox `mousedown` selection is blocked |
 | Safe Capture off | ARIA click selection proceeds; Dropbox `mousedown` selection proceeds |
 | Debug: Supported dropdown | Native dropdown raw HTML and notification |
 | Debug: Any two | ARIA menu-container capture followed by option capture |
@@ -154,6 +163,10 @@ For a new fixture-dependent extension scenario:
 5. Run `npm run test:unit` and `npm run test:e2e` before pushing.
 6. Update the matrices in this guide when coverage changes.
 
+For a new supported dropdown family, also follow the canonical
+[adding a supported dropdown type process](../docs/adding-dropdown-type.md), which covers
+intake, support decisions, public documentation, task evidence, and release states.
+
 For a bug fix, follow the [bug reporting process](../docs/bug-reporting.md): record the
 failing regression, fixture contract when applicable, fix commit, full-suite evidence,
 and release impact.
@@ -167,7 +180,7 @@ before the workflow may deploy the playground.
 
 ## Known gaps
 
-- Ten supported fixture families do not yet have extension end-to-end scenarios.
+- Ten implemented fixture families do not yet have extension end-to-end scenarios.
 - The Options page UI, persistence, and reset workflow are not exercised directly in a
   browser; extension tests set stored preferences and verify their runtime effects.
 - Expiration, explicit cancellation, rearming while already active, and all-frame debug

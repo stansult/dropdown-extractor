@@ -1,0 +1,104 @@
+name: New dropdown type
+description: Propose and track support for a distinct reusable dropdown structure
+title: "[Dropdown type]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use the [adding a supported dropdown type process](https://github.com/stansult/dropdown-extractor/blob/main/docs/adding-dropdown-type.md). Debug HTML can contain private page data; sanitize it before sharing.
+  - type: input
+    id: name
+    attributes:
+      label: Proposed type name
+      description: Use a structural or library name that will make sense in public documentation.
+      placeholder: ARIA grid dropdown
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source and sanitized evidence
+      description: Describe where the type was found and attach or paste sanitized Debug Any two evidence when practical.
+    validations:
+      required: true
+  - type: textarea
+    id: structure
+    attributes:
+      label: Structure and interaction
+      description: Record the trigger, container, options, selection event, closing behavior, and any virtualization, Shadow DOM, canvas, or iframe constraints.
+      placeholder: |
+        Trigger:
+        Container:
+        Options:
+        Selection event:
+        Closing behavior:
+        Rendering constraints:
+    validations:
+      required: true
+  - type: textarea
+    id: fields
+    attributes:
+      label: Extraction fields
+      description: Identify the intended Text and Value sources. State explicitly when Value is unavailable.
+      placeholder: |
+        Text:
+        Value:
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected extension behavior
+      description: Define extraction, Safe Capture, Debug, notifications, and known limitations before implementation.
+      placeholder: |
+        Extraction:
+        Safe Capture:
+        Debug:
+        Notifications:
+        Limitations:
+    validations:
+      required: true
+  - type: checkboxes
+    id: implementation
+    attributes:
+      label: Implementation checklist
+      options:
+        - label: A minimal sanitized Dropdown Playground fixture represents the real structure and interaction.
+        - label: An independent playground contract verifies the fixture assumptions.
+        - label: An extension test verifies clipboard output, notifications, and relevant page side effects.
+        - label: The new extension test was shown to fail before support, or the issue records why that was impractical and what was verified instead.
+        - label: Product support uses the narrowest reusable recognition pattern and was checked for conflicts.
+        - label: Public supported-type and limitation documentation is current.
+        - label: Test coverage matrices are current.
+        - label: The Unreleased changelog and Chrome Web Store description were reviewed and updated when applicable.
+        - label: The Playground and README label the implemented type Coming in next release until publication.
+        - label: Focused tests and both complete test suites pass.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Implementation and verification evidence
+      description: Link the fixture contract, extension test, pre-support failure, implementation commit, complete-suite results, and documentation changes.
+  - type: textarea
+    id: release
+    attributes:
+      label: Release impact and live verification
+      description: Record the target or published Web Store version and live verification. Keep the issue open until the type is live and verified.
+  - type: checkboxes
+    id: publication
+    attributes:
+      label: Publication checklist
+      options:
+        - label: The submitted Web Store version, commit, and artifact checksum are recorded.
+        - label: The Web Store version is live, not merely submitted or under review.
+        - label: The real dropdown was verified with the published extension, or the issue explains why it was no longer safely available.
+        - label: The Playground and README status changed from Coming in next release to Supported.
+        - label: The publication-status change passed both complete test suites and was deployed.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy confirmation
+      options:
+        - label: I reviewed all attached or pasted content and removed sensitive information.
+          required: true

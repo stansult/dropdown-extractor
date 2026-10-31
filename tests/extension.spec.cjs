@@ -112,6 +112,31 @@ test('safe capture extracts an ARIA list without selecting the clicked option', 
   await expect(trigger).toHaveText('Alpha');
 });
 
+test('extracts text-only ARIA grid cells without selecting the clicked option', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+  await renderFixture(page, { type: 'aria-grid', items });
+  await setPrefs(worker, {
+    extractText: true,
+    extractValue: true,
+    format: 'text-brackets-value',
+    safeCapture: true,
+    debugMode: false,
+  });
+  await armExtension(worker, page, context);
+  const trigger = page.locator('#dropdown .dropdown-trigger');
+  const menu = page.locator('#dropdown .dropdown-menu');
+  const cells = page.locator('#dropdown [role="gridcell"]');
+  await expect(trigger).toHaveText('Alpha');
+  await trigger.click();
+  await cells.nth(1).click();
+
+  await expect.poll(() => clipboardText(page)).toBe('Alpha\nBeta\nGamma');
+  await expect(page.locator('.dropdown-extractor-toast', { hasText: 'Only text extracted, no values found.' })).toBeVisible();
+  await expect(trigger).toHaveText('Alpha');
+  await expect(cells.nth(0)).toHaveAttribute('aria-selected', 'true');
+  await expect(cells.nth(1)).toHaveAttribute('aria-selected', 'false');
+  await expect(menu).toHaveClass(/open/);
+});
+
 test('extracts GitHub checkbox values with the configured format', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
   await renderFixture(page, { type: 'github-selectmenu', items });
   await setPrefs(worker, {

@@ -445,7 +445,7 @@ p {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  width: 280px;
+  width: min(360px, calc(100vw - 48px));
   border: 1px solid #bbb;
   border-radius: 6px;
   background: #fff;
@@ -488,6 +488,7 @@ p {
   border-radius: 999px;
   border: 1px solid transparent;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .type-option.supported .type-pill,
@@ -495,6 +496,13 @@ p {
   color: #1f6f3a;
   background: #e8f5ee;
   border-color: #cfe9da;
+}
+
+.type-option.coming .type-pill,
+.type-support.coming {
+  color: #7a4b00;
+  background: #fff3cd;
+  border-color: #f0d98a;
 }
 
 .type-option.unsupported .type-pill,
@@ -691,6 +699,7 @@ button.changed:focus-visible {
 }
 
 .mock-listbox,
+.mock-grid,
 .selectize-dropdown-content,
 .react-select__menu-list,
 .radix-menu,
@@ -721,6 +730,7 @@ button.changed:focus-visible {
 }
 
 .mock-option,
+.mock-gridcell,
 .selectize-dropdown-content .option,
 .react-select__option,
 .radix-menuitem,
@@ -736,6 +746,7 @@ button.changed:focus-visible {
 }
 
 .mock-option:hover,
+.mock-gridcell:hover,
 .selectize-dropdown-content .option:hover,
 .react-select__option:hover,
 .mui-option:hover,

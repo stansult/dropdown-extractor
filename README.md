@@ -41,26 +41,27 @@ To open Extension Options, right-click the extension button and select Options.
 
 ### Dropdown types
 
-| Dropdown type | Supported |
-|--------------|:----------:|
-| Native `<select>` | Yes |
-| ARIA listbox (`role="listbox"`) | Yes |
-| Selectize | Yes |
-| React Select | Yes |
-| React Select (Atlassian) | Yes |
-| Downshift | Yes |
-| MUI Autocomplete | Yes |
-| Radix menu | Yes |
-| Dropbox-style menu | Yes |
-| Ant Design Select | Yes |
-| Select2 | Yes |
-| Chosen | Yes |
-| GitHub SelectMenu | Yes |
-| AliExpress search suggestions | Yes |
-| Google Search suggestions | Yes |
-| Expedia search suggestions | Yes |
-| Canvas-rendered / virtualized | No |
-| Cross-origin iframes | No |
+| Dropdown type | Status |
+|--------------|:------:|
+| Native `<select>` | Supported |
+| ARIA listbox (`role="listbox"`) | Supported |
+| ARIA grid dropdown (`role="grid"`) | Coming in next release |
+| Selectize | Supported |
+| React Select | Supported |
+| React Select (Atlassian) | Supported |
+| Downshift | Supported |
+| MUI Autocomplete | Supported |
+| Radix menu | Supported |
+| Dropbox-style menu | Supported |
+| Ant Design Select | Supported |
+| Select2 | Supported |
+| Chosen | Supported |
+| GitHub SelectMenu | Supported |
+| AliExpress search suggestions | Supported |
+| Google Search suggestions | Supported |
+| Expedia search suggestions | Supported |
+| Canvas-rendered / virtualized | Not supported |
+| Cross-origin iframes | Not supported |
 
 #### Notes / Limitations
 
@@ -68,6 +69,7 @@ To open Extension Options, right-click the extension button and select Options.
   - includes support for Google Search suggestions
 - AntD/Select2/Chosen support depends on their default DOM structure; customized themes may not be detectable.
 - Radix menus are detected via role="menu".
+- ARIA grid dropdowns are detected through selectable grid cells; values depend on what the cells expose.
 - Radix menu items often omit value/data-value; href is used as a fallback value when present.
 - Dropbox-style menus can close on mousedown; Safe capture keeps them open while extracting.
 - GitHub SelectMenu items use checkbox values as the extracted value.

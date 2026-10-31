@@ -15,6 +15,7 @@ const dropdownType = document.getElementById('dropdown-type');
 const dropdownPanel = document.querySelector('.dropdown-panel');
 const valueModeSelect = document.getElementById('value-mode');
 const noteNative = document.getElementById('note-native');
+const noteAriaGrid = document.getElementById('note-aria-grid');
 const noteLibs = document.getElementById('note-libs');
 const noteRadixRole = document.getElementById('note-radix-role');
 const noteRadixValue = document.getElementById('note-radix-value');
@@ -27,27 +28,34 @@ const notesTitle = document.getElementById('notes-title');
 
 let lastRenderSnapshot = null;
 
-const supportedTypes = new Set([
-  'native',
-  'aria',
-  'selectize',
-  'react',
-  'react-atlassian',
-  'downshift',
-  'mui',
-  'radix-menu',
-  'dropbox-menu',
-  'antd',
-  'select2',
-  'chosen',
-  'slm-modal',
-  'github-selectmenu',
-  'aliexpress',
-  'expedia'
+const TYPE_STATUS = Object.freeze({
+  supported: Object.freeze({ className: 'supported', label: 'Supported' }),
+  coming: Object.freeze({ className: 'coming', label: 'Coming in next release' }),
+  unsupported: Object.freeze({ className: 'unsupported', label: 'Not supported' })
+});
+
+const typeStatuses = new Map([
+  ['native', 'supported'],
+  ['aria', 'supported'],
+  ['aria-grid', 'coming'],
+  ['selectize', 'supported'],
+  ['react', 'supported'],
+  ['react-atlassian', 'supported'],
+  ['downshift', 'supported'],
+  ['mui', 'supported'],
+  ['radix-menu', 'supported'],
+  ['dropbox-menu', 'supported'],
+  ['antd', 'supported'],
+  ['select2', 'supported'],
+  ['chosen', 'supported'],
+  ['slm-modal', 'supported'],
+  ['github-selectmenu', 'supported'],
+  ['aliexpress', 'supported'],
+  ['expedia', 'supported']
 ]);
 
-function isTypeSupported(type) {
-  return supportedTypes.has(type);
+function getTypeStatus(type) {
+  return TYPE_STATUS[typeStatuses.get(type)] || TYPE_STATUS.unsupported;
 }
 
 function updateTypeDisplay() {
@@ -57,8 +65,9 @@ function updateTypeDisplay() {
     typeLabel.textContent = label;
   }
   if (typeSupportConfig) {
-    typeSupportConfig.className = `type-support ${isTypeSupported(typeSelect.value) ? 'supported' : 'unsupported'}`;
-    typeSupportConfig.textContent = isTypeSupported(typeSelect.value) ? 'Supported' : 'Not supported';
+    const status = getTypeStatus(typeSelect.value);
+    typeSupportConfig.className = `type-support ${status.className}`;
+    typeSupportConfig.textContent = status.label;
   }
 }
 
@@ -71,15 +80,17 @@ function updateRenderedTypeDisplay() {
   name.className = 'dropdown-type-name';
   name.textContent = label;
   dropdownType.appendChild(name);
+  const status = getTypeStatus(lastRenderSnapshot.type);
   const pill = document.createElement('span');
-  pill.className = `type-support ${isTypeSupported(lastRenderSnapshot.type) ? 'supported' : 'unsupported'}`;
-  pill.textContent = isTypeSupported(lastRenderSnapshot.type) ? 'Supported' : 'Not supported';
+  pill.className = `type-support ${status.className}`;
+  pill.textContent = status.label;
   dropdownType.appendChild(pill);
 }
 
 function updateNotesVisibility() {
   const noteMap = {
     native: [noteNative],
+    'aria-grid': [noteAriaGrid],
     mui: [noteMui],
     'radix-menu': [noteRadixRole, noteRadixValue],
     'dropbox-menu': [noteDropbox],
@@ -139,9 +150,10 @@ function buildTypeMenu() {
   if (!typeMenu) return;
   typeMenu.innerHTML = '';
   [...typeSelect.options].forEach(option => {
+    const status = getTypeStatus(option.value);
     const item = document.createElement('button');
     item.type = 'button';
-    item.className = `type-option ${isTypeSupported(option.value) ? 'supported' : 'unsupported'}`;
+    item.className = `type-option ${status.className}`;
     item.setAttribute('role', 'option');
     item.dataset.value = option.value;
 
@@ -149,7 +161,7 @@ function buildTypeMenu() {
     label.textContent = option.textContent.trim();
     const pill = document.createElement('span');
     pill.className = 'type-pill';
-    pill.textContent = isTypeSupported(option.value) ? '✓' : '✕';
+    pill.textContent = status.label;
 
     item.appendChild(label);
     item.appendChild(pill);
@@ -532,10 +544,12 @@ function createGitHubSelectMenuDropdown(items) {
 
 function wireSelection(menuWrapper, listEl, trigger) {
   listEl.addEventListener('click', (event) => {
-    const option = event.target.closest('[role="option"], [role="listitem"], [role="menuitem"], .option, .react-select__option, .react-select-variant-option, .mui-option, .ant-option, .select2-results__option, .chosen-option, .downshift-option, .mock-option, .radix-menuitem, .uitk-action-list-item-link');
+    const option = event.target.closest('[role="option"], [role="listitem"], [role="menuitem"], [role="gridcell"], .option, .react-select__option, .react-select-variant-option, .mui-option, .ant-option, .select2-results__option, .chosen-option, .downshift-option, .mock-option, .radix-menuitem, .uitk-action-list-item-link');
     if (!option) return;
     listEl.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+    listEl.querySelectorAll('[aria-selected]').forEach(el => el.setAttribute('aria-selected', 'false'));
     option.classList.add('selected');
+    if (option.hasAttribute('aria-selected')) option.setAttribute('aria-selected', 'true');
     trigger.textContent = option.textContent.trim();
     menuWrapper.classList.remove('open');
   });
@@ -846,6 +860,37 @@ function renderDropdown() {
     });
     menu.appendChild(listbox);
     wireSelection(menu, listbox, trigger);
+    dropdownContainer.appendChild(shell);
+    pulsePanel();
+    return;
+  }
+
+  if (type === 'aria-grid') {
+    const { shell, trigger, menu } = createDropdownShell(items[0]?.text);
+    const grid = document.createElement('div');
+    grid.className = 'mock-grid';
+    grid.setAttribute('role', 'grid');
+    grid.setAttribute('aria-label', 'Example choices');
+    items.forEach((item, index) => {
+      const row = document.createElement('div');
+      row.setAttribute('role', 'row');
+      const cell = document.createElement('div');
+      cell.className = 'mock-gridcell';
+      cell.setAttribute('role', 'gridcell');
+      cell.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
+      const content = document.createElement('span');
+      content.className = 'mock-gridcell-content';
+      const highlight = document.createElement('span');
+      highlight.className = 'highlight';
+      const label = document.createElement('span');
+      label.textContent = item.text;
+      content.append(highlight, label);
+      cell.appendChild(content);
+      row.appendChild(cell);
+      grid.appendChild(row);
+    });
+    menu.appendChild(grid);
+    wireSelection(menu, grid, trigger);
     dropdownContainer.appendChild(shell);
     pulsePanel();
     return;

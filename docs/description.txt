@@ -25,6 +25,7 @@ Supported dropdown types (examples):
 
 – Native <select>
 – ARIA listbox (role="listbox")
+– ARIA grid dropdown (role="grid")
 – React Select
 – MUI Autocomplete
 – Radix menu

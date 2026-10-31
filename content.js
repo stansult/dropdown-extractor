@@ -511,6 +511,7 @@
       element.closest('[role="listbox"]') ||
       element.closest('[role="menu"]') ||
       element.closest('[role="list"]') ||
+      element.closest('[role="grid"]') ||
       element.closest('[role="dialog"]') ||
       element.closest('.selectize-dropdown-content') ||
       element.closest('ul,ol')
@@ -523,7 +524,7 @@
     let current = optionEl.parentElement;
     let depth = 0;
     while (current && depth < 10) {
-      if (current.matches && current.matches('[role="listbox"],[role="menu"],[role="list"],[role="dialog"],.selectize-dropdown-content,ul,ol')) {
+      if (current.matches && current.matches('[role="listbox"],[role="menu"],[role="list"],[role="grid"],[role="dialog"],.selectize-dropdown-content,ul,ol')) {
         return current;
       }
       if (classSelector) {
@@ -538,7 +539,7 @@
 
   function isLikelyContainer(element) {
     if (!element || !element.matches) return false;
-    if (element.matches('[role="listbox"],[role="menu"],[role="list"],[role="dialog"],.selectize-dropdown-content,ul,ol')) return true;
+    if (element.matches('[role="listbox"],[role="menu"],[role="list"],[role="grid"],[role="dialog"],.selectize-dropdown-content,ul,ol')) return true;
     const option = element.querySelector(OPTION_LIKE_SELECTOR);
     if (!option) return false;
     const classSelector = getStableClassSelector(getElementClassName(option));
@@ -548,7 +549,7 @@
 
   function getVisibleMenuContainer(point = null) {
     const candidates = [
-      ...document.querySelectorAll('[role="menu"], [role="listbox"], [role="list"], [role="dialog"]'),
+      ...document.querySelectorAll('[role="menu"], [role="listbox"], [role="list"], [role="grid"], [role="dialog"]'),
       ...document.querySelectorAll('.selectize-dropdown-content')
     ]
       .filter(el => el && el.offsetParent !== null);
@@ -678,7 +679,7 @@
         }
         const point = window.__dropdownExtractorLastPointer || null;
         const triggerContainer = getMenuContainerFromTrigger(element);
-        const openMenu = getVisibleDropdownContainer('[role="menu"], [role="listbox"], [role="list"]', element)
+        const openMenu = getVisibleDropdownContainer('[role="menu"], [role="listbox"], [role="list"], [role="grid"]', element)
           || triggerContainer
           || getVisibleMenuContainer(point);
         if (openMenu && openMenu !== element) {
@@ -905,7 +906,7 @@
       const triggerEl = window.__dropdownExtractorDebugTrigger;
       const containerEl = window.__dropdownExtractorDebugContainer
         || (optionContext ? optionContext.container : null)
-        || (toCapture[0] && toCapture[0].matches && toCapture[0].matches('[role="listbox"],[role="menu"],[role="list"],ul,ol')
+        || (toCapture[0] && toCapture[0].matches && toCapture[0].matches('[role="listbox"],[role="menu"],[role="list"],[role="grid"],ul,ol')
           ? toCapture[0]
           : null);
       const element1 = containerEl || toCapture[0] || element;
@@ -927,7 +928,7 @@
       const triggerEl = window.__dropdownExtractorDebugTrigger;
       const containerEl = window.__dropdownExtractorDebugContainer
         || (optionContext ? optionContext.container : null)
-        || (toCapture[0] && toCapture[0].matches && toCapture[0].matches('[role="listbox"],[role="menu"],[role="list"],ul,ol')
+        || (toCapture[0] && toCapture[0].matches && toCapture[0].matches('[role="listbox"],[role="menu"],[role="list"],[role="grid"],ul,ol')
           ? toCapture[0]
           : null);
       const optionEl = optionContext
@@ -1082,6 +1083,7 @@
   const OPTION_LIKE_SELECTOR = [
     '[role="option"]',
     '[role="listitem"]',
+    '[role="gridcell"][aria-selected]',
     '.option',
     '.mock-option',
     '.react-select__option',
@@ -1137,7 +1139,7 @@
       const containerRole = container.getAttribute && container.getAttribute('role');
       const isDialogContainer = containerRole === 'dialog';
       const isExplicitOption = buttonEl.matches(OPTION_LIKE_SELECTOR)
-        || !!buttonEl.closest('[role="list"],[role="listbox"],[role="menu"]')
+        || !!buttonEl.closest('[role="list"],[role="listbox"],[role="menu"],[role="grid"]')
         || buttonEl.hasAttribute('data-stid');
       if (isDialogContainer && !isExplicitOption) {
         return null;
@@ -1340,13 +1342,13 @@
       const hasPopup = trigger.getAttribute('aria-haspopup');
       if (expanded !== null || hasPopup) return true;
     }
-    const triggerContainer = target.closest('[role="menu"],[role="listbox"],[role="list"]');
+    const triggerContainer = target.closest('[role="menu"],[role="listbox"],[role="list"],[role="grid"]');
     if (triggerContainer) {
       const triggerButton = triggerContainer.querySelector(
         'button[aria-haspopup],button[aria-expanded],[role="button"][aria-haspopup],[role="button"][aria-expanded]'
       );
       const nestedMenu = Array.from(
-        triggerContainer.querySelectorAll('[role="menu"],[role="listbox"],[role="list"]')
+        triggerContainer.querySelectorAll('[role="menu"],[role="listbox"],[role="list"],[role="grid"]')
       ).find(el => el !== triggerContainer);
       if (triggerButton && nestedMenu && !isElementVisible(nestedMenu)) {
         return true;
@@ -1354,7 +1356,7 @@
     }
     const menuItem = target.closest('[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]');
     if (!menuItem) return false;
-    const nestedMenu = menuItem.querySelector('[role="menu"],[role="listbox"],[role="list"]');
+    const nestedMenu = menuItem.querySelector('[role="menu"],[role="listbox"],[role="list"],[role="grid"]');
     if (nestedMenu) return true;
     const nestedTrigger = menuItem.querySelector(
       'button[aria-haspopup],button[aria-expanded],[role="button"][aria-haspopup],[role="button"][aria-expanded]'
@@ -1822,6 +1824,35 @@
       return;
     }
 
+    const grid = target.closest && target.closest('[role="grid"]');
+    const gridCells = grid
+      ? [...grid.querySelectorAll('[role="gridcell"][aria-selected]')]
+      : [];
+
+    if (grid && isElementVisible(grid) && gridCells.length && grid.contains(target)) {
+      suppressSupportedEvent(e, prefs);
+
+      if (shouldDebugSupported(prefs) && copyDebugHtml(grid, 'supported dropdown')) return;
+      const fields = resolveFields(
+        gridCells,
+        cell => getOptionLabelText(cell),
+        [
+          cell => cell.value || cell.getAttribute('value'),
+          cell => cell.dataset.value
+        ]
+      );
+      const { items, note, error } = buildOutput(fields, prefs);
+
+      if (items.length) {
+        completeExtraction(items, note, grid, prefs);
+        return;
+      }
+
+      showErrorToast(error || NO_ITEMS_FOUND_TEXT);
+      cleanup();
+      return;
+    }
+
     const listbox = [...document.querySelectorAll('[role="listbox"]')]
       .find(el => el.offsetParent !== null);
 
@@ -1996,7 +2027,7 @@
       const startTime = Date.now();
       const findVisibleNestedMenu = menuRoot => {
         if (!menuRoot || !menuRoot.querySelectorAll) return null;
-        const nested = [...menuRoot.querySelectorAll('[role="menu"], [role="listbox"], [role="list"], [role="dialog"]')]
+        const nested = [...menuRoot.querySelectorAll('[role="menu"], [role="listbox"], [role="list"], [role="grid"], [role="dialog"]')]
           .filter(el => el !== menuRoot && isElementVisible(el));
         return nested.find(el =>
           [...el.querySelectorAll(OPTION_LIKE_SELECTOR)].some(opt => opt && opt.offsetParent !== null)
@@ -2006,7 +2037,7 @@
         if (window.__dropdownExtractorDebugBlocks?.length) return;
         const menu =
           getVisibleMenuContainer(point) ||
-          getVisibleDropdownContainer('[role="menu"], [role="listbox"], [role="list"], [role="dialog"]', triggerTarget);
+          getVisibleDropdownContainer('[role="menu"], [role="listbox"], [role="list"], [role="grid"], [role="dialog"]', triggerTarget);
         const hasVisibleOption = menu
           ? [...menu.querySelectorAll(OPTION_LIKE_SELECTOR)].some(el => el && el.offsetParent !== null)
           : false;

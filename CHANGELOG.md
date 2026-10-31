@@ -5,6 +5,11 @@ documentation, and internal refactoring changes are omitted unless they affect u
 
 ## Unreleased
 
+### Added
+
+- Added support for ARIA grid dropdowns with selectable grid cells.
+  ([#3](https://github.com/stansult/dropdown-extractor/issues/3))
+
 ## 1.0.16 — 2026-09-15
 
 ### Fixed

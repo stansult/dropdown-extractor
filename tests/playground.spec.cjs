@@ -38,6 +38,27 @@ test('native fixture renders options and supports normal selection', async ({ pa
   expect(errors).toEqual([]);
 });
 
+test('playground distinguishes published and next-release dropdown types', async ({ page }) => {
+  await page.locator('#type-trigger').click();
+  const nativeType = page.locator('.type-option[data-value="native"]');
+  const ariaGridType = page.locator('.type-option[data-value="aria-grid"]');
+
+  await expect(ariaGridType.locator('.type-pill')).toHaveText('Coming in next release');
+  await expect(ariaGridType).toHaveClass(/coming/);
+  await expect(nativeType.locator('.type-pill')).toHaveText('Supported');
+  await expect(nativeType).toHaveClass(/supported/);
+
+  await ariaGridType.click();
+  await expect(page.locator('#type-support-config')).toHaveText('Coming in next release');
+  await expect(page.locator('#type-support-config')).toHaveClass(/coming/);
+
+  await page.locator('#render').click();
+  await expect(page.locator('#dropdown-type .type-support')).toHaveText('Coming in next release');
+  await expect(page.locator('#dropdown-type .type-support')).toHaveClass(/coming/);
+  await page.locator('#dropdown .dropdown-trigger').click();
+  await expect(page.locator('#dropdown [role="grid"]')).toBeVisible();
+});
+
 test('ARIA fixture exposes listbox options and performs normal selection', async ({ page }) => {
   await renderFixture(page, { type: 'aria', items });
   const trigger = page.locator('#dropdown .dropdown-trigger');
@@ -52,6 +73,36 @@ test('ARIA fixture exposes listbox options and performs normal selection', async
   await options.nth(1).click();
   await expect(trigger).toHaveText('Beta');
   await expect(options.nth(1)).toHaveClass(/selected/);
+  await expect(menu).not.toHaveClass(/open/);
+});
+
+test('ARIA grid fixture exposes selectable nested grid cells without values', async ({ page }) => {
+  await renderFixture(page, { type: 'aria-grid', items });
+  const trigger = page.locator('#dropdown .dropdown-trigger');
+  const menu = page.locator('#dropdown .dropdown-menu');
+  const grid = page.locator('#dropdown [role="grid"]');
+  const rows = grid.locator('[role="row"]');
+  const cells = grid.locator('[role="gridcell"]');
+
+  await expect(grid).toHaveAttribute('aria-label', 'Example choices');
+  await expect(rows).toHaveCount(3);
+  await expect(cells).toHaveCount(3);
+  await expect(cells.locator('.mock-gridcell-content > span:last-child'))
+    .toHaveText(['Alpha', 'Beta', 'Gamma']);
+  expect(await cells.evaluateAll(elements => elements.map(element => ({
+    value: element.getAttribute('value'),
+    dataValue: element.getAttribute('data-value'),
+  })))).toEqual([
+    { value: null, dataValue: null },
+    { value: null, dataValue: null },
+    { value: null, dataValue: null },
+  ]);
+
+  await trigger.click();
+  await expect(menu).toHaveClass(/open/);
+  await cells.nth(1).click();
+  await expect(trigger).toHaveText('Beta');
+  await expect(cells.nth(1)).toHaveAttribute('aria-selected', 'true');
   await expect(menu).not.toHaveClass(/open/);
 });
 

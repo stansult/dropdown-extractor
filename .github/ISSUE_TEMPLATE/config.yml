@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Adding a supported dropdown type
+    url: https://github.com/stansult/dropdown-extractor/blob/main/docs/adding-dropdown-type.md
+    about: Read how new dropdown structures are assessed, tested, implemented, and released.
   - name: Bug reporting process
     url: https://github.com/stansult/dropdown-extractor/blob/main/docs/bug-reporting.md
     about: Read how reports are reproduced, fixed, and released.

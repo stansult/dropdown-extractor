@@ -39,6 +39,7 @@ verifies the relevant DOM structure, data sources, and unmodified interaction be
 ## Canonical processes
 
 - [Automated testing](tests/README.md)
+- [Adding a supported dropdown type](docs/adding-dropdown-type.md)
 - [Bug reporting and lifecycle](docs/bug-reporting.md)
 - [Chrome Web Store releases](docs/chrome-web-store-release.md)
 - [Playground deployment](docs/deployment.md)

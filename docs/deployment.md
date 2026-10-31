@@ -19,6 +19,12 @@ Netlify CLI publishes only `test/` with `--prod --no-build`. This does not
 package or publish the Chrome extension. A successful upload is followed by a
 GitHub deployment record.
 
+The public Playground may include a fixture for extension behavior implemented on
+`main` but not yet published in the Chrome Web Store. Such a type must be labeled
+**Coming in next release** throughout the Playground and public README. Change it to
+**Supported** only after the relevant Web Store version is live and the real type has
+been verified with that published extension.
+
 ## One-Time Setup
 
 1. Add GitHub Actions secrets `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID`.

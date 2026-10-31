@@ -17,7 +17,8 @@ publishing.
 
 Netlify CLI publishes only `test/` with `--prod --no-build`. This does not
 package or publish the Chrome extension. A successful upload is followed by a
-GitHub deployment record.
+GitHub deployment record. The Netlify deploy title uses the tested commit's
+subject so the dashboard identifies the change instead of showing only a raw SHA.
 
 The public Playground may include a fixture for extension behavior implemented on
 `main` but not yet published in the Chrome Web Store. Such a type must be labeled

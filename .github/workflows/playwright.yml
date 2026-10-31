@@ -89,7 +89,7 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        run: netlify deploy --dir=test --prod --no-build --message "GitHub Actions $GITHUB_SHA" --json
+        run: netlify deploy --dir=test --prod --no-build --message="$(git show -s --format=%s "$GITHUB_SHA")" --json
       - name: Record successful deployment baseline
         if: steps.current.outputs.ready == 'true'
         uses: actions/github-script@v9

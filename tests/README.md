@@ -98,13 +98,14 @@ and at least one extension end-to-end scenario.
 | --- | --- | --- |
 | Native `<select>` | Option text/value, missing text, normal selection | Text, value, fallbacks, formats, errors, and supported debug |
 | ARIA listbox | Roles, values, selection, and menu closing | Safe Capture on/off and Any-two debug |
+| Searchable ARIA listbox | Public 26-option fixture plus iCIMS-style short/long iframe contracts for trigger, filtering, selection, and closing | All-frame Any-two debug for both short and long menus ([#4](https://github.com/stansult/dropdown-extractor/issues/4)) |
 | ARIA grid dropdown | Grid/row/cell roles, nested text, absent values, selection, and menu closing | Text-only fallback and Safe Capture on |
 | GitHub SelectMenu | Checkbox values, checking, summary update, and closing | Checkbox value extraction and combined formatting |
 | Dropbox-style menu | `mousedown` selection and menu closing | Safe Capture on/off for `mousedown` behavior |
 | AliExpress suggestions | Link text, `href`, ignored competing fields, and opening | `href` value precedence |
 | Expedia suggestions | `aria-label`, absent value fields, selection, and closing | `aria-label` precedence and text-only fallback |
 
-This covers 7 of the 17 implemented playground fixture families. Fixture families without an
+This covers 8 of the 18 implemented test fixture families. Fixture families without an
 extension scenario are Selectize, React Select, React Select Atlassian, Downshift, MUI,
 Radix, Ant Design, Select2, Chosen, and SLM modal. This count measures fixture-family
 coverage, not source-code line or branch coverage; no numeric code-coverage instrumentation
@@ -145,7 +146,7 @@ When both Text and Value are selected, the native fixture verifies every support
 | Safe Capture on | ARIA listbox and grid click selection is blocked; Dropbox `mousedown` selection is blocked |
 | Safe Capture off | ARIA click selection proceeds; Dropbox `mousedown` selection proceeds |
 | Debug: Supported dropdown | Native dropdown raw HTML and notification |
-| Debug: Any two | ARIA menu-container capture followed by option capture |
+| Debug: Any two | ARIA menu-container capture followed by option capture, including short and long searchable menus inside an iframe |
 
 ARIA and Dropbox are both required for Safe Capture because they use different interaction
 events. Debug modes use representative fixtures because the workflows are shared; add
@@ -183,7 +184,7 @@ before the workflow may deploy the playground.
 - Ten implemented fixture families do not yet have extension end-to-end scenarios.
 - The Options page UI, persistence, and reset workflow are not exercised directly in a
   browser; extension tests set stored preferences and verify their runtime effects.
-- Expiration, explicit cancellation, rearming while already active, and all-frame debug
-  behavior lack browser-level coverage.
+- Expiration, explicit cancellation, and rearming while already active lack browser-level
+  coverage.
 - Canvas-rendered, virtualized, Shadow DOM, and cross-origin iframe limitations are not
   represented as successful extraction fixtures.

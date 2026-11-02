@@ -758,6 +758,123 @@ button.changed:focus-visible {
   background: #f2f2f2;
 }
 
+.icims-dropdown-shell {
+  position: relative;
+}
+
+.icims-dropdown-shell .dropdown-hide,
+.icims-dropdown-shell .dropdown-invisible {
+  display: none;
+}
+
+.icims-dropdown-shell .dropdown-select {
+  align-items: center;
+  border: 1px solid #999;
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 10px;
+  text-decoration: none;
+}
+
+.icims-dropdown-shell .dropdown-container {
+  background: #fff;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  margin-top: 4px;
+  padding: 6px;
+  position: absolute;
+  width: 100%;
+  z-index: 5;
+}
+
+.icims-dropdown-shell .dropdown-search {
+  box-sizing: border-box;
+  margin-bottom: 6px;
+  padding: 6px 8px;
+  width: 100%;
+}
+
+.icims-dropdown-shell .dropdown-results {
+  list-style: none;
+  margin: 0;
+  max-height: 24em;
+  overflow-y: auto;
+}
+
+.icims-dropdown-shell .dropdown-result {
+  border-bottom: 1px solid #ddd;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.icims-dropdown-shell .dropdown-result:hover {
+  background: #f2f2f2;
+}
+
+.iframe-fixture {
+  margin: 16px;
+  max-width: 420px;
+  position: relative;
+}
+
+.iframe-fixture label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.iframe-fixture .dropdown-hide,
+.iframe-fixture .dropdown-invisible {
+  display: none;
+}
+
+.iframe-fixture .dropdown-select {
+  align-items: center;
+  border: 1px solid #999;
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 10px;
+  text-decoration: none;
+}
+
+.iframe-fixture .dropdown-container {
+  background: #fff;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  margin-top: 4px;
+  padding: 6px;
+}
+
+.iframe-fixture .dropdown-search {
+  box-sizing: border-box;
+  margin-bottom: 6px;
+  padding: 6px 8px;
+  width: 100%;
+}
+
+.iframe-fixture .dropdown-results {
+  list-style: none;
+  margin: 0;
+  max-height: 24em;
+  overflow-y: auto;
+}
+
+.iframe-fixture .dropdown-result {
+  border-bottom: 1px solid #ddd;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.iframe-fixture .dropdown-result:hover {
+  background: #f2f2f2;
+}
+
 .uitk-action-list-item-link {
   background: transparent;
   border: 0;

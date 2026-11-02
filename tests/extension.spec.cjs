@@ -73,6 +73,21 @@ async function clipboardText(page) {
   return page.evaluate(() => navigator.clipboard.readText());
 }
 
+async function renderSearchableAriaFrame(page, optionCount) {
+  await page.evaluate(count => {
+    const frame = document.createElement('iframe');
+    frame.id = 'searchable-aria-frame';
+    frame.src = `/searchable-aria-frame.html?options=${count}`;
+    frame.style.width = '800px';
+    frame.style.height = '600px';
+    document.querySelector('#dropdown').replaceChildren(frame);
+  }, optionCount);
+  const frame = page.frameLocator('#searchable-aria-frame');
+  await expect(frame.locator('.dropdown-select')).toBeVisible();
+  await expect(frame.locator('[role="option"]')).toHaveCount(optionCount);
+  return frame;
+}
+
 const items = [
   { text: 'Alpha', value: '101' },
   { text: 'Beta', value: '202' },
@@ -351,3 +366,33 @@ test('Any two debug captures the menu container and selected option', async ({ e
   await expect(page.locator('.dropdown-extractor-toast', { hasText: 'Debug: copied HTML (2/2, option)' })).toBeVisible();
   await expect(trigger).toHaveText('Alpha');
 });
+
+for (const { label, optionCount } of [
+  { label: 'short', optionCount: 3 },
+  { label: 'long', optionCount: 26 },
+]) {
+  test(`Any two debug captures a ${label} searchable ARIA menu and mouse-selected option`, async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+    const frame = await renderSearchableAriaFrame(page, optionCount);
+    await page.evaluate(() => navigator.clipboard.writeText('unchanged'));
+    await setPrefs(worker, {
+      extractText: true,
+      extractValue: false,
+      safeCapture: true,
+      debugMode: true,
+      debugModeTarget: 'any-two',
+      debugAllFrames: true,
+    });
+    await armExtension(worker, page, context);
+    await expect(frame.locator('.dropdown-extractor-toast', { hasText: 'Click a dropdown' })).toBeVisible();
+    const trigger = frame.locator('.dropdown-select');
+    await trigger.click();
+    await expect(frame.locator('.dropdown-extractor-toast', { hasText: 'Debug: copied HTML (1/2, menu container)' })).toBeVisible();
+    await frame.locator('[role="option"]').nth(1).click();
+
+    await expect.poll(() => clipboardText(page)).toContain('--- dropdown-extractor: 1. menu container ---');
+    await expect.poll(() => clipboardText(page)).toContain('--- dropdown-extractor: 2. menu option ---');
+    await expect.poll(() => clipboardText(page)).toContain('text: "Beta"');
+    await expect(frame.locator('.dropdown-extractor-toast', { hasText: 'Debug: copied HTML (2/2, option)' })).toBeVisible();
+    await expect(trigger.locator('.dropdown-text')).toHaveText('Alpha');
+  });
+}

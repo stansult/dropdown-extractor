@@ -608,8 +608,19 @@
     return role === 'button' || role === 'combobox' || !!hasPopup || hasMenuTarget;
   }
 
+  function isReasonableDebugMenu(element) {
+    if (!isLikelyContainer(element) || !isElementVisible(element)) return false;
+    const rect = element.getBoundingClientRect();
+    const viewportArea = window.innerWidth * window.innerHeight;
+    if (rect.width * rect.height > viewportArea * 0.45) return false;
+    return [...element.querySelectorAll(OPTION_LIKE_SELECTOR)]
+      .some(option => option && option.offsetParent !== null);
+  }
+
   function isDebugFirstCandidate(element) {
-    return isDebugTriggerCandidate(element) || isReasonableDebugElement(element);
+    return isReasonableDebugMenu(element)
+      || isDebugTriggerCandidate(element)
+      || isReasonableDebugElement(element);
   }
 
   function finalizeDebugCapture() {

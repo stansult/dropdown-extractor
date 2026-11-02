@@ -39,6 +39,8 @@ test('native fixture renders options and supports normal selection', async ({ pa
 });
 
 test('playground distinguishes published and next-release dropdown types', async ({ page }) => {
+  const comingNote = page.locator('#note-coming');
+  await expect(comingNote).toBeHidden();
   await page.locator('#type-trigger').click();
   const nativeType = page.locator('.type-option[data-value="native"]');
   const ariaGridType = page.locator('.type-option[data-value="aria-grid"]');
@@ -51,6 +53,7 @@ test('playground distinguishes published and next-release dropdown types', async
   await ariaGridType.click();
   await expect(page.locator('#type-support-config')).toHaveText('Coming in next release');
   await expect(page.locator('#type-support-config')).toHaveClass(/coming/);
+  await expect(comingNote).toBeVisible();
 
   await page.locator('#render').click();
   await expect(page.locator('#dropdown-type .type-support')).toHaveText('Coming in next release');
@@ -75,6 +78,70 @@ test('ARIA fixture exposes listbox options and performs normal selection', async
   await expect(options.nth(1)).toHaveClass(/selected/);
   await expect(menu).not.toHaveClass(/open/);
 });
+
+test('long searchable ARIA fixture is public, supported, searchable, and selectable', async ({ page }) => {
+  await renderFixture(page, { type: 'aria-searchable', items });
+  const trigger = page.locator('#dropdown .dropdown-select');
+  const container = page.locator('#dropdown .dropdown-container');
+  const search = page.locator('#dropdown .dropdown-search');
+  const options = page.locator('#dropdown [role="listbox"] [role="option"]');
+
+  await expect(page.locator('#type-support-config')).toHaveText('Supported');
+  await expect(page.locator('#dropdown-type')).toContainText('Searchable ARIA listbox (long)');
+  await expect(trigger).toHaveAttribute('role', 'combobox');
+  await expect(trigger).not.toHaveAttribute('aria-controls');
+  await expect(container).toHaveAttribute('aria-owns', 'candidate-major_dropdown-results');
+  await expect(options).toHaveCount(26);
+  await expect(options.nth(0)).toHaveText('Alpha');
+  await expect(options.nth(1)).toHaveText('Beta');
+
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await search.fill('category 25');
+  await expect(options.nth(0)).toBeHidden();
+  await expect(options.nth(25)).toBeVisible();
+  await search.fill('Beta');
+  await options.nth(1).click();
+  await expect(trigger.locator('.dropdown-text')).toHaveText('Beta');
+  await expect(container).toHaveClass(/dropdown-invisible/);
+});
+
+for (const { label, optionCount } of [
+  { label: 'short', optionCount: 3 },
+  { label: 'long', optionCount: 26 },
+]) {
+  test(`searchable ARIA iframe fixture preserves the ${label} component contract`, async ({ page }) => {
+    await page.evaluate(count => {
+      const frame = document.createElement('iframe');
+      frame.id = 'searchable-aria-frame';
+      frame.src = `/searchable-aria-frame.html?options=${count}`;
+      frame.style.width = '800px';
+      frame.style.height = '600px';
+      document.querySelector('#dropdown').replaceChildren(frame);
+    }, optionCount);
+    const frame = page.frameLocator('#searchable-aria-frame');
+    const trigger = frame.locator('.dropdown-select');
+    const container = frame.locator('.dropdown-container');
+    const search = frame.locator('.dropdown-search');
+    const options = frame.locator('[role="listbox"] [role="option"]');
+
+    await expect(trigger).toHaveAttribute('role', 'combobox');
+    await expect(trigger).not.toHaveAttribute('aria-controls');
+    await expect(container).toHaveAttribute('aria-owns', 'candidate-major_dropdown-results');
+    await expect(options).toHaveCount(optionCount);
+    await expect(options.nth(0)).toHaveText('Alpha');
+    await expect(options.nth(1)).toHaveText('Beta');
+    await expect(options.nth(2)).toHaveText('Gamma');
+    await trigger.click();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await search.fill('Be');
+    await expect(options.nth(0)).toBeHidden();
+    await expect(options.nth(1)).toBeVisible();
+    await options.nth(1).click();
+    await expect(trigger.locator('.dropdown-text')).toHaveText('Beta');
+    await expect(container).toHaveClass(/dropdown-invisible/);
+  });
+}
 
 test('ARIA grid fixture exposes selectable nested grid cells without values', async ({ page }) => {
   await renderFixture(page, { type: 'aria-grid', items });

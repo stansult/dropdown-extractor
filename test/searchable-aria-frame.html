@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Searchable ARIA iframe fixture</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="searchable-aria-frame" class="iframe-fixture">
+    <label for="candidate-major">Example category</label>
+    <select id="candidate-major" class="dropdown-hide" aria-label="Example category">
+      <option value="101" selected>Alpha</option>
+      <option value="202">Beta</option>
+      <option value="303">Gamma</option>
+    </select>
+    <a id="candidate-major_icimsDropdown" class="dropdown-select" aria-expanded="false"
+       tabindex="0" aria-label="Example category" role="combobox">
+      <span id="candidate-major_fakeSelected_icimsDropdown" class="dropdown-text">Alpha</span>
+      <span class="dropdown-arrow" aria-hidden="true">▾</span>
+    </a>
+    <div id="candidate-major_icimsDropdown_ctnr" class="dropdown-container dropdown-invisible"
+         aria-owns="candidate-major_dropdown-results" aria-expanded="false">
+      <input class="dropdown-search" type="text" autocomplete="off"
+             placeholder="— Type to Search —" aria-label="— Type to Search —"
+             role="combobox" aria-autocomplete="list"
+             aria-controls="candidate-major_dropdown-results">
+      <ul id="candidate-major_dropdown-results" class="dropdown-results" role="listbox">
+        <li id="result-selectable_candidate-major_0" class="dropdown-result result-selectable"
+            role="option" dropdown-index="0" title="Alpha" aria-label="Alpha">Alpha</li>
+        <li id="result-selectable_candidate-major_1" class="dropdown-result result-selectable"
+            role="option" dropdown-index="1" title="Beta" aria-label="Beta">Beta</li>
+        <li id="result-selectable_candidate-major_2" class="dropdown-result result-selectable"
+            role="option" dropdown-index="2" title="Gamma" aria-label="Gamma">Gamma</li>
+      </ul>
+    </div>
+  </main>
+  <script src="searchable-aria-frame.js"></script>
+</body>
+</html>

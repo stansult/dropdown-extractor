@@ -47,6 +47,7 @@
               <select id="type" class="type-select">
                 <option value="native">Native &lt;select&gt;</option>
                 <option value="aria">ARIA listbox</option>
+                <option value="aria-searchable">Searchable ARIA listbox (long)</option>
                 <option value="aria-grid">ARIA grid dropdown</option>
                 <option value="selectize">Selectize</option>
                 <option value="react">React Select</option>
@@ -88,8 +89,9 @@
             <div id="notes-title" class="notes-title">Notes:</div>
         <ul class="notes-list">
           <li class="note">Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom or virtualized menus may not be detectable.</li>
-          <li class="note">“Coming in next release” works with the development extension but is not yet available in the Chrome Web Store version.</li>
+          <li id="note-coming" class="note">“Coming in next release” works with the development extension but is not yet available in the Chrome Web Store version.</li>
           <li id="note-native" class="note">Safe capture doesn’t apply to native &lt;select&gt; dropdowns.</li>
+          <li id="note-aria-searchable" class="note">This fixture always renders 26 searchable options so Debug “Any two” exercises a long menu.</li>
           <li id="note-aria-grid" class="note">ARIA grid dropdowns expose text through selectable grid cells; the representative fixture does not provide values.</li>
           <li id="note-libs" class="note">AntD/Select2/Chosen support depends on default DOM structure; customized themes may not be detectable.</li>
           <li id="note-radix-role" class="note">Radix menus are detected via role="menu".</li>

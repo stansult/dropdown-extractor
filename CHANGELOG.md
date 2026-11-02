@@ -10,6 +10,12 @@ documentation, and internal refactoring changes are omitted unless they affect u
 - Added support for ARIA grid dropdowns with selectable grid cells.
   ([#3](https://github.com/stansult/dropdown-extractor/issues/3))
 
+### Fixed
+
+- Any two debug capture now accepts long dropdown menus instead of rejecting them based on
+  their combined text length.
+  ([#4](https://github.com/stansult/dropdown-extractor/issues/4))
+
 ## 1.0.16 — 2026-09-15
 
 ### Fixed

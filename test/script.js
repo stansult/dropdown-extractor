@@ -14,7 +14,9 @@ const dropdownContainer = document.getElementById('dropdown');
 const dropdownType = document.getElementById('dropdown-type');
 const dropdownPanel = document.querySelector('.dropdown-panel');
 const valueModeSelect = document.getElementById('value-mode');
+const noteComing = document.getElementById('note-coming');
 const noteNative = document.getElementById('note-native');
+const noteAriaSearchable = document.getElementById('note-aria-searchable');
 const noteAriaGrid = document.getElementById('note-aria-grid');
 const noteLibs = document.getElementById('note-libs');
 const noteRadixRole = document.getElementById('note-radix-role');
@@ -37,6 +39,7 @@ const TYPE_STATUS = Object.freeze({
 const typeStatuses = new Map([
   ['native', 'supported'],
   ['aria', 'supported'],
+  ['aria-searchable', 'supported'],
   ['aria-grid', 'coming'],
   ['selectize', 'supported'],
   ['react', 'supported'],
@@ -90,6 +93,7 @@ function updateRenderedTypeDisplay() {
 function updateNotesVisibility() {
   const noteMap = {
     native: [noteNative],
+    'aria-searchable': [noteAriaSearchable],
     'aria-grid': [noteAriaGrid],
     mui: [noteMui],
     'radix-menu': [noteRadixRole, noteRadixValue],
@@ -113,6 +117,9 @@ function updateNotesVisibility() {
       if (note) visibleNotes.add(note);
     });
   });
+  if ([...visibleTypes].some(type => typeStatuses.get(type) === 'coming')) {
+    visibleNotes.add(noteComing);
+  }
 
   document.querySelectorAll('.notes-list .note').forEach(note => {
     if (!note.id) {
@@ -218,6 +225,120 @@ function createDropdownShell(selectedText) {
   });
 
   return { shell, trigger, menu };
+}
+
+function createSearchableAriaDropdown(items) {
+  const menuItems = items.map(item => ({ ...item }));
+  for (let index = menuItems.length; index < 26; index += 1) {
+    menuItems.push({
+      text: `Additional searchable category ${index}`,
+      value: String(1000 + index)
+    });
+  }
+
+  const shell = document.createElement('div');
+  shell.className = 'icims-dropdown-shell';
+
+  const backingSelect = document.createElement('select');
+  backingSelect.id = 'candidate-major';
+  backingSelect.className = 'dropdown-hide';
+  backingSelect.setAttribute('aria-label', 'Example category');
+  const selectedOption = document.createElement('option');
+  selectedOption.value = menuItems[0]?.value || '';
+  selectedOption.textContent = menuItems[0]?.text || 'Make a selection';
+  selectedOption.selected = true;
+  backingSelect.appendChild(selectedOption);
+
+  const trigger = document.createElement('a');
+  trigger.id = 'candidate-major_icimsDropdown';
+  trigger.className = 'dropdown-select';
+  trigger.tabIndex = 0;
+  trigger.setAttribute('role', 'combobox');
+  trigger.setAttribute('aria-label', 'Example category');
+  trigger.setAttribute('aria-expanded', 'false');
+
+  const triggerText = document.createElement('span');
+  triggerText.id = 'candidate-major_fakeSelected_icimsDropdown';
+  triggerText.className = 'dropdown-text';
+  triggerText.textContent = selectedOption.textContent;
+  const arrow = document.createElement('span');
+  arrow.className = 'dropdown-arrow';
+  arrow.textContent = '▾';
+  trigger.append(triggerText, arrow);
+
+  const container = document.createElement('div');
+  container.id = 'candidate-major_icimsDropdown_ctnr';
+  container.className = 'dropdown-container dropdown-invisible';
+  container.setAttribute('aria-expanded', 'false');
+  container.setAttribute('aria-owns', 'candidate-major_dropdown-results');
+
+  const search = document.createElement('input');
+  search.className = 'dropdown-search';
+  search.type = 'text';
+  search.autocomplete = 'off';
+  search.placeholder = '— Type to Search —';
+  search.setAttribute('aria-label', '— Type to Search —');
+  search.setAttribute('role', 'combobox');
+  search.setAttribute('aria-autocomplete', 'list');
+  search.setAttribute('aria-controls', 'candidate-major_dropdown-results');
+
+  const listbox = document.createElement('ul');
+  listbox.id = 'candidate-major_dropdown-results';
+  listbox.className = 'dropdown-results';
+  listbox.setAttribute('role', 'listbox');
+  menuItems.forEach((item, index) => {
+    const option = document.createElement('li');
+    option.id = `result-selectable_candidate-major_${index}`;
+    option.className = 'dropdown-result result-selectable';
+    option.setAttribute('role', 'option');
+    option.setAttribute('dropdown-index', String(index));
+    option.title = item.text || '';
+    option.setAttribute('aria-label', item.text || '');
+    option.textContent = item.text || '';
+    listbox.appendChild(option);
+  });
+
+  container.append(search, listbox);
+  shell.append(backingSelect, trigger, container);
+
+  const setOpen = open => {
+    trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    container.setAttribute('aria-expanded', open ? 'true' : 'false');
+    container.classList.toggle('dropdown-invisible', !open);
+  };
+
+  document.addEventListener('mousedown', event => {
+    const triggerClick = event.target === trigger || trigger.contains(event.target);
+    if (triggerClick) {
+      const open = trigger.getAttribute('aria-expanded') !== 'true';
+      setOpen(open);
+      if (open) search.focus();
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    if (trigger.getAttribute('aria-expanded') === 'true' && !container.contains(event.target)) {
+      setOpen(false);
+    }
+  });
+
+  search.addEventListener('input', () => {
+    const query = search.value.trim().toLowerCase();
+    listbox.querySelectorAll('[role="option"]').forEach(option => {
+      option.hidden = !!query && !option.textContent.toLowerCase().includes(query);
+    });
+  });
+
+  listbox.addEventListener('click', event => {
+    const option = event.target.closest('[role="option"]');
+    if (!option) return;
+    triggerText.textContent = option.textContent.trim();
+    setOpen(false);
+    event.preventDefault();
+    event.stopPropagation();
+  });
+
+  return { shell };
 }
 
 function createDropboxMenuDropdown(items, selectedText) {
@@ -860,6 +981,13 @@ function renderDropdown() {
     });
     menu.appendChild(listbox);
     wireSelection(menu, listbox, trigger);
+    dropdownContainer.appendChild(shell);
+    pulsePanel();
+    return;
+  }
+
+  if (type === 'aria-searchable') {
+    const { shell } = createSearchableAriaDropdown(items);
     dropdownContainer.appendChild(shell);
     pulsePanel();
     return;

@@ -81,6 +81,29 @@ The activation helper marks any existing armed toast before triggering the toolb
 and waits for a newly created armed toast. This prevents a fading toast from a previous
 activation from making repeated-activation tests continue before reinjection is ready.
 
+## Test-oracle requirements
+
+A passing test must observe the user-facing outcome named by the test and coverage matrix,
+not only an internal step that can also occur when that outcome is broken. Apply these rules:
+
+- Prove clipboard behavior by reading and comparing the exact clipboard contents. A toast that
+  says content was copied, a handler invocation, or a constructed payload is not clipboard
+  evidence.
+- Prove visible feedback in the browsing context where the user must see it. For iframe results,
+  assert that the intended top-level feedback is in the current viewport; the existence or CSS
+  visibility of a toast inside a child frame is not sufficient.
+- Prove Safe Capture with both the extraction result and all relevant prevented page effects,
+  such as selection state, trigger text, menu state, navigation, and the fixture's event-specific
+  behavior. Prove Safe Capture off with the corresponding normal effects occurring.
+- At mocked boundaries, assert exact messages, targets, and meaningful state changes rather than
+  call counts or the existence of any call.
+- Match test names and coverage claims to what the assertions actually prove. If a browser-harness
+  limitation prevents observation of the claimed outcome, label the test as partial evidence,
+  do not count it as complete automated coverage, and record the separate evidence required.
+- During controlled-fault verification, confirm that the user-outcome assertion itself fails.
+  Failure only in setup, an implementation-detail assertion, or an unrelated assertion does not
+  demonstrate an effective regression test.
+
 ## Playground publication status
 
 The Playground distinguishes types available in the current Chrome Web Store release from
@@ -96,9 +119,9 @@ and at least one extension end-to-end scenario.
 
 | Fixture | Playground contract | Extension behavior |
 | --- | --- | --- |
-| Native `<select>` | Top-level fixture, an iCIMS-style same-origin iframe contract, and a tall iframe feedback contract | Text, value, fallbacks, formats, errors, supported debug, normal same-origin iframe extraction ([#5](https://github.com/stansult/dropdown-extractor/issues/5)), and top-level viewport feedback ([#7](https://github.com/stansult/dropdown-extractor/issues/7)) |
+| Native `<select>` | Top-level fixture, an iCIMS-style same-origin iframe contract, and a tall iframe feedback contract | Text, value, fallbacks, formats, errors, supported debug, exact clipboard and normal same-origin iframe handling ([#5](https://github.com/stansult/dropdown-extractor/issues/5)), native Any-two Safe Capture ([#9](https://github.com/stansult/dropdown-extractor/issues/9)), and top-level viewport feedback for normal success, Debug completion, and errors ([#7](https://github.com/stansult/dropdown-extractor/issues/7), [#10](https://github.com/stansult/dropdown-extractor/issues/10)) |
 | ARIA listbox | Roles, values, selection, and menu closing | Safe Capture on/off and Any-two debug |
-| Searchable ARIA listbox | Public 26-option fixture plus iCIMS-style short/long iframe contracts for trigger, filtering, selection, and closing | Normal same-origin iframe extraction ([#5](https://github.com/stansult/dropdown-extractor/issues/5)) and all-frame Any-two debug for short/long menus ([#4](https://github.com/stansult/dropdown-extractor/issues/4)) |
+| Searchable ARIA listbox | Public 26-option fixture plus iCIMS-style short/long and tall iframe contracts for trigger, filtering, selection, closing, and vertical placement | Normal same-origin iframe extraction ([#5](https://github.com/stansult/dropdown-extractor/issues/5)), all-frame Any-two payload capture for short/long menus ([#4](https://github.com/stansult/dropdown-extractor/issues/4)), and top-viewport 1/2 and 2/2 feedback ([#10](https://github.com/stansult/dropdown-extractor/issues/10)) |
 | ARIA grid dropdown | Grid/row/cell roles, nested text, absent values, selection, and menu closing | Text-only fallback and Safe Capture on |
 | GitHub SelectMenu | Checkbox values, checking, summary update, and closing | Checkbox value extraction and combined formatting |
 | Dropbox-style menu | `mousedown` selection and menu closing | Safe Capture on/off for `mousedown` behavior |
@@ -143,10 +166,10 @@ When both Text and Value are selected, the native fixture verifies every support
 
 | Option | Coverage |
 | --- | --- |
-| Safe Capture on | ARIA listbox and grid click selection is blocked; Dropbox `mousedown` selection is blocked |
+| Safe Capture on | ARIA listbox, searchable ARIA iframe, grid, GitHub, and Expedia selection effects are blocked with menu/selection state verified; Dropbox `mousedown` selection is blocked; native Any-two allows an intentional selection change and captures the selected option |
 | Safe Capture off | ARIA click selection proceeds; Dropbox `mousedown` selection proceeds |
 | Debug: Supported dropdown | Native dropdown raw HTML and notification |
-| Debug: Any two | ARIA menu-container capture followed by option capture, including short and long searchable menus inside an iframe |
+| Debug: Any two | ARIA menu-container capture followed by option capture, including short and long searchable menus inside an iframe; native select followed by its changed option at top level and in an iframe; top-viewport 1/2 and 2/2 feedback; plus controlled completion through the uncategorized-element fallback ([#6](https://github.com/stansult/dropdown-extractor/issues/6), [#9](https://github.com/stansult/dropdown-extractor/issues/9), [#10](https://github.com/stansult/dropdown-extractor/issues/10)) |
 
 Normal extraction targets all accessible frames automatically. Debug mode targets only the
 top frame unless **Inject Debug mode into all iframes** is enabled. Background unit tests
@@ -155,12 +178,9 @@ The asymmetry is intentional: normal extraction should be transparent to users, 
 all-frame raw-HTML debugging remains explicit to limit noise and unintended capture from
 unrelated embedded content.
 
-The normal iframe regressions divide one browser-harness limitation deliberately. The ARIA
-case asserts the exact clipboard result end to end. Bundled headless Chromium does not commit
-the native-select iframe's clipboard write during the select's `mousedown`, although the
-handler runs; that case therefore asserts child-frame readiness, the exact extracted-item
-notification, field feedback, and unchanged selection. Manual verification in desktop Chrome
-confirms that the equivalent native iCIMS control writes the expected clipboard content.
+Same-origin iframe results include their clipboard payload in the extension's existing
+child-to-top feedback message. The top frame writes that payload, so both native and ARIA
+iframe regressions can assert the exact clipboard result end to end in bundled Chromium.
 
 The tall native iframe regression places its control more than 1,000 pixels below the iframe
 top and scrolls that control into the outer viewport. It proves that the child-frame success
@@ -177,12 +197,15 @@ type-specific debug coverage only when a dropdown family has distinct debug beha
 For a new fixture-dependent extension scenario:
 
 1. Add or update the playground fixture.
-2. Add an independent playground contract for the exact DOM, data, and unmodified behavior
-   on which the extension test will depend.
-3. Add the extension scenario with exact clipboard and page-side-effect assertions.
-4. Run the relevant spec directly while developing.
-5. Run `npm run test:unit` and `npm run test:e2e` before pushing.
-6. Update the matrices in this guide when coverage changes.
+2. Add an independent playground contract for the exact DOM, data, interaction target and event,
+   and unmodified behavior on which the extension test will depend.
+3. Add the extension scenario with assertions at the user-observable boundary, following the
+   test-oracle requirements above.
+4. Verify with a narrow controlled fault that the user-outcome assertion detects the intended
+   failure; restore the implementation and confirm the test passes.
+5. Run the relevant spec directly while developing.
+6. Run `npm run test:unit` and `npm run test:e2e` before pushing.
+7. Update the matrices in this guide only for behavior the assertions fully prove.
 
 For a new supported dropdown family, also follow the canonical
 [adding a supported dropdown type process](../docs/adding-dropdown-type.md), which covers

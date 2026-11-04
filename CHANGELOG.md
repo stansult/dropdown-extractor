@@ -20,6 +20,17 @@ documentation, and internal refactoring changes are omitted unless they affect u
 - Successful extraction inside a same-origin iframe now shows its confirmation in the visible
   top-level page instead of leaving it offscreen inside the iframe.
   ([#7](https://github.com/stansult/dropdown-extractor/issues/7))
+- Any two debug capture now completes instead of crashing when its fallback captures the same
+  uncategorized element twice.
+  ([#6](https://github.com/stansult/dropdown-extractor/issues/6))
+- Debug progress, Debug completion, and extraction errors from a same-origin iframe now show
+  their feedback in the visible top-level page.
+  ([#10](https://github.com/stansult/dropdown-extractor/issues/10))
+- Any two debug capture now records native dropdowns as the menu container and the newly
+  selected native option as the second element, including inside same-origin iframes.
+  ([#9](https://github.com/stansult/dropdown-extractor/issues/9))
+- Clipboard results from same-origin iframe extraction are now written through the top-level
+  page for consistent native-dropdown and Debug capture behavior.
 
 ## 1.0.16 — 2026-09-15
 

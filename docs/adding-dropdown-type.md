@@ -35,9 +35,10 @@ interaction. It must not duplicate the extension's extraction logic.
 ## 3. Add extension coverage before support
 
 Exercise the real unpacked extension through its toolbar action. Assert exact clipboard
-output, notifications, and observable page side effects. Cover type-specific behavior such
-as a distinct value source or event model; do not repeat the global extraction-option matrix
-without a type-specific reason.
+output, user-visible notifications in the intended viewport/frame context, and observable
+page side effects. A generated payload or child-frame toast is not a substitute for the
+user-facing outcome. Cover type-specific behavior such as a distinct value source or event
+model; do not repeat the global extraction-option matrix without a type-specific reason.
 
 When practical, run the new extension test against the unsupported implementation and record
 that it fails because the new structure is not recognized. If controlled failure verification

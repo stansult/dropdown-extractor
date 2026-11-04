@@ -72,20 +72,25 @@ function loadBackground({ tabs = [{ id: 42 }], prefs = {}, injectionError = null
 
 test('popup sends pick once and closes after success', () => {
   let calls = 0;
-  const popup = loadPopup((_message, callback) => {
+  const messages = [];
+  const popup = loadPopup((message, callback) => {
     calls += 1;
+    messages.push(message);
     callback({ ok: true });
   });
   assert.equal(calls, 1);
+  assert.deepEqual(plain(messages), [{ action: 'pick' }]);
   assert.equal(popup.timers.length, 0);
   assert.equal(popup.closes(), 1);
 });
 
 test('popup retries pick once after failure, then closes', () => {
   let calls = 0;
+  const messages = [];
   let popup;
-  popup = loadPopup((_message, callback) => {
+  popup = loadPopup((message, callback) => {
     calls += 1;
+    messages.push(message);
     callback(calls === 1 ? undefined : { ok: true });
   });
   assert.equal(calls, 1);
@@ -93,6 +98,7 @@ test('popup retries pick once after failure, then closes', () => {
   popup.runtime.lastError = null;
   popup.timers.shift()();
   assert.equal(calls, 2);
+  assert.deepEqual(plain(messages), [{ action: 'pick' }, { action: 'pick' }]);
   assert.equal(popup.closes(), 1);
 });
 
@@ -129,15 +135,25 @@ test('background ignores stale frame cancellation after successful extraction', 
   assert.equal(background.actionCalls.length, actionCountAfterDone);
 });
 
-test('background forwards child-frame success feedback to the top frame', () => {
+test('background forwards child-frame completion feedback to the top frame', () => {
   const background = loadBackground();
   background.messageListener(
-    { action: 'done', feedbackMessage: 'Extracted 3 items' },
+    {
+      action: 'done',
+      feedbackMessage: 'Extracted 3 items',
+      clipboardText: 'Alpha\nBeta\nGamma',
+    },
     { tab: { id: 42 }, frameId: 7 }
   );
   assert.deepEqual(plain(background.tabMessageCalls), [{
     tabId: 42,
-    message: { action: 'show-success-feedback', message: 'Extracted 3 items' },
+    message: {
+      action: 'show-feedback',
+      message: 'Extracted 3 items',
+      tone: 'success',
+      complete: true,
+      clipboardText: 'Alpha\nBeta\nGamma',
+    },
     options: { frameId: 0 },
   }]);
 
@@ -146,6 +162,51 @@ test('background forwards child-frame success feedback to the top frame', () => 
     { tab: { id: 42 }, frameId: 0 }
   );
   assert.equal(background.tabMessageCalls.length, 1);
+});
+
+test('background forwards child-frame progress and error feedback with exact state', () => {
+  const background = loadBackground();
+  background.messageListener(
+    {
+      action: 'feedback',
+      feedbackMessage: 'Debug: copied HTML (1/2, menu container)',
+      feedbackTone: 'success',
+      feedbackComplete: false,
+    },
+    { tab: { id: 42 }, frameId: 7 }
+  );
+  background.messageListener(
+    {
+      action: 'error',
+      feedbackMessage: 'No extract option selected.',
+      feedbackTone: 'error',
+      feedbackComplete: true,
+    },
+    { tab: { id: 42 }, frameId: 7 }
+  );
+
+  assert.deepEqual(plain(background.tabMessageCalls), [
+    {
+      tabId: 42,
+      message: {
+        action: 'show-feedback',
+        message: 'Debug: copied HTML (1/2, menu container)',
+        tone: 'success',
+        complete: false,
+      },
+      options: { frameId: 0 },
+    },
+    {
+      tabId: 42,
+      message: {
+        action: 'show-feedback',
+        message: 'No extract option selected.',
+        tone: 'error',
+        complete: true,
+      },
+      options: { frameId: 0 },
+    },
+  ]);
 });
 
 test('background reports missing tabs and injection failures', () => {
@@ -158,5 +219,13 @@ test('background reports missing tabs and injection failures', () => {
   let failedResponse;
   failed.messageListener({ action: 'pick' }, {}, value => { failedResponse = value; });
   assert.deepEqual(plain(failedResponse), { ok: false, error: 'Blocked page' });
-  assert.equal(failed.actionCalls.some(([method]) => method === 'setBadgeText'), true);
+  assert.equal(failed.actionCalls.some(([method, options]) =>
+    method === 'setBadgeBackgroundColor' && options.color === '#d93025'
+  ), true);
+  assert.equal(failed.actionCalls.some(([method, options]) =>
+    method === 'setBadgeText' && options.text === '!'
+  ), true);
+  assert.equal(failed.actionCalls.some(([method, options]) =>
+    method === 'setTitle' && options.title === "Dropdown Extractor: can't run on this page"
+  ), true);
 });

@@ -192,6 +192,33 @@ for (const { label, optionCount } of [
   });
 }
 
+test('tall searchable ARIA iframe fixture places the component below the iframe top', async ({ page }) => {
+  await page.evaluate(() => {
+    const frame = document.createElement('iframe');
+    frame.id = 'tall-searchable-aria-frame';
+    frame.src = '/searchable-aria-frame.html?options=3&tall=1';
+    frame.style.width = '800px';
+    frame.style.height = '1400px';
+    document.querySelector('#dropdown').replaceChildren(frame);
+  });
+  const frameElement = page.locator('#tall-searchable-aria-frame');
+  const frame = page.frameLocator('#tall-searchable-aria-frame');
+  const trigger = frame.locator('.dropdown-select');
+  const container = frame.locator('.dropdown-container');
+
+  await expect(frame.locator('[role="option"]')).toHaveText(['Alpha', 'Beta', 'Gamma']);
+  const frameBox = await frameElement.boundingBox();
+  const triggerBox = await trigger.boundingBox();
+  expect(frameBox).not.toBeNull();
+  expect(triggerBox).not.toBeNull();
+  expect(triggerBox.y - frameBox.y).toBeGreaterThan(1000);
+  await trigger.click();
+  await expect(container).not.toHaveClass(/dropdown-invisible/);
+  await frame.locator('[role="option"]').nth(1).click();
+  await expect(trigger.locator('.dropdown-text')).toHaveText('Beta');
+  await expect(container).toHaveClass(/dropdown-invisible/);
+});
+
 test('ARIA grid fixture exposes selectable nested grid cells without values', async ({ page }) => {
   await renderFixture(page, { type: 'aria-grid', items });
   const trigger = page.locator('#dropdown .dropdown-trigger');
@@ -234,7 +261,7 @@ test('GitHub fixture exposes checkbox values and performs normal selection', asy
     .toEqual(['101', '202', '303']);
   await summary.click();
   await expect(shell).toHaveClass(/open/);
-  await checkboxes.nth(1).click();
+  await rows.nth(1).click();
   await expect(checkboxes.nth(1)).toBeChecked();
   await expect(summary).toContainText('Beta');
   await expect(shell).not.toHaveClass(/open/);

@@ -3,7 +3,15 @@ const triggerText = document.getElementById('candidate-major_fakeSelected_icimsD
 const container = document.getElementById('candidate-major_icimsDropdown_ctnr');
 const search = container.querySelector('.dropdown-search');
 const listbox = document.getElementById('candidate-major_dropdown-results');
-const requestedOptionCount = Number(new URLSearchParams(window.location.search).get('options')) || 3;
+const params = new URLSearchParams(window.location.search);
+const requestedOptionCount = Number(params.get('options')) || 3;
+
+if (params.get('tall') === '1') {
+  const spacer = document.createElement('div');
+  spacer.className = 'tall-iframe-spacer';
+  spacer.setAttribute('aria-hidden', 'true');
+  trigger.closest('.iframe-fixture').insertBefore(spacer, trigger.previousElementSibling);
+}
 
 for (let index = 3; index < requestedOptionCount; index += 1) {
   const option = document.createElement('li');

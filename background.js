@@ -89,6 +89,37 @@ function startArmBadge() {
   }, 1000);
 }
 
+function forwardChildFeedback(msg, sender, defaultComplete) {
+  const senderTabId = sender?.tab?.id || null;
+  const senderFrameId = sender?.frameId;
+  if (
+    !senderTabId
+    || !Number.isInteger(senderFrameId)
+    || senderFrameId <= 0
+    || typeof msg.feedbackMessage !== "string"
+    || !msg.feedbackMessage.trim()
+  ) {
+    return;
+  }
+  const feedback = {
+    action: "show-feedback",
+    message: msg.feedbackMessage,
+    tone: msg.feedbackTone === "error" ? "error" : "success",
+    complete: typeof msg.feedbackComplete === "boolean"
+      ? msg.feedbackComplete
+      : defaultComplete,
+  };
+  if (typeof msg.clipboardText === "string") {
+    feedback.clipboardText = msg.clipboardText;
+  }
+  chrome.tabs.sendMessage(
+    senderTabId,
+    feedback,
+    { frameId: 0 },
+    () => void chrome.runtime.lastError
+  );
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.action === "armed") {
     armedTabId = _sender?.tab?.id || null;
@@ -96,29 +127,20 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     return;
   }
 
+  if (msg.action === "feedback") {
+    forwardChildFeedback(msg, _sender, false);
+    return;
+  }
+
   if (msg.action === "done") {
-    const senderTabId = _sender?.tab?.id || null;
-    const senderFrameId = _sender?.frameId;
-    if (
-      senderTabId
-      && Number.isInteger(senderFrameId)
-      && senderFrameId > 0
-      && typeof msg.feedbackMessage === "string"
-      && msg.feedbackMessage.trim()
-    ) {
-      chrome.tabs.sendMessage(
-        senderTabId,
-        { action: "show-success-feedback", message: msg.feedbackMessage },
-        { frameId: 0 },
-        () => void chrome.runtime.lastError
-      );
-    }
+    forwardChildFeedback(msg, _sender, true);
     armedTabId = null;
     showDoneBadge();
     return;
   }
 
   if (msg.action === "error") {
+    forwardChildFeedback(msg, _sender, true);
     armedTabId = null;
     showErrorBadge("error");
     return;

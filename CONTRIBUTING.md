@@ -35,6 +35,11 @@ and contribution requirements.
 
 Every fixture-dependent extension test must have an independent playground contract that
 verifies the relevant DOM structure, data sources, and unmodified interaction behavior.
+Passing tests must observe the user-facing outcome they claim: internal calls, generated
+payloads, or child-frame DOM elements are not substitutes for exact clipboard results,
+top-viewport feedback, or page-side-effect assertions. Test names and coverage documentation
+must not claim more than the assertions prove. See the automated testing guide's
+[test-oracle requirements](tests/README.md#test-oracle-requirements) for the full checklist.
 
 ## Canonical processes
 

@@ -246,14 +246,20 @@
       chrome.runtime.onMessage.removeListener(window.__dropdownExtractorFeedbackMessageHandler);
     }
     window.__dropdownExtractorFeedbackMessageHandler = message => {
-      if (message?.action !== 'show-success-feedback') return;
+      if (message?.action !== 'show-feedback') return;
       if (typeof message.message !== 'string' || !message.message.trim()) return;
+      if (typeof message.clipboardText === 'string') {
+        navigator.clipboard.writeText(message.clipboardText);
+      }
       clearArmedToast();
-      cleanup(true);
+      if (message.complete) cleanup(true);
+      const background = message.tone === 'error'
+        ? TOAST_ERROR_BG
+        : TOAST_SUCCESS_BG;
       replaceActiveToast(showToast(message.message, {
         position: 'top-right',
         duration: EXTRACTED_TOAST_MS,
-        background: TOAST_SUCCESS_BG
+        background
       }));
     };
     chrome.runtime.onMessage.addListener(window.__dropdownExtractorFeedbackMessageHandler);
@@ -381,7 +387,11 @@
       duration: 2000,
       background: TOAST_ERROR_BG
     }));
-    notifyBackground('error');
+    notifyBackground('error', {
+      feedbackMessage: message,
+      feedbackTone: 'error',
+      feedbackComplete: true
+    });
   }
 
   function formatDebugText(value) {
@@ -472,6 +482,21 @@
     return optionEl ? 'option' : 'uncategorized';
   }
 
+  function showDebugFeedback(message, complete = false, clipboardText = null) {
+    replaceActiveToast(showToast(message, {
+      position: 'top-right',
+      duration: EXTRACTED_TOAST_MS,
+      background: TOAST_SUCCESS_BG
+    }));
+    const details = {
+      feedbackMessage: message,
+      feedbackTone: 'success',
+      feedbackComplete: complete
+    };
+    if (typeof clipboardText === 'string') details.clipboardText = clipboardText;
+    notifyBackground(complete ? 'done' : 'feedback', details);
+  }
+
   function copyDebugHtml(element, label) {
     const block = buildDebugBlock(element, label);
     if (!block) return false;
@@ -481,12 +506,7 @@
     flashElement(element);
     setTimeout(writeBlock, 120);
     clearArmedToast();
-    replaceActiveToast(showToast('Debug: copied dropdown HTML', {
-      position: 'top-right',
-      duration: EXTRACTED_TOAST_MS,
-      background: TOAST_SUCCESS_BG
-    }));
-    notifyBackground('done');
+    showDebugFeedback('Debug: copied dropdown HTML', true, block);
     cleanup();
     return true;
   }
@@ -728,11 +748,7 @@
           window.__dropdownExtractorDebugFirstElement = openMenu || triggerEl || fallbackEl || element;
           window.__dropdownExtractorDebugFirstLabel = `1. ${firstLabel}`;
           navigator.clipboard.writeText(buildDebugAnyTwoPayloadFromStored(null));
-          replaceActiveToast(showToast(`Debug: copied HTML (1/2, ${firstLabel})`, {
-            position: 'top-right',
-            duration: EXTRACTED_TOAST_MS,
-            background: TOAST_SUCCESS_BG
-          }));
+          showDebugFeedback(`Debug: copied HTML (1/2, ${firstLabel})`, false, buildDebugAnyTwoPayloadFromStored(null));
           return true;
         } else if (!window.__dropdownExtractorDebugPendingTimeout) {
           if (window.__dropdownExtractorDebugPendingTrigger) {
@@ -763,11 +779,7 @@
             window.__dropdownExtractorDebugFirstElement = containerEl || triggerEl || fallbackEl || element1;
             window.__dropdownExtractorDebugFirstLabel = `1. ${firstLabel}`;
             navigator.clipboard.writeText(buildDebugAnyTwoPayloadFromStored(null));
-            replaceActiveToast(showToast(`Debug: copied HTML (1/2, ${firstLabel})`, {
-              position: 'top-right',
-              duration: EXTRACTED_TOAST_MS,
-              background: TOAST_SUCCESS_BG
-            }));
+            showDebugFeedback(`Debug: copied HTML (1/2, ${firstLabel})`, false, buildDebugAnyTwoPayloadFromStored(null));
           }, 80);
         }
       }
@@ -783,12 +795,7 @@
           navigator.clipboard.writeText(payload);
         }, 120);
         const secondLabel = getDebugAnyTwoSecondLabel(optionCandidate);
-        replaceActiveToast(showToast(`Debug: copied HTML (2/2, ${secondLabel})`, {
-          position: 'top-right',
-          duration: EXTRACTED_TOAST_MS,
-          background: TOAST_SUCCESS_BG
-        }));
-        notifyBackground('done');
+        showDebugFeedback(`Debug: copied HTML (2/2, ${secondLabel})`, true, payload);
         finalizeDebugCapture();
         return true;
       }
@@ -804,12 +811,7 @@
             navigator.clipboard.writeText(payload);
           }, 120);
           const secondLabel = getDebugAnyTwoSecondLabel(element);
-          replaceActiveToast(showToast(`Debug: copied HTML (2/2, ${secondLabel})`, {
-            position: 'top-right',
-            duration: EXTRACTED_TOAST_MS,
-            background: TOAST_SUCCESS_BG
-          }));
-          notifyBackground('done');
+          showDebugFeedback(`Debug: copied HTML (2/2, ${secondLabel})`, true, payload);
           finalizeDebugCapture();
           return true;
         }
@@ -827,12 +829,7 @@
           navigator.clipboard.writeText(payload);
         }, 120);
         const secondLabel = getDebugAnyTwoSecondLabel(element);
-        replaceActiveToast(showToast(`Debug: copied HTML (2/2, ${secondLabel})`, {
-          position: 'top-right',
-          duration: EXTRACTED_TOAST_MS,
-          background: TOAST_SUCCESS_BG
-        }));
-        notifyBackground('done');
+        showDebugFeedback(`Debug: copied HTML (2/2, ${secondLabel})`, true, payload);
         finalizeDebugCapture();
         return true;
       }
@@ -849,12 +846,7 @@
           navigator.clipboard.writeText(payload);
         }, 120);
         const secondLabel = getDebugAnyTwoSecondLabel(element);
-        replaceActiveToast(showToast(`Debug: copied HTML (2/2, ${secondLabel})`, {
-          position: 'top-right',
-          duration: EXTRACTED_TOAST_MS,
-          background: TOAST_SUCCESS_BG
-        }));
-        notifyBackground('done');
+        showDebugFeedback(`Debug: copied HTML (2/2, ${secondLabel})`, true, payload);
         finalizeDebugCapture();
         return true;
       }
@@ -873,12 +865,7 @@
             navigator.clipboard.writeText(payload);
           }, 120);
           const secondLabel = getDebugAnyTwoSecondLabel(element);
-          replaceActiveToast(showToast(`Debug: copied HTML (2/2, ${secondLabel})`, {
-            position: 'top-right',
-            duration: EXTRACTED_TOAST_MS,
-            background: TOAST_SUCCESS_BG
-          }));
-          notifyBackground('done');
+          showDebugFeedback(`Debug: copied HTML (2/2, ${secondLabel})`, true, payload);
           finalizeDebugCapture();
           return true;
         }
@@ -904,12 +891,7 @@
               navigator.clipboard.writeText(payload);
             }, 120);
             const secondLabel = getDebugAnyTwoSecondLabel(optionEl);
-            replaceActiveToast(showToast(`Debug: copied HTML (2/2, ${secondLabel})`, {
-              position: 'top-right',
-              duration: EXTRACTED_TOAST_MS,
-              background: TOAST_SUCCESS_BG
-            }));
-            notifyBackground('done');
+            showDebugFeedback(`Debug: copied HTML (2/2, ${secondLabel})`, true, payload);
             finalizeDebugCapture();
             return true;
           }
@@ -939,7 +921,7 @@
       const triggerEl = window.__dropdownExtractorDebugTrigger;
       const containerEl = window.__dropdownExtractorDebugContainer
         || (optionContext ? optionContext.container : null)
-        || (toCapture[0] && toCapture[0].matches && toCapture[0].matches('[role="listbox"],[role="menu"],[role="list"],[role="grid"],ul,ol')
+        || (toCapture[0] && toCapture[0].matches && toCapture[0].matches('select,[role="listbox"],[role="menu"],[role="list"],[role="grid"],ul,ol')
           ? toCapture[0]
           : null);
       const element1 = containerEl || toCapture[0] || element;
@@ -949,37 +931,26 @@
       const firstLabel = getDebugAnyTwoFirstLabel(triggerEl, containerEl, fallbackEl);
       window.__dropdownExtractorDebugFirstLabel = `1. ${firstLabel}`;
       navigator.clipboard.writeText(buildDebugAnyTwoPayloadFromStored(null));
-      replaceActiveToast(showToast(`Debug: copied HTML (1/2, ${firstLabel})`, {
-        position: 'top-right',
-        duration: EXTRACTED_TOAST_MS,
-        background: TOAST_SUCCESS_BG
-      }));
+      showDebugFeedback(`Debug: copied HTML (1/2, ${firstLabel})`, false, buildDebugAnyTwoPayloadFromStored(null));
       return true;
     }
 
-    {
-      const triggerEl = window.__dropdownExtractorDebugTrigger;
-      const containerEl = window.__dropdownExtractorDebugContainer
-        || (optionContext ? optionContext.container : null)
-        || (toCapture[0] && toCapture[0].matches && toCapture[0].matches('[role="listbox"],[role="menu"],[role="list"],[role="grid"],ul,ol')
-          ? toCapture[0]
-          : null);
-      const optionEl = optionContext
-        ? optionContext.option
-        : (toCapture.find(el => el && el !== containerEl) || element);
-      flashElement(containerEl || optionEl || element);
-      const payload = buildDebugAnyTwoPayloadFromStored(optionEl);
-      setTimeout(() => {
-        navigator.clipboard.writeText(payload);
-      }, 120);
-    }
+    const triggerEl = window.__dropdownExtractorDebugTrigger;
+    const containerEl = window.__dropdownExtractorDebugContainer
+      || (optionContext ? optionContext.container : null)
+      || (toCapture[0] && toCapture[0].matches && toCapture[0].matches('select,[role="listbox"],[role="menu"],[role="list"],[role="grid"],ul,ol')
+        ? toCapture[0]
+        : null);
+    const optionEl = optionContext
+      ? optionContext.option
+      : (toCapture.find(el => el && el !== containerEl) || element);
+    flashElement(containerEl || optionEl || element);
+    const payload = buildDebugAnyTwoPayloadFromStored(optionEl);
+    setTimeout(() => {
+      navigator.clipboard.writeText(payload);
+    }, 120);
     const secondLabel = getDebugAnyTwoSecondLabel(optionEl);
-    replaceActiveToast(showToast(`Debug: copied HTML (2/2, ${secondLabel})`, {
-      position: 'top-right',
-      duration: EXTRACTED_TOAST_MS,
-      background: TOAST_SUCCESS_BG
-    }));
-    notifyBackground('done');
+    showDebugFeedback(`Debug: copied HTML (2/2, ${secondLabel})`, true, payload);
     finalizeDebugCapture();
     return true;
   }
@@ -1416,6 +1387,7 @@
     document.removeEventListener('pointerdown', onPointerDown, true);
     document.removeEventListener('pointerup', onPointerUp, true);
     document.removeEventListener('mousemove', onMouseMove, true);
+    document.removeEventListener('change', onChange, true);
     document.removeEventListener('click', onClick, true);
     document.removeEventListener('mouseup', onMouseUp, true);
     window.removeEventListener('pointerdown', onWindowPointerDown, true);
@@ -1456,7 +1428,10 @@
         duration: EXTRACTED_TOAST_MS,
         background: TOAST_SUCCESS_BG
       }));
-      notifyBackground('done', { feedbackMessage });
+      notifyBackground('done', {
+        feedbackMessage,
+        clipboardText: items.join('\n')
+      });
       cleanup();
     };
 
@@ -1961,6 +1936,9 @@
         const debugTarget = document.elementFromPoint(e.clientX, e.clientY) || target;
         const debugBlocks = window.__dropdownExtractorDebugBlocks || [];
         if (prefs.safeCapture && debugBlocks.length === 0) {
+          const nativeSelect = debugTarget.closest?.('select');
+          if (!nativeSelect) return;
+          captureDebugElement(nativeSelect);
           return;
         }
         if (
@@ -1992,6 +1970,9 @@
         const debugTarget = document.elementFromPoint(e.clientX, e.clientY) || target;
         const debugBlocks = window.__dropdownExtractorDebugBlocks || [];
         if (loadedPrefs.safeCapture && debugBlocks.length === 0) {
+          const nativeSelect = debugTarget.closest?.('select');
+          if (!nativeSelect) return;
+          captureDebugElement(nativeSelect);
           return;
         }
         if (
@@ -2019,6 +2000,16 @@
     if (hovered && hovered.nodeType === Node.ELEMENT_NODE && !hovered.closest(`.${TOAST_CLASS}`)) {
       window.__dropdownExtractorLastHover = hovered;
     }
+  }
+
+  function onChange(e) {
+    if (!window.__dropdownExtractorActive) return;
+    const prefs = window.__dropdownExtractorPrefs;
+    if (!prefs || !shouldDebugAnyTwo(prefs)) return;
+    const select = e.target?.closest?.('select');
+    if (!select || window.__dropdownExtractorDebugBlocks?.length !== 1) return;
+    const option = select.selectedOptions?.[0];
+    if (option) captureDebugElement(option);
   }
 
   function onClick(e) {
@@ -2259,6 +2250,7 @@
   document.addEventListener('pointerdown', onPointerDown, true);
   document.addEventListener('pointerup', onPointerUp, true);
   document.addEventListener('mousemove', onMouseMove, true);
+  document.addEventListener('change', onChange, true);
   document.addEventListener('click', onClick, true);
   document.addEventListener('mouseup', onMouseUp, true);
   window.addEventListener('pointerdown', onWindowPointerDown, true);

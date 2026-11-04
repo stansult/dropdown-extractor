@@ -97,6 +97,22 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
 
   if (msg.action === "done") {
+    const senderTabId = _sender?.tab?.id || null;
+    const senderFrameId = _sender?.frameId;
+    if (
+      senderTabId
+      && Number.isInteger(senderFrameId)
+      && senderFrameId > 0
+      && typeof msg.feedbackMessage === "string"
+      && msg.feedbackMessage.trim()
+    ) {
+      chrome.tabs.sendMessage(
+        senderTabId,
+        { action: "show-success-feedback", message: msg.feedbackMessage },
+        { frameId: 0 },
+        () => void chrome.runtime.lastError
+      );
+    }
     armedTabId = null;
     showDoneBadge();
     return;

@@ -96,7 +96,7 @@ and at least one extension end-to-end scenario.
 
 | Fixture | Playground contract | Extension behavior |
 | --- | --- | --- |
-| Native `<select>` | Top-level fixture plus an iCIMS-style same-origin iframe contract for option text/value and normal selection | Text, value, fallbacks, formats, errors, supported debug, and normal same-origin iframe extraction ([#5](https://github.com/stansult/dropdown-extractor/issues/5)) |
+| Native `<select>` | Top-level fixture, an iCIMS-style same-origin iframe contract, and a tall iframe feedback contract | Text, value, fallbacks, formats, errors, supported debug, normal same-origin iframe extraction ([#5](https://github.com/stansult/dropdown-extractor/issues/5)), and top-level viewport feedback ([#7](https://github.com/stansult/dropdown-extractor/issues/7)) |
 | ARIA listbox | Roles, values, selection, and menu closing | Safe Capture on/off and Any-two debug |
 | Searchable ARIA listbox | Public 26-option fixture plus iCIMS-style short/long iframe contracts for trigger, filtering, selection, and closing | Normal same-origin iframe extraction ([#5](https://github.com/stansult/dropdown-extractor/issues/5)) and all-frame Any-two debug for short/long menus ([#4](https://github.com/stansult/dropdown-extractor/issues/4)) |
 | ARIA grid dropdown | Grid/row/cell roles, nested text, absent values, selection, and menu closing | Text-only fallback and Safe Capture on |
@@ -161,6 +161,12 @@ the native-select iframe's clipboard write during the select's `mousedown`, alth
 handler runs; that case therefore asserts child-frame readiness, the exact extracted-item
 notification, field feedback, and unchanged selection. Manual verification in desktop Chrome
 confirms that the equivalent native iCIMS control writes the expected clipboard content.
+
+The tall native iframe regression places its control more than 1,000 pixels below the iframe
+top and scrolls that control into the outer viewport. It proves that the child-frame success
+toast is outside the user's viewport, while the same exact message is forwarded to a visible
+top-frame toast. The native field retains its existing immediate highlight as a secondary cue;
+the top-frame toast is the reliable confirmation when Chrome's native picker obscures it.
 
 ARIA and Dropbox are both required for Safe Capture because they use different interaction
 events. Debug modes use representative fixtures because the workflows are shared; add

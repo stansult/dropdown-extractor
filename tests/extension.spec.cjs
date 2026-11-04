@@ -102,6 +102,20 @@ async function renderNativeSelectFrame(page) {
   return frame;
 }
 
+async function renderTallNativeSelectFrame(page) {
+  await page.evaluate(() => {
+    const frame = document.createElement('iframe');
+    frame.id = 'tall-native-select-frame';
+    frame.src = '/tall-native-select-frame.html';
+    frame.style.width = '800px';
+    frame.style.height = '1400px';
+    document.querySelector('#dropdown').replaceChildren(frame);
+  });
+  const frame = page.frameLocator('#tall-native-select-frame');
+  await expect(frame.locator('#education-start-day')).toBeVisible();
+  return frame;
+}
+
 const items = [
   { text: 'Alpha', value: '101' },
   { text: 'Beta', value: '202' },
@@ -147,6 +161,32 @@ test('normal extraction handles a native select in a same-origin iframe', async 
   })).toBeVisible();
   await expect(select).toHaveClass(/dropdown-extractor-flash/);
   await expect(select).toHaveValue('02');
+});
+
+test('iframe extraction shows success feedback in the current top-level viewport', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+  const frame = await renderTallNativeSelectFrame(page);
+  const select = frame.locator('#education-start-day');
+  await setPrefs(worker, {
+    extractText: true,
+    extractValue: false,
+    safeCapture: true,
+    debugMode: false,
+    debugAllFrames: false,
+  });
+  await armExtension(worker, page, context);
+  await expect(frame.locator('.dropdown-extractor-toast', { hasText: 'Click a dropdown' })).toBeVisible();
+  await select.click();
+
+  const expectedFeedback = 'Extracted 3 items to clipboard:\n\n– 1\n– 2\n– 3';
+  await expect(select).toHaveClass(/dropdown-extractor-flash/);
+  const childSuccess = frame.locator('.dropdown-extractor-toast', { hasText: expectedFeedback });
+  await expect(childSuccess).toHaveCount(1);
+  await expect(childSuccess).not.toBeInViewport();
+  const topSuccess = page.locator('.dropdown-extractor-toast', { hasText: expectedFeedback });
+  await expect(topSuccess).toBeVisible();
+  await expect(topSuccess).toBeInViewport();
+  await expect(topSuccess).toHaveText(expectedFeedback);
+  await expect(select).toHaveValue('2');
 });
 
 test('safe capture extracts an ARIA list without selecting the clicked option', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {

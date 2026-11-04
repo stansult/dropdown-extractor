@@ -23,6 +23,7 @@ function loadPopup(sendMessage) {
 function loadBackground({ tabs = [{ id: 42 }], prefs = {}, injectionError = null } = {}) {
   let messageListener;
   const executeCalls = [];
+  const tabMessageCalls = [];
   const actionCalls = [];
   const runtime = {
     lastError: null,
@@ -41,6 +42,10 @@ function loadBackground({ tabs = [{ id: 42 }], prefs = {}, injectionError = null
       },
       tabs: {
         query(_query, callback) { callback(tabs); },
+        sendMessage(tabId, message, options, callback) {
+          tabMessageCalls.push({ tabId, message, options });
+          callback();
+        },
         onUpdated: { addListener() {} },
       },
       scripting: {
@@ -62,7 +67,7 @@ function loadBackground({ tabs = [{ id: 42 }], prefs = {}, injectionError = null
     setTimeout() { return 1; },
   };
   vm.runInNewContext(backgroundSource, context, { filename: 'background.js' });
-  return { actionCalls, executeCalls, messageListener };
+  return { actionCalls, executeCalls, messageListener, tabMessageCalls };
 }
 
 test('popup sends pick once and closes after success', () => {
@@ -122,6 +127,25 @@ test('background ignores stale frame cancellation after successful extraction', 
   background.messageListener({ action: 'canceled' }, sender);
 
   assert.equal(background.actionCalls.length, actionCountAfterDone);
+});
+
+test('background forwards child-frame success feedback to the top frame', () => {
+  const background = loadBackground();
+  background.messageListener(
+    { action: 'done', feedbackMessage: 'Extracted 3 items' },
+    { tab: { id: 42 }, frameId: 7 }
+  );
+  assert.deepEqual(plain(background.tabMessageCalls), [{
+    tabId: 42,
+    message: { action: 'show-success-feedback', message: 'Extracted 3 items' },
+    options: { frameId: 0 },
+  }]);
+
+  background.messageListener(
+    { action: 'done', feedbackMessage: 'Top-frame result' },
+    { tab: { id: 42 }, frameId: 0 }
+  );
+  assert.equal(background.tabMessageCalls.length, 1);
 });
 
 test('background reports missing tabs and injection failures', () => {

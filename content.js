@@ -1,7 +1,7 @@
 (function () {
-  function notifyBackground(action) {
+  function notifyBackground(action, details = {}) {
     try {
-      chrome.runtime.sendMessage({ action });
+      chrome.runtime.sendMessage({ ...details, action });
     } catch (e) {
       // Ignore messaging failures (e.g., if extension context is unavailable).
     }
@@ -235,6 +235,28 @@
     }
     const message = `Extracted ${items.length} items to clipboard:\n\n${lines.join('\n')}`;
     return note ? `${message}\n\n${note}` : message;
+  }
+
+  function registerTopLevelFeedbackHandler() {
+    if (!chrome?.runtime?.onMessage?.addListener) return;
+    if (
+      window.__dropdownExtractorFeedbackMessageHandler
+      && chrome.runtime.onMessage.removeListener
+    ) {
+      chrome.runtime.onMessage.removeListener(window.__dropdownExtractorFeedbackMessageHandler);
+    }
+    window.__dropdownExtractorFeedbackMessageHandler = message => {
+      if (message?.action !== 'show-success-feedback') return;
+      if (typeof message.message !== 'string' || !message.message.trim()) return;
+      clearArmedToast();
+      cleanup(true);
+      replaceActiveToast(showToast(message.message, {
+        position: 'top-right',
+        duration: EXTRACTED_TOAST_MS,
+        background: TOAST_SUCCESS_BG
+      }));
+    };
+    chrome.runtime.onMessage.addListener(window.__dropdownExtractorFeedbackMessageHandler);
   }
 
   function formatTextValue(text, value, format) {
@@ -981,6 +1003,8 @@
     return;
   }
 
+  registerTopLevelFeedbackHandler();
+
   window.__dropdownExtractorActive = true;
   window.__dropdownExtractorPageHideHandler = () => {
     if (!window.__dropdownExtractorActive) return;
@@ -1420,18 +1444,19 @@
     if (flashTarget) flashElement(flashTarget);
 
     const finish = () => {
+      const feedbackMessage = buildExtractedMessage(items, note);
       navigator.clipboard.writeText(items.join('\n'));
       clearArmedToast();
       if (window.__dropdownExtractorCancelTimer) {
         clearTimeout(window.__dropdownExtractorCancelTimer);
         window.__dropdownExtractorCancelTimer = null;
       }
-      replaceActiveToast(showToast(buildExtractedMessage(items, note), {
+      replaceActiveToast(showToast(feedbackMessage, {
         position: 'top-right',
         duration: EXTRACTED_TOAST_MS,
         background: TOAST_SUCCESS_BG
       }));
-      notifyBackground('done');
+      notifyBackground('done', { feedbackMessage });
       cleanup();
     };
 

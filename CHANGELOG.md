@@ -17,6 +17,9 @@ documentation, and internal refactoring changes are omitted unless they affect u
   ([#4](https://github.com/stansult/dropdown-extractor/issues/4))
 - Normal extraction now detects supported dropdowns inside accessible same-origin iframes.
   ([#5](https://github.com/stansult/dropdown-extractor/issues/5))
+- Successful extraction inside a same-origin iframe now shows its confirmation in the visible
+  top-level page instead of leaving it offscreen inside the iframe.
+  ([#7](https://github.com/stansult/dropdown-extractor/issues/7))
 
 ## 1.0.16 — 2026-09-15
 

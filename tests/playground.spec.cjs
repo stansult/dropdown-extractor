@@ -60,6 +60,33 @@ test('native select iframe fixture preserves option data and normal selection', 
   await expect(select).toHaveValue('03');
 });
 
+test('tall native select iframe fixture places the control below the iframe top', async ({ page }) => {
+  await page.evaluate(() => {
+    const frame = document.createElement('iframe');
+    frame.id = 'tall-native-select-frame';
+    frame.src = '/tall-native-select-frame.html';
+    frame.style.width = '800px';
+    frame.style.height = '1400px';
+    document.querySelector('#dropdown').replaceChildren(frame);
+  });
+  const frameElement = page.locator('#tall-native-select-frame');
+  const frame = page.frameLocator('#tall-native-select-frame');
+  const select = frame.locator('#education-start-day');
+  const options = select.locator('option');
+
+  await expect(options).toHaveText(['', '1', '2', '3']);
+  expect(await options.evaluateAll(elements => elements.map(element => element.value)))
+    .toEqual(['0', '1', '2', '3']);
+  await expect(select).toHaveValue('2');
+  const frameBox = await frameElement.boundingBox();
+  const selectBox = await select.boundingBox();
+  expect(frameBox).not.toBeNull();
+  expect(selectBox).not.toBeNull();
+  expect(selectBox.y - frameBox.y).toBeGreaterThan(1000);
+  await select.selectOption('3');
+  await expect(select).toHaveValue('3');
+});
+
 test('playground distinguishes published and next-release dropdown types', async ({ page }) => {
   const comingNote = page.locator('#note-coming');
   await expect(comingNote).toBeHidden();

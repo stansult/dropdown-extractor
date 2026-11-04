@@ -21,9 +21,10 @@ async function selectType(page, type) {
   await page.locator(`.type-option[data-value="${type}"]`).click();
 }
 
-async function renderFixture(page, { type, items }) {
+async function renderFixture(page, { type, items, iframe = false }) {
   await selectType(page, type);
   await setItems(page, items);
+  await page.locator('#render-in-iframe').setChecked(iframe);
   await page.locator('#render').click();
 }
 

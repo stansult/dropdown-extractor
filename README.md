@@ -124,6 +124,7 @@ Use these commands to build uploadable zip archives:
 To test the extension, you can use [Dropdown Playground](https://dropdown-extractor.stansult.com). It lets you:
 
 - pick a dropdown type and value source
+- render that fixture either on the top page or inside a same-origin iframe
 - generate items (text/value/data-value) and mark missing fields
 - render a mock dropdown and extract from it
 - copy a snapshot (text/JSON) to easily share a repro setup

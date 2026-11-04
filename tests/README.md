@@ -65,6 +65,13 @@ Every fixture-dependent extension test must have an independent playground contr
 contract should validate only the assumptions that make the extension result meaningful;
 it should not duplicate extraction logic.
 
+The public Playground can render any offered fixture either on the top page (the default)
+or directly inside a same-origin iframe. Its contracts verify the context control and status,
+preserve the existing top-page behavior, exercise native and searchable ARIA interactions in
+the iframe, and smoke-test every offered fixture family there without page errors. Extension
+coverage remains focused on representative native and ARIA iframe paths rather than repeating
+every fixture permutation.
+
 ### Extension end-to-end tests
 
 `tests/extension.spec.cjs` launches Playwright's bundled Chromium with the repository root
@@ -75,7 +82,9 @@ Tests invoke the toolbar action through Chrome DevTools Protocol `Extensions.tri
 This exercises toolbar activation, popup, background service worker, `activeTab` permission,
 content-script injection, page interaction, clipboard output, and notifications. Extension
 tests run serially because they operate through extension state and persistent browser
-contexts; playground contracts may run in parallel.
+contexts; playground contracts may run in parallel. The complete browser suite uses at most
+two workers locally and in CI so parallel fixture checks do not starve extension browser
+startup and activation.
 
 The activation helper marks any existing armed toast before triggering the toolbar action
 and waits for a newly created armed toast. This prevents a fading toast from a previous

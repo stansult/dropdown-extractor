@@ -23,7 +23,7 @@
           <details class="howto">
             <summary>How?</summary>
             <ol>
-              <li>Pick a dropdown type and value source.</li>
+              <li>Pick a dropdown type, value source, and whether to render it inside a same-origin iframe.</li>
               <li>Set the number of items to generate.</li>
               <li>Edit text/value/data-value cells, or mark them missing.</li>
               <li>Use header tools to clear, toggle missing, or number a column.</li>
@@ -85,6 +85,13 @@
             </div>
           </div>
 
+          <div class="control render-context-control">
+            <label class="checkbox-label">
+              <input id="render-in-iframe" type="checkbox">
+              Render inside a same-origin iframe
+            </label>
+          </div>
+
           <div class="notes">
             <div id="notes-title" class="notes-title">Notes:</div>
         <ul class="notes-list">
@@ -109,10 +116,11 @@
       <aside class="right-column">
         <div class="dropdown-panel">
           <h2>Test dropdown</h2>
-        <div class="render-actions">
-          <button id="render" title="Render the dropdown with current settings">Render</button>
-        </div>
-        <div id="dropdown-type" class="dropdown-type">Type: Native &lt;select&gt;</div>
+          <div class="render-actions">
+            <button id="render" title="Render the dropdown with current settings">Render</button>
+          </div>
+          <div id="dropdown-type" class="dropdown-type">Type: Native &lt;select&gt;</div>
+          <div id="dropdown-context" class="dropdown-context">Context: Top page</div>
           <div id="dropdown"></div>
           <div class="snapshot-summary">
             <span>Snapshot:</span>

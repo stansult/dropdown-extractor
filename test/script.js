@@ -14,6 +14,8 @@ const dropdownContainer = document.getElementById('dropdown');
 const dropdownType = document.getElementById('dropdown-type');
 const dropdownPanel = document.querySelector('.dropdown-panel');
 const valueModeSelect = document.getElementById('value-mode');
+const renderInIframe = document.getElementById('render-in-iframe');
+const dropdownContext = document.getElementById('dropdown-context');
 const noteComing = document.getElementById('note-coming');
 const noteNative = document.getElementById('note-native');
 const noteAriaSearchable = document.getElementById('note-aria-searchable');
@@ -29,6 +31,7 @@ const noteExpedia = document.getElementById('note-expedia');
 const notesTitle = document.getElementById('notes-title');
 
 let lastRenderSnapshot = null;
+let fixtureDocument = document;
 
 const TYPE_STATUS = Object.freeze({
   supported: Object.freeze({ className: 'supported', label: 'Supported' }),
@@ -88,6 +91,11 @@ function updateRenderedTypeDisplay() {
   pill.className = `type-support ${status.className}`;
   pill.textContent = status.label;
   dropdownType.appendChild(pill);
+  if (dropdownContext) {
+    dropdownContext.textContent = lastRenderSnapshot.renderInIframe
+      ? 'Context: Same-origin iframe'
+      : 'Context: Top page';
+  }
 }
 
 function updateNotesVisibility() {
@@ -199,7 +207,7 @@ function enablePressedState() {
   });
 }
 
-function createDropdownShell(selectedText) {
+function createDropdownShell(selectedText, document = fixtureDocument) {
   const shell = document.createElement('div');
   shell.className = 'dropdown-shell';
 
@@ -227,7 +235,7 @@ function createDropdownShell(selectedText) {
   return { shell, trigger, menu };
 }
 
-function createSearchableAriaDropdown(items) {
+function createSearchableAriaDropdown(items, document = fixtureDocument) {
   const menuItems = items.map(item => ({ ...item }));
   for (let index = menuItems.length; index < 26; index += 1) {
     menuItems.push({
@@ -341,7 +349,7 @@ function createSearchableAriaDropdown(items) {
   return { shell };
 }
 
-function createDropboxMenuDropdown(items, selectedText) {
+function createDropboxMenuDropdown(items, selectedText, document = fixtureDocument) {
   const { shell, trigger, menu } = createDropdownShell(selectedText);
   const list = document.createElement('div');
   list.className = 'dropbox-menu';
@@ -372,7 +380,7 @@ function createDropboxMenuDropdown(items, selectedText) {
   return { shell, trigger, menu };
 }
 
-function createSlmModalDropdown(items, selectedText) {
+function createSlmModalDropdown(items, selectedText, document = fixtureDocument) {
   const shell = document.createElement('div');
   shell.className = 'dropdown-shell';
 
@@ -451,7 +459,7 @@ function createSlmModalDropdown(items, selectedText) {
   return { shell, trigger, modal };
 }
 
-function createAliExpressSearchDropdown(items, selectedText) {
+function createAliExpressSearchDropdown(items, selectedText, document = fixtureDocument) {
   const shell = document.createElement('div');
   shell.className = 'ali-shell';
 
@@ -540,7 +548,7 @@ function createAliExpressSearchDropdown(items, selectedText) {
   return { shell };
 }
 
-function createExpediaSearchDropdown(items, selectedText) {
+function createExpediaSearchDropdown(items, selectedText, document = fixtureDocument) {
   const { shell, trigger, menu } = createDropdownShell(selectedText || 'Where to?');
   trigger.setAttribute('data-stid', 'destination_form_field-menu-trigger');
 
@@ -569,7 +577,7 @@ function createExpediaSearchDropdown(items, selectedText) {
   return { shell };
 }
 
-function createGitHubSelectMenuDropdown(items) {
+function createGitHubSelectMenuDropdown(items, document = fixtureDocument) {
   const shell = document.createElement('div');
   shell.className = 'gh-selectmenu';
 
@@ -893,6 +901,7 @@ function buildSnapshot() {
     type: typeSelect.value,
     typeLabel,
     valueSource: valueModeSelect.value,
+    renderInIframe: !!renderInIframe.checked,
     count: items.length,
     countValue: countInput.value,
     items
@@ -907,6 +916,7 @@ function buildSnapshotText(snapshot) {
   return [
     `type: ${snapshot.typeLabel}`,
     `value source: ${snapshot.valueSource}`,
+    `rendering context: ${snapshot.renderInIframe ? 'same-origin iframe' : 'top page'}`,
     `items: ${snapshot.count}`,
     `missing text/value/data/href: ${missingText}/${missingValue}/${missingData}/${missingHref}`,
     '',
@@ -941,14 +951,41 @@ function applyMuiValueTarget(element, item) {
   }
 }
 
+function prepareFixtureTarget(useIframe) {
+  dropdownContainer.replaceChildren();
+  if (!useIframe) {
+    fixtureDocument = window.document;
+    return dropdownContainer;
+  }
+
+  const frame = window.document.createElement('iframe');
+  frame.id = 'playground-fixture-frame';
+  frame.className = 'playground-fixture-frame';
+  frame.title = 'Rendered dropdown fixture';
+  dropdownContainer.appendChild(frame);
+
+  const frameDocument = frame.contentDocument;
+  const stylesheet = frameDocument.createElement('link');
+  stylesheet.rel = 'stylesheet';
+  stylesheet.href = new URL('styles.css?v=3', window.location.href).href;
+  frameDocument.head.appendChild(stylesheet);
+  frameDocument.body.className = 'fixture-frame-body';
+  const root = frameDocument.createElement('div');
+  root.id = 'fixture-root';
+  frameDocument.body.appendChild(root);
+  fixtureDocument = frameDocument;
+  return root;
+}
+
 function renderDropdown() {
-  dropdownContainer.innerHTML = '';
   const items = readItems();
   const type = typeSelect.value;
   lastRenderSnapshot = buildSnapshot();
   updateRenderedTypeDisplay();
   updateNotesVisibility();
   updateChangedState();
+  const renderContainer = prepareFixtureTarget(lastRenderSnapshot.renderInIframe);
+  const document = fixtureDocument;
 
   if (type === 'native') {
     const select = document.createElement('select');
@@ -960,7 +997,7 @@ function renderDropdown() {
       if (item.dataValue) option.dataset.value = item.dataValue;
       select.appendChild(option);
     });
-    dropdownContainer.appendChild(select);
+    renderContainer.appendChild(select);
     pulsePanel();
     return;
   }
@@ -981,14 +1018,14 @@ function renderDropdown() {
     });
     menu.appendChild(listbox);
     wireSelection(menu, listbox, trigger);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
 
   if (type === 'aria-searchable') {
     const { shell } = createSearchableAriaDropdown(items);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
@@ -1019,7 +1056,7 @@ function renderDropdown() {
     });
     menu.appendChild(grid);
     wireSelection(menu, grid, trigger);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
@@ -1038,7 +1075,7 @@ function renderDropdown() {
     });
     menu.appendChild(content);
     wireSelection(menu, content, trigger);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
@@ -1058,7 +1095,7 @@ function renderDropdown() {
     });
     menu.appendChild(reactMenu);
     wireSelection(menu, reactMenu, trigger);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
@@ -1101,7 +1138,7 @@ function renderDropdown() {
     listbox.appendChild(list);
     menu.appendChild(listbox);
     wireSelection(menu, list, trigger);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
@@ -1126,7 +1163,7 @@ function renderDropdown() {
     });
     menu.appendChild(listbox);
     wireSelection(menu, listbox, trigger);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
@@ -1146,7 +1183,7 @@ function renderDropdown() {
     });
     menu.appendChild(listbox);
     wireSelection(menu, listbox, trigger);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
@@ -1169,14 +1206,14 @@ function renderDropdown() {
     });
     menu.appendChild(list);
     wireSelection(menu, list, trigger);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
 
   if (type === 'dropbox-menu') {
     const { shell } = createDropboxMenuDropdown(items, items[0]?.text);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
@@ -1195,7 +1232,7 @@ function renderDropdown() {
     });
     menu.appendChild(list);
     wireSelection(menu, list, trigger);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
@@ -1214,35 +1251,35 @@ function renderDropdown() {
     });
     menu.appendChild(list);
     wireSelection(menu, list, trigger);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
 
   if (type === 'aliexpress') {
     const { shell } = createAliExpressSearchDropdown(items, items[0]?.text);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
 
   if (type === 'expedia') {
     const { shell } = createExpediaSearchDropdown(items, items[0]?.text);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
 
   if (type === 'github-selectmenu') {
     const { shell } = createGitHubSelectMenuDropdown(items);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
 
   if (type === 'slm-modal') {
     const { shell } = createSlmModalDropdown(items, items[0]?.text);
-    dropdownContainer.appendChild(shell);
+    renderContainer.appendChild(shell);
     pulsePanel();
     return;
   }
@@ -1260,7 +1297,7 @@ function renderDropdown() {
   });
   menu.appendChild(list);
   wireSelection(menu, list, trigger);
-  dropdownContainer.appendChild(shell);
+  renderContainer.appendChild(shell);
   pulsePanel();
 }
 
@@ -1321,6 +1358,10 @@ function updateChangedState() {
   if (valueSourceChanged) anyChanged = true;
   valueModeSelect.parentElement.classList.toggle('changed', valueSourceChanged);
 
+  const iframeChanged = renderInIframe.checked !== lastRenderSnapshot.renderInIframe;
+  if (iframeChanged) anyChanged = true;
+  renderInIframe.closest('.control')?.classList.toggle('changed', iframeChanged);
+
   renderButton.classList.toggle('changed', anyChanged);
 }
 
@@ -1336,6 +1377,7 @@ typeSelect.addEventListener('change', () => {
   updateChangedState();
 });
 valueModeSelect.addEventListener('change', updateChangedState);
+renderInIframe.addEventListener('change', updateChangedState);
 renderButton.addEventListener('click', renderDropdown);
 randomizeButton.addEventListener('click', fillRandomValues);
 snapshotTextButton.addEventListener('click', () => {

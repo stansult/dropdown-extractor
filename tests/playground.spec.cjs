@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { renderFixture } = require('./helpers.cjs');
+const { renderFixture, setItems } = require('./helpers.cjs');
 
 const items = [
   { text: 'Alpha', value: '101' },
@@ -18,6 +18,7 @@ test('native fixture renders options and supports normal selection', async ({ pa
   await expect(page.getByRole('heading', { name: 'Dropdown Playground' })).toBeVisible();
   await expect(page.locator('#items tr')).toHaveCount(5);
   await expect(page.locator('#dropdown select option')).toHaveCount(5);
+  await expect(page.locator('#playground-fixture-frame')).toHaveCount(0);
   await expect(page.locator('#dropdown-type')).toContainText('Native <select>');
 
   await renderFixture(page, { type: 'native', items });
@@ -35,6 +36,88 @@ test('native fixture renders options and supports normal selection', async ({ pa
   await expect(valueOnlyOptions).toHaveText(['', '', '']);
   expect(await valueOnlyOptions.evaluateAll(elements => elements.map(element => element.value)))
     .toEqual(['101', '202', '303']);
+  expect(errors).toEqual([]);
+});
+
+test('iframe option reports and changes the rendered context', async ({ page }) => {
+  const iframeOption = page.locator('#render-in-iframe');
+  const iframeControl = page.locator('.render-context-control');
+  const renderButton = page.locator('#render');
+  const contextStatus = page.locator('#dropdown-context');
+
+  await expect(iframeOption).not.toBeChecked();
+  await expect(contextStatus).toHaveText('Context: Top page');
+  await page.locator('#render').click();
+  await expect(page.locator('#playground-fixture-frame')).toHaveCount(0);
+
+  await iframeOption.check();
+  await expect(iframeControl).toHaveClass(/changed/);
+  await expect(renderButton).toHaveClass(/changed/);
+  await renderButton.click();
+  await expect(iframeControl).not.toHaveClass(/changed/);
+  await expect(renderButton).not.toHaveClass(/changed/);
+  await expect(contextStatus).toHaveText('Context: Same-origin iframe');
+  await expect(page.locator('#playground-fixture-frame')).toBeVisible();
+  await expect(page.frameLocator('#playground-fixture-frame').locator('link[href*="styles.css"]'))
+    .toHaveCount(1);
+});
+
+test('configurable iframe renders a native select with normal interaction', async ({ page }) => {
+  await renderFixture(page, { type: 'native', items, iframe: true });
+  const frame = page.frameLocator('#playground-fixture-frame');
+  const select = frame.locator('select');
+  const options = select.locator('option');
+
+  await expect(options).toHaveText(['Alpha', 'Beta', 'Gamma']);
+  expect(await options.evaluateAll(elements => elements.map(element => element.value)))
+    .toEqual(['101', '202', '303']);
+  await select.selectOption('202');
+  await expect(select).toHaveValue('202');
+});
+
+test('configurable iframe preserves searchable ARIA interaction behavior', async ({ page }) => {
+  await renderFixture(page, { type: 'aria-searchable', items, iframe: true });
+  const frame = page.frameLocator('#playground-fixture-frame');
+  const trigger = frame.locator('.dropdown-select');
+  const container = frame.locator('.dropdown-container');
+  const search = frame.locator('.dropdown-search');
+  const options = frame.locator('[role="listbox"] [role="option"]');
+
+  await trigger.click();
+  await expect(container).not.toHaveClass(/dropdown-invisible/);
+  await search.fill('category 25');
+  await expect(options.nth(0)).toBeHidden();
+  await expect(options.nth(25)).toBeVisible();
+  await frame.locator('#fixture-root').click({ position: { x: 2, y: 2 } });
+  await expect(container).toHaveClass(/dropdown-invisible/);
+
+  await trigger.click();
+  await search.fill('Beta');
+  await options.nth(1).click();
+  await expect(trigger.locator('.dropdown-text')).toHaveText('Beta');
+  await expect(container).toHaveClass(/dropdown-invisible/);
+});
+
+test('every offered dropdown type renders in iframe mode without a page error', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  const types = await page.locator('#type option').evaluateAll(options => (
+    options.map(option => option.value)
+  ));
+  await setItems(page, items);
+  await page.locator('#render-in-iframe').check();
+
+  for (const type of types) {
+    await page.locator('#type').evaluate((select, value) => {
+      select.value = value;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    }, type);
+    await page.locator('#render').click();
+    await expect(page.locator('#playground-fixture-frame')).toBeVisible();
+    await expect(page.frameLocator('#playground-fixture-frame').locator('#fixture-root > *'))
+      .toHaveCount(1);
+  }
+
   expect(errors).toEqual([]);
 });
 

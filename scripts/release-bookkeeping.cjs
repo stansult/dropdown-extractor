@@ -71,6 +71,31 @@ function submittedTag(version) {
   return `${submissionTagPrefix}${version}`;
 }
 
+function submissionAttempt(tag, version) {
+  const original = submittedTag(version);
+  if (tag === original) return 1;
+  if (!tag.startsWith(`${original}-r`)) {
+    throw new Error(`Invalid submission marker for ${version}: ${tag}`);
+  }
+  const suffix = tag.slice(`${original}-r`.length);
+  if (!/^[2-9]\d*$/.test(suffix)) {
+    throw new Error(`Invalid submission marker for ${version}: ${tag}`);
+  }
+  return Number(suffix);
+}
+
+function submissionTags(git, version) {
+  return git.output(['tag', '--list', `${submittedTag(version)}*`])
+    .split('\n')
+    .filter(Boolean)
+    .map(tag => ({ tag, attempt: submissionAttempt(tag, version) }))
+    .sort((left, right) => right.attempt - left.attempt);
+}
+
+function latestSubmissionTag(git, version) {
+  return submissionTags(git, version)[0]?.tag || null;
+}
+
 function commitVersion(git, commit) {
   let manifest;
   try {
@@ -103,14 +128,51 @@ function recordSubmission({ git, version, commit, checksum }) {
   return { version, tag, commit, checksum };
 }
 
+function recordResubmission({ git, version, commit, checksum }) {
+  parseVersion(version);
+  if (git.output(['status', '--porcelain'])) throw new Error('Working tree must be clean.');
+  if (!/^[a-f0-9]{64}$/.test(checksum)) throw new Error('ZIP checksum must be a SHA-256 hash.');
+  if (git.status(['merge-base', '--is-ancestor', commit, 'origin/main']) !== 0) {
+    throw new Error('Resubmitted commit must be contained in origin/main.');
+  }
+  if (commitVersion(git, commit) !== version) {
+    throw new Error(`Resubmitted commit manifest does not have version ${version}.`);
+  }
+
+  const original = submittedTag(version);
+  const originalStatus = git.status(['show-ref', '--verify', '--quiet', `refs/tags/${original}`]);
+  if (originalStatus === 1) throw new Error(`Original submission tag does not exist: ${original}`);
+  if (originalStatus !== 0) throw new Error(`Could not check tag: ${original}`);
+  if (git.output(['cat-file', '-t', original]) !== 'tag') {
+    throw new Error(`Original submission marker must be an annotated tag: ${original}`);
+  }
+  const originalMessage = git.output([
+    'for-each-ref', '--format=%(contents)', `refs/tags/${original}`,
+  ]);
+  const originalChecksum = originalMessage.match(/ZIP SHA-256: ([a-f0-9]{64})/)?.[1];
+  if (!originalChecksum) {
+    throw new Error(`Original submission marker does not contain a ZIP checksum: ${original}`);
+  }
+  if (checksum !== originalChecksum) {
+    throw new Error('Resubmission ZIP checksum must match the original submission.');
+  }
+
+  const attempts = submissionTags(git, version);
+  const attempt = Math.max(1, ...attempts.map(candidate => candidate.attempt)) + 1;
+  const tag = `${original}-r${attempt}`;
+  const message = `Chrome Web Store resubmission ${version} (attempt ${attempt})\n\n`
+    + `Original submission: ${original}\nZIP SHA-256: ${checksum}`;
+  git.run(['tag', '-a', tag, commit, '-m', message]);
+  git.run(['push', 'origin', `refs/tags/${tag}`]);
+  return { version, tag, commit, checksum, attempt, original };
+}
+
 function recordRelease({ git, version }) {
   parseVersion(version);
   if (git.output(['status', '--porcelain'])) throw new Error('Working tree must be clean.');
 
-  const submission = submittedTag(version);
-  const submissionStatus = git.status(['show-ref', '--verify', '--quiet', `refs/tags/${submission}`]);
-  if (submissionStatus === 1) throw new Error(`Submission tag does not exist: ${submission}`);
-  if (submissionStatus !== 0) throw new Error(`Could not check tag: ${submission}`);
+  const submission = latestSubmissionTag(git, version);
+  if (!submission) throw new Error(`Submission tag does not exist: ${submittedTag(version)}`);
   if (git.output(['cat-file', '-t', submission]) !== 'tag') {
     throw new Error(`Submission marker must be an annotated tag: ${submission}`);
   }
@@ -188,11 +250,17 @@ if (require.main === module) {
       const result = recordSubmission({ git, version, commit, checksum: sha256(archive) });
       console.log(`Recorded ${result.tag} at ${result.commit} and pushed it to origin.`);
       console.log(`ZIP SHA-256: ${result.checksum}`);
+    } else if (command === 'resubmit') {
+      const commit = process.argv[4] || git.output(['rev-parse', 'HEAD']);
+      const archive = process.argv[5] || `dist/dropdown-extractor-${version}.zip`;
+      const result = recordResubmission({ git, version, commit, checksum: sha256(archive) });
+      console.log(`Recorded ${result.tag} at ${result.commit} and pushed it to origin.`);
+      console.log(`ZIP SHA-256: ${result.checksum}`);
     } else if (command === 'record') {
       const result = recordRelease({ git, version });
       console.log(`Recorded ${result.tag} at ${result.commit} and pushed it to origin.`);
     } else {
-      throw new Error('Usage: release-bookkeeping.cjs <status|submit|record> [version] [commit] [archive]');
+      throw new Error('Usage: release-bookkeeping.cjs <status|submit|resubmit|record> [version] [commit] [archive]');
     }
   } catch (error) {
     console.error(`Release bookkeeping failed: ${error.message}`);
@@ -202,8 +270,10 @@ if (require.main === module) {
 
 module.exports = {
   compareVersions,
+  latestSubmissionTag,
   latestReleaseTag,
   recordRelease,
+  recordResubmission,
   recordSubmission,
   releaseStatus,
   submittedTag,

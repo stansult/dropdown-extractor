@@ -21,8 +21,8 @@ Use this workflow for an update to the existing Dropdown Extractor listing.
 10. Submit the update for review. Normal development may continue on `main` while review
     is pending because the submission tag preserves the uploaded commit.
 11. After that version is live, run `npm run release:record -- <version>`. This creates and
-    pushes `webstore-v<version>` at the commit recorded by the submission tag, regardless
-    of the current `main` tip.
+    pushes `webstore-v<version>` at the commit recorded by the latest submission or
+    resubmission tag, regardless of the current `main` tip.
 12. Run `npm run release:status`. If `main` has not changed since submission, runtime and
     listing files should report `unchanged`; otherwise its results describe legitimate
     post-submission work relative to the newly recorded live baseline.
@@ -36,6 +36,31 @@ after the Chrome Web Store version is live. See the
 annotated tag contains the ZIP SHA-256 and must point to a commit contained in `origin/main`
 whose manifest has the submitted version. By default it uses the current manifest, `HEAD`,
 and `dist/dropdown-extractor-<version>.zip`; optional arguments are version, commit, and ZIP.
+
+## Rejected submissions
+
+A rejected draft is not a published release. Keep the original
+`webstore-submitted-v<version>` tag as immutable evidence of the rejected attempt, record the
+exact policy message, and correct the applicable source file before resubmitting.
+
+If only Store metadata changes and the uploaded ZIP remains byte-for-byte identical:
+
+1. Commit and push the corrected listing source.
+2. Reuse or re-upload the same tested ZIP and submit the corrected draft for review. Do not use
+   **Roll back to previous version**; rollback applies to an already-published package.
+3. From a clean tree, run
+   `npm run release:resubmit -- <version> <corrected-commit> <archive>`. The command requires
+   the ZIP checksum to match the original submission and creates
+   `webstore-submitted-v<version>-r2`. Later retries increment the suffix (`-r3`, `-r4`, and so
+   on) without deleting earlier evidence.
+
+If the package changes, or the Dashboard requires a new extension version, do not use
+`release:resubmit`. Prepare the new version through the normal packaging workflow and record it
+with `release:submit`.
+
+`release:record` selects the highest numbered resubmission marker when one exists, so the final
+publication tag preserves the accepted listing revision as well as the unchanged package
+checksum.
 
 `release:record` is the explicit confirmation that a submitted version became public. Do
 not run it while the package is awaiting review. If its tag push fails after the local tag

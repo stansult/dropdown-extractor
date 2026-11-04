@@ -7,6 +7,7 @@ const { join } = require('node:path');
 const {
   compareVersions,
   recordRelease,
+  recordResubmission,
   recordSubmission,
   releaseStatus,
 } = require('./release-bookkeeping.cjs');
@@ -20,6 +21,8 @@ function fakeGit({
   diffs = {},
   tagExists = false,
   submissionExists = true,
+  submissionMessage = `Chrome Web Store submission 1.0.15\n\nZIP SHA-256: ${'a'.repeat(64)}`,
+  submissionTags = null,
   submittedCommit = 'abc',
   manifestVersion = '1.0.15',
   ancestor = true,
@@ -38,8 +41,14 @@ function fakeGit({
         if (args[1].endsWith('^{commit}')) return submittedCommit;
       }
       if (args[0] === 'show') return JSON.stringify({ version: manifestVersion });
+      if (args[0] === 'for-each-ref') return submissionMessage;
       if (args[0] === 'cat-file') return submissionType;
-      if (args[0] === 'tag') return tags;
+      if (args[0] === 'tag') {
+        if (args.at(-1).startsWith('webstore-submitted-v')) {
+          return submissionTags ?? (submissionExists ? 'webstore-submitted-v1.0.15' : '');
+        }
+        return tags;
+      }
       throw new Error(`Unexpected output call: ${args.join(' ')}`);
     },
     status(args) {
@@ -113,6 +122,20 @@ test('record creates and pushes an annotated version tag', () => {
   ]);
 });
 
+test('record uses the latest resubmission marker', () => {
+  const git = fakeGit({
+    tags: 'webstore-v1.0.14',
+    submissionTags: 'webstore-submitted-v1.0.15\nwebstore-submitted-v1.0.15-r2',
+    submittedCommit: 'corrected-listing',
+  });
+  assert.deepEqual(recordRelease({ git, version: '1.0.15' }), {
+    version: '1.0.15',
+    tag: 'webstore-v1.0.15',
+    commit: 'corrected-listing',
+    submission: 'webstore-submitted-v1.0.15-r2',
+  });
+});
+
 for (const [name, options, message] of [
   ['dirty tree', { dirty: true }, /clean/],
   ['missing submission tag', { submissionExists: false }, /Submission tag does not exist/],
@@ -150,6 +173,49 @@ test('submit records the commit and ZIP checksum in an annotated tag', () => {
   ]);
 });
 
+test('resubmit preserves the original package checksum in a numbered marker', () => {
+  const git = fakeGit();
+  const checksum = 'a'.repeat(64);
+  assert.deepEqual(recordResubmission({ git, version: '1.0.15', commit: 'abc', checksum }), {
+    version: '1.0.15',
+    tag: 'webstore-submitted-v1.0.15-r2',
+    commit: 'abc',
+    checksum,
+    attempt: 2,
+    original: 'webstore-submitted-v1.0.15',
+  });
+  assert.deepEqual(git.runs, [
+    ['tag', '-a', 'webstore-submitted-v1.0.15-r2', 'abc', '-m',
+      `Chrome Web Store resubmission 1.0.15 (attempt 2)\n\nOriginal submission: webstore-submitted-v1.0.15\nZIP SHA-256: ${checksum}`],
+    ['push', 'origin', 'refs/tags/webstore-submitted-v1.0.15-r2'],
+  ]);
+});
+
+test('resubmit increments an existing retry marker', () => {
+  const git = fakeGit({
+    submissionTags: 'webstore-submitted-v1.0.15\nwebstore-submitted-v1.0.15-r2',
+  });
+  assert.equal(recordResubmission({
+    git, version: '1.0.15', commit: 'abc', checksum: 'a'.repeat(64),
+  }).tag, 'webstore-submitted-v1.0.15-r3');
+});
+
+for (const [name, options, checksum, message] of [
+  ['dirty tree', { dirty: true }, 'a'.repeat(64), /clean/],
+  ['missing original submission', { submissionExists: false }, 'a'.repeat(64), /does not exist/],
+  ['lightweight original submission', { submissionType: 'commit' }, 'a'.repeat(64), /annotated tag/],
+  ['changed package checksum', {}, 'b'.repeat(64), /must match the original submission/],
+  ['commit outside main', { ancestor: false }, 'a'.repeat(64), /contained in origin\/main/],
+  ['wrong manifest version', { manifestVersion: '1.0.14' }, 'a'.repeat(64), /does not have version/],
+]) {
+  test(`resubmit rejects ${name}`, () => {
+    assert.throws(
+      () => recordResubmission({ git: fakeGit(options), version: '1.0.15', commit: 'abc', checksum }),
+      message
+    );
+  });
+}
+
 for (const [name, options, checksum, message] of [
   ['dirty tree', { dirty: true, submissionExists: false }, 'a'.repeat(64), /clean/],
   ['invalid checksum', { submissionExists: false }, 'not-a-hash', /SHA-256/],
@@ -165,7 +231,7 @@ for (const [name, options, checksum, message] of [
   });
 }
 
-test('record creates an annotated tag in a real isolated remote repository', (context) => {
+test('resubmit and record preserve the latest attempt in a real isolated remote repository', (context) => {
   const root = mkdtempSync(join(tmpdir(), 'dropdown-release-'));
   context.after(() => rmSync(root, { recursive: true, force: true }));
   const remote = join(root, 'remote.git');
@@ -202,8 +268,19 @@ test('record creates an annotated tag in a real isolated remote repository', (co
     },
   };
 
-  run(worktree, ['tag', '-a', 'webstore-submitted-v1.0.15', '-m', 'submitted']);
+  const checksum = 'a'.repeat(64);
+  run(worktree, ['tag', '-a', 'webstore-submitted-v1.0.15', '-m',
+    `Chrome Web Store submission 1.0.15\n\nZIP SHA-256: ${checksum}`]);
   run(worktree, ['push', 'origin', 'refs/tags/webstore-submitted-v1.0.15']);
+  writeFileSync(join(worktree, 'listing.txt'), 'corrected listing\n');
+  run(worktree, ['add', 'listing.txt']);
+  run(worktree, ['commit', '-m', 'correct listing']);
+  run(worktree, ['push']);
+  const correctedCommit = run(worktree, ['rev-parse', 'HEAD']);
+  const resubmission = recordResubmission({
+    git, version: '1.0.15', commit: correctedCommit, checksum,
+  });
+  assert.equal(resubmission.tag, 'webstore-submitted-v1.0.15-r2');
   writeFileSync(join(worktree, 'later.txt'), 'post-submission work\n');
   run(worktree, ['add', 'later.txt']);
   run(worktree, ['commit', '-m', 'continue development']);
@@ -212,6 +289,7 @@ test('record creates an annotated tag in a real isolated remote repository', (co
   assert.equal(result.tag, 'webstore-v1.0.15');
   assert.equal(run(remote, ['tag', '--list', 'webstore-v1.0.15']), 'webstore-v1.0.15');
   assert.equal(run(worktree, ['cat-file', '-t', 'webstore-v1.0.15']), 'tag');
-  assert.equal(run(worktree, ['rev-list', '-n', '1', 'webstore-v1.0.15']), submittedCommit);
-  assert.notEqual(run(worktree, ['rev-parse', 'HEAD']), submittedCommit);
+  assert.equal(run(worktree, ['rev-list', '-n', '1', 'webstore-v1.0.15']), correctedCommit);
+  assert.notEqual(run(worktree, ['rev-parse', 'HEAD']), correctedCommit);
+  assert.notEqual(correctedCommit, submittedCommit);
 });

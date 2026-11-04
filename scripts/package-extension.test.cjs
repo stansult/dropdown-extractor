@@ -47,7 +47,7 @@ function fixture(version = '1.0.15') {
     fs.writeFileSync(path.join(root, file), `fixture:${file}\n`);
   }
   for (const file of [
-    'README.md', 'LICENSE', 'package-lock.json', 'playwright.config.cjs',
+    'README.md', 'CONTRIBUTING.md', 'LICENSE', 'package-lock.json', 'playwright.config.cjs',
     'netlify.toml', 'icon.svg', 'icon-inline.svg',
   ]) {
     fs.writeFileSync(path.join(root, file), 'must not be packaged\n');

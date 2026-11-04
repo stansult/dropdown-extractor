@@ -5,6 +5,8 @@ documentation, and internal refactoring changes are omitted unless they affect u
 
 ## Unreleased
 
+## 1.0.17 — 2026-11-04
+
 ### Added
 
 - Added support for ARIA grid dropdowns with selectable grid cells.

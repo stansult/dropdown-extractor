@@ -6,7 +6,7 @@ const { renderFixture } = require('./helpers.cjs');
 
 const extensionPath = join(__dirname, '..');
 const test = base.extend({
-  extensionContext: async ({}, use) => {
+  extensionContext: [async ({}, use) => {
     const userDataDir = mkdtempSync(join(tmpdir(), 'dropdown-playwright-'));
     const context = await chromium.launchPersistentContext(userDataDir, {
       channel: 'chromium',
@@ -23,7 +23,7 @@ const test = base.extend({
     await use(context);
     await context.close();
     rmSync(userDataDir, { recursive: true, force: true });
-  },
+  }, { timeout: 60_000 }],
   extensionWorker: async ({ extensionContext }, use) => {
     let [worker] = extensionContext.serviceWorkers();
     if (!worker) worker = await extensionContext.waitForEvent('serviceworker');
@@ -183,11 +183,11 @@ test('normal extraction handles a native select in a same-origin iframe', async 
   await expect(frame.locator('.dropdown-extractor-toast', { hasText: 'Click a dropdown' })).toBeVisible();
   await select.click();
 
+  await expect(select).toHaveClass(/dropdown-extractor-flash/);
   await expect.poll(() => clipboardText(page)).toBe('Jan\nFeb\nMar');
   await expect(frame.locator('.dropdown-extractor-toast', {
     hasText: 'Extracted 3 items to clipboard:\n\n– Jan\n– Feb\n– Mar',
   })).toBeVisible();
-  await expect(select).toHaveClass(/dropdown-extractor-flash/);
   await expect(select).toHaveValue('02');
 });
 

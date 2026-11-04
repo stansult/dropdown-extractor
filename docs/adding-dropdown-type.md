@@ -60,7 +60,8 @@ intended path and the assertions observe the relevant outcome.
 Follow [Automated Testing](../tests/README.md) for focused and complete-suite verification.
 Update, as applicable:
 
-- the supported dropdown table and limitations in [README.md](../README.md);
+- the supported dropdown table and limitations in the
+  [dropdown compatibility reference](dropdown-compatibility.md);
 - the fixture and option matrices in [tests/README.md](../tests/README.md);
 - `Unreleased` in [CHANGELOG.md](../CHANGELOG.md);
 - the Chrome Web Store source in [docs/description.txt](description.txt) only when the new
@@ -77,7 +78,7 @@ commit, complete-suite results, documentation changes, and release impact in the
 Implementation and Chrome Web Store publication are separate states. When a fixture and its
 support are merged before publication:
 
-- label the type **Coming in next release** in the Playground and public README;
+- label the type **Coming in next release** in the Playground and compatibility reference;
 - keep its user-visible changelog entry under `Unreleased`;
 - review `docs/description.txt`, changing it only if the concise general capability or
   limitation is no longer accurate;
@@ -97,7 +98,7 @@ Only after the Web Store version is live:
 1. install or update to the published extension;
 2. verify the real dropdown when it remains safely available;
 3. record the version and evidence in the issue;
-4. change the Playground and README status to **Supported**;
+4. change the Playground and compatibility reference status to **Supported**;
 5. run the required suites and deploy that status change; and
 6. close the issue after the release record and live verification are complete.
 
@@ -107,5 +108,5 @@ The implementation is complete when the sanitized fixture, independent contract,
 coverage, product support, pending-release status, documentation, and required verification
 are all present. This is **implemented but unreleased**, not publicly supported. Keep the issue
 open until the relevant Chrome Web Store version is live, the real type is verified in that
-version, the Playground and README say **Supported**, and the release is recorded using the
-repository's release workflow.
+version, the Playground and compatibility reference say **Supported**, and the release is
+recorded using the repository's release workflow.

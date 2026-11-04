@@ -2,8 +2,8 @@
 
 **Dropdown Extractor** is a Chrome extension that copies items from dropdown lists into your clipboard.
 
-It supports many popular [types of dropdowns](#dropdown-types). Go to any website and try
-it on any supported dropdown. You can also try it on our test page:
+It supports many popular [types of dropdowns](docs/dropdown-compatibility.md). Go to any
+website and try it on any supported dropdown. You can also try it on our test page:
 [Dropdown Playground](https://dropdown-extractor.stansult.com)
 
 ## How it works
@@ -45,47 +45,9 @@ HTML and produce diagnostic feedback from unrelated embedded content.
 
 To open Extension Options, right-click the extension button and select Options.
 
-### Dropdown types
+### Dropdown compatibility
 
-| Dropdown type | Status |
-|--------------|:------:|
-| Native `<select>` | Supported |
-| ARIA listbox (`role="listbox"`) | Supported |
-| ARIA grid dropdown (`role="grid"`) | Coming in next release |
-| Selectize | Supported |
-| React Select | Supported |
-| React Select (Atlassian) | Supported |
-| Downshift | Supported |
-| MUI Autocomplete | Supported |
-| Radix menu | Supported |
-| Dropbox-style menu | Supported |
-| Ant Design Select | Supported |
-| Select2 | Supported |
-| Chosen | Supported |
-| GitHub SelectMenu | Supported |
-| AliExpress search suggestions | Supported |
-| Google Search suggestions | Supported |
-| Expedia search suggestions | Supported |
-| Accessible same-origin iframes | Supported |
-| Canvas-rendered / virtualized | Not supported |
-| Cross-origin iframes | Not supported |
-
-#### Notes / Limitations
-
-- Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom implementations, virtualized or canvas-rendered menus, Shadow DOM, or cross-origin iframes may not be detectable.
-  - includes support for Google Search suggestions
-- Normal extraction automatically checks accessible same-origin frames; cross-origin frames remain unsupported.
-- AntD/Select2/Chosen support depends on their default DOM structure; customized themes may not be detectable.
-- Radix menus are detected via role="menu".
-- ARIA grid dropdowns are detected through selectable grid cells; values depend on what the cells expose.
-- Radix menu items often omit value/data-value; href is used as a fallback value when present.
-- Dropbox-style menus can close on mousedown; Safe capture keeps them open while extracting.
-- GitHub SelectMenu items use checkbox values as the extracted value.
-- AliExpress search suggestions use href as value; value/data-value are ignored.
-- Expedia search suggestions expose text via aria-label; value/data-value are not provided.
-- MUI options don’t expose value properties on DOM nodes; use data-value if available.
-- Safe capture does not apply to native `<select>` dropdowns.
-- Right-click (context menu) cannot be used with Selectize dropdowns because they close immediately on right-mouse events. That’s why right-click wasn’t implemented.
+See the [complete compatibility matrix and limitations](docs/dropdown-compatibility.md).
 
 
 ## How to Install

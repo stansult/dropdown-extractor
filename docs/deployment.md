@@ -1,8 +1,10 @@
 # Test-Gated Playground Deployment
 
-The workflow in `.github/workflows/playwright.yml` runs unit and Chromium
-Playwright tests on pushes and pull requests to `main`. Tests run even when a
-playground deployment is unnecessary. Pull requests never deploy.
+The workflow in `.github/workflows/playwright.yml` runs unit and Chromium Playwright tests on
+product-impacting pushes and pull requests to `main`. Documentation/issue-template-only
+changes use the targeted workflow described in [Automated Testing](../tests/README.md#ci).
+Product tests still run when a playground deployment is unnecessary. Pull requests never
+deploy.
 
 After tests pass on `main`, the deployment job compares `test/` and
 `netlify.toml` against the last successful deployment recorded in the GitHub
@@ -22,9 +24,10 @@ subject so the dashboard identifies the change instead of showing only a raw SHA
 
 The public Playground may include a fixture for extension behavior implemented on
 `main` but not yet published in the Chrome Web Store. Such a type must be labeled
-**Coming in next release** throughout the Playground and public README. Change it to
-**Supported** only after the relevant Web Store version is live and the real type has
-been verified with that published extension.
+**Coming in next release** throughout the Playground and public
+[compatibility reference](dropdown-compatibility.md). Change it to **Supported** only after
+the relevant Web Store version is live and the real type has been verified with that
+published extension.
 
 ## One-Time Setup
 

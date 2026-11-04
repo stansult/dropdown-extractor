@@ -11,11 +11,13 @@
     "release:resubmit": "node scripts/release-bookkeeping.cjs resubmit",
     "release:record": "node scripts/release-bookkeeping.cjs record",
     "test:release": "node --test scripts/release-bookkeeping.test.cjs",
+    "test:issue-templates": "node --test scripts/issue-templates.test.cjs",
     "test:unit": "node --test scripts/*.test.cjs",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed"
   },
   "devDependencies": {
-    "@playwright/test": "^1.63.0"
+    "@playwright/test": "^1.63.0",
+    "yaml": "^2.9.1"
   }
 }

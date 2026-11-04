@@ -73,7 +73,7 @@ body:
         - label: Public supported-type and limitation documentation is current.
         - label: Test coverage matrices are current.
         - label: The Unreleased changelog and Chrome Web Store description were reviewed and updated when applicable.
-        - label: The Playground and README label the implemented type Coming in next release until publication.
+        - label: The Playground and compatibility reference label the implemented type Coming in next release until publication.
         - label: Focused tests and both complete test suites pass.
   - type: textarea
     id: evidence
@@ -93,7 +93,7 @@ body:
         - label: The submitted Web Store version, commit, and artifact checksum are recorded.
         - label: The Web Store version is live, not merely submitted or under review.
         - label: The real dropdown was verified with the published extension, or the issue explains why it was no longer safely available.
-        - label: The Playground and README status changed from Coming in next release to Supported.
+        - label: The Playground and compatibility reference status changed from Coming in next release to Supported.
         - label: The publication-status change passed both complete test suites and was deployed.
   - type: checkboxes
     id: privacy

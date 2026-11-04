@@ -32,17 +32,18 @@ same commit as the change whenever practical.
 | Change category | Public product documentation | Changelog | Store description | Testing/process documentation |
 | --- | --- | --- | --- | --- |
 | Extension behavior, capability, option, or limitation | Update the README when current behavior or guidance changes | Required when user-visible | Update only when the permanent advertised behavior or limitation changes | Update coverage or workflow guidance when affected |
-| New supported dropdown family | Update the README compatibility table and Playground publication status | Required | Conditional: revise concise compatibility prose only when the general claim changes; do not add a framework/type keyword list | Update the fixture and coverage matrices and follow the adding-type guide |
+| New supported dropdown family | Update the compatibility reference and Playground publication status | Required | Conditional: revise concise compatibility prose only when the general claim changes; do not add a framework/type keyword list | Update the fixture and coverage matrices and follow the adding-type guide |
 | User-visible bug fix | Correct inaccurate README guidance when applicable | Required | Usually unchanged; update only if the listing's current behavior or limitation becomes inaccurate | Link regression coverage and bug/release evidence |
 | Playground behavior or fixture | Update Playground help and the README when public usage changes | Do not add to the extension changelog unless extension behavior also changed | Unchanged | Update Playground contracts, coverage, and deployment guidance when applicable |
 | Test, CI, deployment, or contributor-process change | Usually unchanged | Unchanged | Unchanged | Update the relevant public contributor, testing, deployment, bug, or release guide |
 | Store metadata/editorial change | Keep equivalent product terminology consistent when applicable | Unchanged unless product behavior changed | Required | Update release guidance only when the reusable workflow changed |
-| Release-state change | Keep README and Playground statuses aligned with the live Web Store version | Prepare/version/verify according to the release workflow | Use the text submitted for that release | Record submission, publication, and verification evidence in their canonical locations |
+| Release-state change | Keep the compatibility reference and Playground statuses aligned with the live Web Store version | Prepare/version/verify according to the release workflow | Use the text submitted for that release | Record submission, publication, and verification evidence in their canonical locations |
 
-The README and Playground are the canonical public locations for the detailed supported-type
-list. The Chrome Web Store description must remain concise and behavior-oriented; it is not a
-second compatibility matrix. `CHANGELOG.md` records extension releases, not standalone
-Playground, test, CI, or documentation changes.
+The [dropdown compatibility reference](docs/dropdown-compatibility.md) and Playground are the
+canonical public locations for the detailed supported-type list. The README links prominently
+to the compatibility reference. The Chrome Web Store description must remain concise and
+behavior-oriented; it is not a second compatibility matrix. `CHANGELOG.md` records extension
+releases, not standalone Playground, test, CI, or documentation changes.
 
 ## Verification before pushing
 
@@ -53,15 +54,20 @@ npm run test:unit
 npm run test:e2e
 ```
 
-Push only after both suites pass. A change containing only Markdown files may skip both
-suites after all of the following checks:
+Push only after both suites pass. A change limited to Markdown files and human-facing content
+in `.github/ISSUE_TEMPLATE/*.yml` may skip product regression after all of the following
+checks:
 
 - run `git diff --check`;
-- confirm the changed-file list is Markdown-only;
+- confirm no runtime, workflow, deployment, package, fixture, test, or product configuration
+  changed;
+- run `npm run test:issue-templates` when an issue-template YAML file changed;
+- review changed Issue Form structure, labels, validations, and checklist wording;
 - review the full diff and rendered wording; and
 - verify referenced local links.
 
-Markdown that drives automation or generated output does not qualify for this exception.
+Arbitrary YAML does not qualify. Markdown that drives automation or generated output and
+files under `.github/workflows/` do not qualify either.
 See the [automated testing guide](tests/README.md) for test architecture, coverage, reports,
 and contribution requirements.
 

@@ -86,6 +86,11 @@ contexts; playground contracts may run in parallel. The complete browser suite u
 two workers locally and in CI so parallel fixture checks do not starve extension browser
 startup and activation.
 
+The persistent Chromium fixture has a separate 60-second setup budget for creating its
+temporary profile and loading the extension. Individual tests retain the shared 15-second
+limit and 5-second assertion timeout, so slow browser startup cannot consume or weaken the
+product-behavior checks.
+
 The activation helper marks any existing armed toast before triggering the toolbar action
 and waits for a newly created armed toast. This prevents a fading toast from a previous
 activation from making repeated-activation tests continue before reinjection is ready.
@@ -226,10 +231,16 @@ and release impact.
 
 ## CI
 
-`.github/workflows/playwright.yml` runs unit and Playwright tests on pushes to `main`, pull
-requests targeting `main`, and manual dispatches. CI retries browser failures twice, uses
-two workers, and retains the HTML Playwright report for 30 days. The test job must pass
-before the workflow may deploy the playground.
+`.github/workflows/playwright.yml` runs unit and Playwright tests on product-impacting pushes
+to `main`, pull requests targeting `main`, and manual dispatches. CI retries browser failures
+twice, uses two workers, and retains the HTML Playwright report for 30 days. The test job must
+pass before the workflow may deploy the playground.
+
+Changes limited to Markdown and `.github/ISSUE_TEMPLATE/` use
+`.github/workflows/documentation.yml` instead. That targeted workflow runs
+`npm run test:issue-templates`; it does not install Chromium or run unrelated product
+regression. Mixed changes trigger both workflows, and workflow, script, package, fixture,
+test, or product changes continue to trigger the complete suites.
 
 ## Known gaps
 

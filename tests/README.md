@@ -96,9 +96,9 @@ and at least one extension end-to-end scenario.
 
 | Fixture | Playground contract | Extension behavior |
 | --- | --- | --- |
-| Native `<select>` | Option text/value, missing text, normal selection | Text, value, fallbacks, formats, errors, and supported debug |
+| Native `<select>` | Top-level fixture plus an iCIMS-style same-origin iframe contract for option text/value and normal selection | Text, value, fallbacks, formats, errors, supported debug, and normal same-origin iframe extraction ([#5](https://github.com/stansult/dropdown-extractor/issues/5)) |
 | ARIA listbox | Roles, values, selection, and menu closing | Safe Capture on/off and Any-two debug |
-| Searchable ARIA listbox | Public 26-option fixture plus iCIMS-style short/long iframe contracts for trigger, filtering, selection, and closing | All-frame Any-two debug for both short and long menus ([#4](https://github.com/stansult/dropdown-extractor/issues/4)) |
+| Searchable ARIA listbox | Public 26-option fixture plus iCIMS-style short/long iframe contracts for trigger, filtering, selection, and closing | Normal same-origin iframe extraction ([#5](https://github.com/stansult/dropdown-extractor/issues/5)) and all-frame Any-two debug for short/long menus ([#4](https://github.com/stansult/dropdown-extractor/issues/4)) |
 | ARIA grid dropdown | Grid/row/cell roles, nested text, absent values, selection, and menu closing | Text-only fallback and Safe Capture on |
 | GitHub SelectMenu | Checkbox values, checking, summary update, and closing | Checkbox value extraction and combined formatting |
 | Dropbox-style menu | `mousedown` selection and menu closing | Safe Capture on/off for `mousedown` behavior |
@@ -147,6 +147,20 @@ When both Text and Value are selected, the native fixture verifies every support
 | Safe Capture off | ARIA click selection proceeds; Dropbox `mousedown` selection proceeds |
 | Debug: Supported dropdown | Native dropdown raw HTML and notification |
 | Debug: Any two | ARIA menu-container capture followed by option capture, including short and long searchable menus inside an iframe |
+
+Normal extraction targets all accessible frames automatically. Debug mode targets only the
+top frame unless **Inject Debug mode into all iframes** is enabled. Background unit tests
+also verify that a late cancellation from another frame cannot overwrite a successful result.
+The asymmetry is intentional: normal extraction should be transparent to users, while
+all-frame raw-HTML debugging remains explicit to limit noise and unintended capture from
+unrelated embedded content.
+
+The normal iframe regressions divide one browser-harness limitation deliberately. The ARIA
+case asserts the exact clipboard result end to end. Bundled headless Chromium does not commit
+the native-select iframe's clipboard write during the select's `mousedown`, although the
+handler runs; that case therefore asserts child-frame readiness, the exact extracted-item
+notification, field feedback, and unchanged selection. Manual verification in desktop Chrome
+confirms that the equivalent native iCIMS control writes the expected clipboard content.
 
 ARIA and Dropbox are both required for Safe Capture because they use different interaction
 events. Debug modes use representative fixtures because the workflows are shared; add

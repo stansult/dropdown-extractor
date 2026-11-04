@@ -91,25 +91,37 @@ test('popup retries pick once after failure, then closes', () => {
   assert.equal(popup.closes(), 1);
 });
 
-test('background injects content into the active tab and responds successfully', () => {
+test('background injects normal extraction into all accessible frames', () => {
   const background = loadBackground();
   let response;
   assert.equal(background.messageListener({ action: 'pick' }, {}, value => { response = value; }), true);
   assert.deepEqual(plain(background.executeCalls), [{
-    target: { tabId: 42, allFrames: false },
+    target: { tabId: 42, allFrames: true },
     files: ['content.js'],
   }]);
   assert.deepEqual(plain(response), { ok: true });
 });
 
-test('background enables all-frame injection only for all-frame debug mode', () => {
-  const background = loadBackground({ prefs: { debugMode: true, debugAllFrames: true } });
-  background.messageListener({ action: 'pick' }, {}, () => {});
-  assert.equal(background.executeCalls[0].target.allFrames, true);
+test('background follows the iframe preference only in debug mode', () => {
+  const topFrameDebug = loadBackground({ prefs: { debugMode: true, debugAllFrames: false } });
+  topFrameDebug.messageListener({ action: 'pick' }, {}, () => {});
+  assert.equal(topFrameDebug.executeCalls[0].target.allFrames, false);
 
-  const nonDebug = loadBackground({ prefs: { debugMode: false, debugAllFrames: true } });
-  nonDebug.messageListener({ action: 'pick' }, {}, () => {});
-  assert.equal(nonDebug.executeCalls[0].target.allFrames, false);
+  const allFrameDebug = loadBackground({ prefs: { debugMode: true, debugAllFrames: true } });
+  allFrameDebug.messageListener({ action: 'pick' }, {}, () => {});
+  assert.equal(allFrameDebug.executeCalls[0].target.allFrames, true);
+});
+
+test('background ignores stale frame cancellation after successful extraction', () => {
+  const background = loadBackground();
+  const sender = { tab: { id: 42 } };
+  background.messageListener({ action: 'armed' }, sender);
+  background.messageListener({ action: 'done' }, sender);
+  const actionCountAfterDone = background.actionCalls.length;
+
+  background.messageListener({ action: 'canceled' }, sender);
+
+  assert.equal(background.actionCalls.length, actionCountAfterDone);
 });
 
 test('background reports missing tabs and injection failures', () => {

@@ -8,6 +8,7 @@ How it works
 – All dropdown items are copied to the clipboard
 
 The extractor automatically expires after a short timeout if no dropdown items are extracted.
+Supported dropdowns inside accessible same-origin iframes are detected automatically. Cross-origin iframes remain unsupported.
 
 What gets extracted
 

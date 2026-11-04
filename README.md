@@ -14,6 +14,7 @@ it on any supported dropdown. You can also try it on our test page:
 1. All dropdown items are copied to the clipboard  
 
 The extractor automatically expires after a short timeout if no dropdown items are extracted.
+Supported dropdowns inside accessible same-origin iframes are detected automatically.
 
 ### What gets extracted
 
@@ -34,6 +35,11 @@ Debug mode is intended for troubleshooting, and has two modes:
 - **any two elements** — for inspecting unsupported dropdowns for potentially adding support
 
 In debug mode, extension copies raw HTML to your clipboard so you can inspect the menu structure.
+The Developer-zone iframe option controls whether Debug mode is injected into child frames;
+normal extraction handles accessible same-origin frames automatically.
+This difference is intentional: regular extraction should work without requiring users to
+understand page frame structure, while all-frame debugging is opt-in because it can copy raw
+HTML and produce diagnostic feedback from unrelated embedded content.
 
 ### Extension Options
 
@@ -60,6 +66,7 @@ To open Extension Options, right-click the extension button and select Options.
 | AliExpress search suggestions | Supported |
 | Google Search suggestions | Supported |
 | Expedia search suggestions | Supported |
+| Accessible same-origin iframes | Supported |
 | Canvas-rendered / virtualized | Not supported |
 | Cross-origin iframes | Not supported |
 
@@ -67,6 +74,7 @@ To open Extension Options, right-click the extension button and select Options.
 
 - Support depends on the dropdown exposing recognizable DOM/ARIA patterns. Custom implementations, virtualized or canvas-rendered menus, Shadow DOM, or cross-origin iframes may not be detectable.
   - includes support for Google Search suggestions
+- Normal extraction automatically checks accessible same-origin frames; cross-origin frames remain unsupported.
 - AntD/Select2/Chosen support depends on their default DOM structure; customized themes may not be detectable.
 - Radix menus are detected via role="menu".
 - ARIA grid dropdowns are detected through selectable grid cells; values depend on what the cells expose.

@@ -15,6 +15,8 @@ documentation, and internal refactoring changes are omitted unless they affect u
 - Any two debug capture now accepts long dropdown menus instead of rejecting them based on
   their combined text length.
   ([#4](https://github.com/stansult/dropdown-extractor/issues/4))
+- Normal extraction now detects supported dropdowns inside accessible same-origin iframes.
+  ([#5](https://github.com/stansult/dropdown-extractor/issues/5))
 
 ## 1.0.16 — 2026-09-15
 

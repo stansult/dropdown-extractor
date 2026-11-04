@@ -109,6 +109,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
 
   if (msg.action === "canceled") {
+    const senderTabId = _sender?.tab?.id || null;
+    if (!armedTabId || (senderTabId && senderTabId !== armedTabId)) return;
     armedTabId = null;
     showStoppedBadge();
     return;
@@ -123,7 +125,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     }
 
     chrome.storage.sync.get({ debugMode: false, debugAllFrames: false }, prefs => {
-      const allFrames = !!(prefs.debugMode && prefs.debugAllFrames);
+      const allFrames = prefs.debugMode ? !!prefs.debugAllFrames : true;
       chrome.scripting.executeScript({
         target: { tabId: tabs[0].id, allFrames },
         files: ["content.js"]

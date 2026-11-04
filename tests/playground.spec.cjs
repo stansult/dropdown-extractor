@@ -38,6 +38,28 @@ test('native fixture renders options and supports normal selection', async ({ pa
   expect(errors).toEqual([]);
 });
 
+test('native select iframe fixture preserves option data and normal selection', async ({ page }) => {
+  await page.evaluate(() => {
+    const frame = document.createElement('iframe');
+    frame.id = 'native-select-frame';
+    frame.src = '/native-select-frame.html';
+    frame.style.width = '800px';
+    frame.style.height = '300px';
+    document.querySelector('#dropdown').replaceChildren(frame);
+  });
+  const frame = page.frameLocator('#native-select-frame');
+  const select = frame.locator('#education-start-month');
+  const options = select.locator('option');
+
+  await expect(select).toHaveAttribute('aria-labelledby', 'education-start-month-label');
+  await expect(options).toHaveText(['', 'Jan', 'Feb', 'Mar']);
+  expect(await options.evaluateAll(elements => elements.map(element => element.value)))
+    .toEqual(['0', '01', '02', '03']);
+  await expect(select).toHaveValue('02');
+  await select.selectOption('03');
+  await expect(select).toHaveValue('03');
+});
+
 test('playground distinguishes published and next-release dropdown types', async ({ page }) => {
   const comingNote = page.locator('#note-coming');
   await expect(comingNote).toBeHidden();

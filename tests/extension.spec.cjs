@@ -88,6 +88,20 @@ async function renderSearchableAriaFrame(page, optionCount) {
   return frame;
 }
 
+async function renderNativeSelectFrame(page) {
+  await page.evaluate(() => {
+    const frame = document.createElement('iframe');
+    frame.id = 'native-select-frame';
+    frame.src = '/native-select-frame.html';
+    frame.style.width = '800px';
+    frame.style.height = '300px';
+    document.querySelector('#dropdown').replaceChildren(frame);
+  });
+  const frame = page.frameLocator('#native-select-frame');
+  await expect(frame.locator('#education-start-month')).toBeVisible();
+  return frame;
+}
+
 const items = [
   { text: 'Alpha', value: '101' },
   { text: 'Beta', value: '202' },
@@ -114,6 +128,27 @@ test('extracts all items from a native select', async ({ extensionContext: conte
   await expect(page.locator('.dropdown-extractor-toast', { hasText: 'Extracted 3 items' })).toBeVisible();
 });
 
+test('normal extraction handles a native select in a same-origin iframe', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+  const frame = await renderNativeSelectFrame(page);
+  const select = frame.locator('#education-start-month');
+  await setPrefs(worker, {
+    extractText: true,
+    extractValue: false,
+    safeCapture: true,
+    debugMode: false,
+    debugAllFrames: false,
+  });
+  await armExtension(worker, page, context);
+  await expect(frame.locator('.dropdown-extractor-toast', { hasText: 'Click a dropdown' })).toBeVisible();
+  await select.click();
+
+  await expect(frame.locator('.dropdown-extractor-toast', {
+    hasText: 'Extracted 3 items to clipboard:\n\n– Jan\n– Feb\n– Mar',
+  })).toBeVisible();
+  await expect(select).toHaveClass(/dropdown-extractor-flash/);
+  await expect(select).toHaveValue('02');
+});
+
 test('safe capture extracts an ARIA list without selecting the clicked option', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
   await renderFixture(page, { type: 'aria', items });
   await setPrefs(worker, { extractText: true, extractValue: false, safeCapture: true, debugMode: false });
@@ -125,6 +160,25 @@ test('safe capture extracts an ARIA list without selecting the clicked option', 
 
   await expect.poll(() => clipboardText(page)).toBe('Alpha\nBeta\nGamma');
   await expect(trigger).toHaveText('Alpha');
+});
+
+test('normal extraction handles a supported ARIA listbox in a same-origin iframe', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
+  const frame = await renderSearchableAriaFrame(page, 3);
+  await page.evaluate(() => navigator.clipboard.writeText('unchanged'));
+  await setPrefs(worker, {
+    extractText: true,
+    extractValue: false,
+    safeCapture: true,
+    debugMode: false,
+    debugAllFrames: false,
+  });
+  await armExtension(worker, page, context);
+  const trigger = frame.locator('.dropdown-select');
+  await trigger.click();
+  await frame.locator('[role="option"]').nth(1).click();
+
+  await expect.poll(() => clipboardText(page)).toBe('Alpha\nBeta\nGamma');
+  await expect(trigger.locator('.dropdown-text')).toHaveText('Alpha');
 });
 
 test('extracts text-only ARIA grid cells without selecting the clicked option', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {

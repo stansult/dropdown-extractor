@@ -71,20 +71,23 @@ is created, push that tag with
 
 [CHANGELOG.md](../CHANGELOG.md) is the versioned history for existing users.
 `docs/description.txt` is the current Chrome Web Store listing copy for prospective users.
-It may prepare an implemented type for the next submission even while the public Playground
-and README label that type **Coming in next release**. Treat the changelog and listing source
-independently:
+It may prepare a concise compatibility claim for the next submission even while the public
+Playground and README label a type **Coming in next release**. Treat the changelog and listing
+source independently, following the repository-wide
+[documentation impact review](../CONTRIBUTING.md#documentation-impact-review):
 
 | Change | Changelog | Store description |
 | --- | --- | --- |
 | User-visible bug fix | Update | Usually unchanged |
-| New supported dropdown type | Update | Update |
-| New user-facing option | Update | Update |
+| New supported dropdown type | Update | Conditional: update concise general compatibility prose only when its claim changes; never add a framework/type keyword list |
+| New user-facing option | Update | Update only when the option is part of the permanent advertised behavior |
 | Internal refactor, tests, CI, or general documentation | Unchanged | Unchanged |
 | Marketing or editorial listing change | Unchanged | Update |
 
 Do not add generic statements such as “bug fixes” to the permanent Store description.
 Change it only when the extension's currently advertised capabilities or limitations change.
+Keep the detailed supported-type list in the public README and Playground rather than
+duplicating it in Store metadata.
 Packaging emits `dist/description-to-upload.txt` only when `docs/description.txt` differs
 from its last-uploaded baseline.
 

@@ -63,7 +63,10 @@ Update, as applicable:
 - the supported dropdown table and limitations in [README.md](../README.md);
 - the fixture and option matrices in [tests/README.md](../tests/README.md);
 - `Unreleased` in [CHANGELOG.md](../CHANGELOG.md);
-- the Chrome Web Store source in [docs/description.txt](description.txt), following the
+- the Chrome Web Store source in [docs/description.txt](description.txt) only when the new
+  family changes its concise general compatibility claim or a documented limitation. Do not
+  add the family name to a framework/type list in Store metadata. Follow the
+  [documentation impact review](../CONTRIBUTING.md#documentation-impact-review) and
   [release guide](chrome-web-store-release.md).
 
 Record the fixture contract, pre-support failure evidence, extension coverage, implementation
@@ -76,7 +79,8 @@ support are merged before publication:
 
 - label the type **Coming in next release** in the Playground and public README;
 - keep its user-visible changelog entry under `Unreleased`;
-- allow `docs/description.txt` to prepare the listing text for the next submission;
+- review `docs/description.txt`, changing it only if the concise general capability or
+  limitation is no longer accurate;
 - record development-extension verification separately from live Web Store verification;
 - keep the tracking issue open.
 

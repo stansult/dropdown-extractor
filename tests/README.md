@@ -238,6 +238,9 @@ closed → open → closed lifecycle. The regression acceptance criteria are:
 - In-progress Any-two feedback follows the same movement contract while capture remains active.
 - Native-select extraction in both the top page and a same-origin iframe must defer clipboard
   success until Chrome's native picker closes, then confirm the owning document has focus.
+- Native-select success tests must complete that browser interaction explicitly: click the
+  select, press Escape to close its picker, and verify that `:open` cleared before asserting
+  clipboard or feedback outcomes.
 - Clipboard rejection must produce explicit error feedback and must never be reported as a
   successful extraction.
 

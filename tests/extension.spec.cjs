@@ -1,5 +1,5 @@
 const { test, expect, setPrefs, armExtension, clipboardText } = require('./extension-harness.cjs');
-const { renderFixture } = require('./helpers.cjs');
+const { clickNativeSelectAndClosePicker, renderFixture } = require('./helpers.cjs');
 
 test.describe.configure({ mode: 'serial' });
 
@@ -164,7 +164,7 @@ test('extracts all items from a native select', async ({ extensionContext: conte
   await renderFixture(page, { type: 'native', items });
   await setPrefs(worker, { extractText: true, extractValue: false, safeCapture: true, debugMode: false });
   await armExtension(worker, page, context);
-  await page.locator('#dropdown select').click();
+  await clickNativeSelectAndClosePicker(page, page.locator('#dropdown select'));
 
   await expect.poll(() => clipboardText(page)).toBe('Alpha\nBeta\nGamma');
   await expect(page.locator('.dropdown-extractor-toast', { hasText: 'Extracted 3 items' })).toBeVisible();
@@ -182,7 +182,7 @@ test('normal extraction handles a native select in a same-origin iframe', async 
     debugAllFrames: false,
   });
   await armExtension(worker, page, context);
-  await select.click();
+  await clickNativeSelectAndClosePicker(page, select);
 
   await expect(select).toHaveClass(/dropdown-extractor-flash/);
   await expect.poll(() => clipboardText(page)).toBe('Jan\nFeb\nMar');
@@ -266,7 +266,7 @@ test('iframe extraction shows success feedback in the current top-level viewport
     debugAllFrames: false,
   });
   await armExtension(worker, page, context);
-  await select.click();
+  await clickNativeSelectAndClosePicker(page, select);
 
   const expectedFeedback = 'Extracted 3 items to clipboard:\n\n– 1\n– 2\n– 3';
   await expect(select).toHaveClass(/dropdown-extractor-flash/);
@@ -289,7 +289,7 @@ test('iframe extraction error feedback is visible in the current top-level viewp
     debugAllFrames: false,
   });
   await armExtension(worker, page, context);
-  await select.click();
+  await clickNativeSelectAndClosePicker(page, select);
 
   const expectedFeedback = 'No extract option selected.';
   await expect.poll(() => clipboardText(page)).toBe('unchanged');
@@ -310,7 +310,7 @@ test('iframe supported-debug completion feedback is visible in the current top-l
     debugAllFrames: true,
   });
   await armExtension(worker, page, context);
-  await frame.locator('#education-start-day').click();
+  await clickNativeSelectAndClosePicker(page, frame.locator('#education-start-day'));
 
   await expect.poll(() => clipboardText(page)).toContain('--- dropdown-extractor: supported dropdown ---');
   const expectedFeedback = 'Debug: copied dropdown HTML';
@@ -521,7 +521,7 @@ test('extracts native values without text', async ({ extensionContext: context, 
   await renderFixture(page, { type: 'native', items });
   await setPrefs(worker, { extractText: false, extractValue: true, safeCapture: true, debugMode: false });
   await armExtension(worker, page, context);
-  await page.locator('#dropdown select').click();
+  await clickNativeSelectAndClosePicker(page, page.locator('#dropdown select'));
 
   await expect.poll(() => clipboardText(page)).toBe('101\n202\n303');
 });
@@ -537,7 +537,7 @@ for (const [label, format, expected] of combinedFormats) {
       debugMode: false,
     });
     await armExtension(worker, page, context);
-    await page.locator('#dropdown select').click();
+    await clickNativeSelectAndClosePicker(page, page.locator('#dropdown select'));
     await expect.poll(() => clipboardText(page)).toBe(expected);
   });
 }
@@ -552,12 +552,12 @@ test('immediate reactivation uses newly stored preferences', async ({ extensionC
     debugMode: false,
   });
   await armExtension(worker, page, context);
-  await page.locator('#dropdown select').click();
+  await clickNativeSelectAndClosePicker(page, page.locator('#dropdown select'));
   await expect.poll(() => clipboardText(page)).toBe('Alpha 101\nBeta 202\nGamma 303');
 
   await setPrefs(worker, { format: 'text-dash-value' });
   await armExtension(worker, page, context);
-  await page.locator('#dropdown select').click();
+  await clickNativeSelectAndClosePicker(page, page.locator('#dropdown select'));
 
   await expect.poll(() => clipboardText(page)).toBe('Alpha - 101\nBeta - 202\nGamma - 303');
 });
@@ -567,7 +567,7 @@ test('reports an error when neither text nor value is selected', async ({ extens
   await page.evaluate(() => navigator.clipboard.writeText('unchanged'));
   await setPrefs(worker, { extractText: false, extractValue: false, safeCapture: true, debugMode: false });
   await armExtension(worker, page, context);
-  await page.locator('#dropdown select').click();
+  await clickNativeSelectAndClosePicker(page, page.locator('#dropdown select'));
 
   await expect(page.locator('.dropdown-extractor-toast', { hasText: 'No extract option selected.' })).toBeVisible();
   await expect.poll(() => clipboardText(page)).toBe('unchanged');
@@ -584,7 +584,7 @@ test('falls back to values when item text is absent', async ({ extensionContext:
     debugMode: false,
   });
   await armExtension(worker, page, context);
-  await page.locator('#dropdown select').click();
+  await clickNativeSelectAndClosePicker(page, page.locator('#dropdown select'));
 
   await expect.poll(() => clipboardText(page)).toBe('101\n202\n303');
   await expect(page.locator('.dropdown-extractor-toast', { hasText: 'Only values extracted, no text found.' })).toBeVisible();
@@ -626,7 +626,7 @@ test('supported-dropdown debug copies raw dropdown HTML', async ({ extensionCont
     debugModeTarget: 'supported',
   });
   await armExtension(worker, page, context);
-  await page.locator('#dropdown select').click();
+  await clickNativeSelectAndClosePicker(page, page.locator('#dropdown select'));
 
   await expect.poll(() => clipboardText(page)).toContain('--- dropdown-extractor: supported dropdown ---');
   await expect.poll(() => clipboardText(page)).toContain('tag: SELECT');

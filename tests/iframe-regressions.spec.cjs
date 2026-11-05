@@ -1,6 +1,6 @@
 const { test: plainTest, expect } = require('@playwright/test');
 const { test: extensionTest, setPrefs, armExtension, clipboardText } = require('./extension-harness.cjs');
-const { renderFixture } = require('./helpers.cjs');
+const { clickNativeSelectAndClosePicker, renderFixture } = require('./helpers.cjs');
 
 const viewport = { width: 1656, height: 908 };
 const items = [
@@ -214,7 +214,7 @@ for (const phase of ['activation', 'timeout', 'success']) {
     const text = phase === 'activation' ? 'Click a dropdown'
       : phase === 'timeout' ? 'Dropdown extractor stopped (timeout)' : 'Extracted 3 items to clipboard:';
     if (phase === 'success') {
-      await select.click();
+      await clickNativeSelectAndClosePicker(page, select);
       await expect.poll(() => clipboardText(page)).toBe('Alpha\nBeta\nGamma');
     }
     await expect.poll(async () => (await notifications(page, text))

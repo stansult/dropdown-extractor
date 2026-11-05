@@ -28,4 +28,18 @@ async function renderFixture(page, { type, items, iframe = false }) {
   await page.locator('#render').click();
 }
 
-module.exports = { renderFixture, selectType, setItems };
+async function clickNativeSelectAndClosePicker(page, select) {
+  await select.click();
+  await page.keyboard.press('Escape');
+  await select.evaluate(async element => {
+    const deadline = Date.now() + 1_500;
+    while (element.matches(':open')) {
+      if (Date.now() >= deadline) {
+        throw new Error('Native select picker remained open after Escape.');
+      }
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+  });
+}
+
+module.exports = { clickNativeSelectAndClosePicker, renderFixture, selectType, setItems };

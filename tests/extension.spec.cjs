@@ -1,77 +1,7 @@
-const { test: base, expect, chromium } = require('@playwright/test');
-const { mkdtempSync, rmSync } = require('node:fs');
-const { tmpdir } = require('node:os');
-const { join } = require('node:path');
+const { test, expect, setPrefs, armExtension, clipboardText } = require('./extension-harness.cjs');
 const { renderFixture } = require('./helpers.cjs');
 
-const extensionPath = join(__dirname, '..');
-const test = base.extend({
-  extensionContext: [async ({}, use) => {
-    const userDataDir = mkdtempSync(join(tmpdir(), 'dropdown-playwright-'));
-    const context = await chromium.launchPersistentContext(userDataDir, {
-      channel: 'chromium',
-      headless: true,
-      args: [
-        `--disable-extensions-except=${extensionPath}`,
-        `--load-extension=${extensionPath}`,
-        '--enable-unsafe-extension-debugging',
-      ],
-    });
-    await context.grantPermissions(['clipboard-read', 'clipboard-write'], {
-      origin: 'http://127.0.0.1:4173',
-    });
-    await use(context);
-    await context.close();
-    rmSync(userDataDir, { recursive: true, force: true });
-  }, { timeout: 60_000 }],
-  extensionWorker: async ({ extensionContext }, use) => {
-    let [worker] = extensionContext.serviceWorkers();
-    if (!worker) worker = await extensionContext.waitForEvent('serviceworker');
-    await use(worker);
-  },
-  extensionPage: async ({ extensionContext }, use) => {
-    const page = await extensionContext.newPage();
-    await page.goto('http://127.0.0.1:4173/');
-    await use(page);
-  },
-});
-
 test.describe.configure({ mode: 'serial' });
-
-async function setPrefs(worker, values) {
-  await worker.evaluate(prefs => new Promise(resolve => chrome.storage.sync.set(prefs, resolve)), values);
-}
-
-async function armExtension(worker, page, context) {
-  await page.locator('.dropdown-extractor-toast', { hasText: 'Click a dropdown' })
-    .evaluateAll(toasts => toasts.forEach(toast => { toast.dataset.playwrightPreviousArm = 'true'; }));
-  await page.bringToFront();
-  const extensionId = new URL(worker.url()).hostname;
-  const browser = context.browser();
-  if (!browser) throw new Error('Browser connection is unavailable.');
-  const browserSession = await browser.newBrowserCDPSession();
-  try {
-    const { targetInfos } = await browserSession.send('Target.getTargets', {
-      filter: [{ type: 'tab' }],
-    });
-    const target = targetInfos.find(candidate => candidate.url === page.url());
-    if (!target) throw new Error('Playground tab target not found.');
-    await browserSession.send('Extensions.triggerAction', {
-      id: extensionId,
-      targetId: target.targetId,
-    });
-  } finally {
-    await browserSession.detach();
-  }
-  await expect(page.locator(
-    '.dropdown-extractor-toast:not([data-playwright-previous-arm])',
-    { hasText: 'Click a dropdown' }
-  )).toBeVisible();
-}
-
-async function clipboardText(page) {
-  return page.evaluate(() => navigator.clipboard.readText());
-}
 
 async function dispatchMouseDownAtCenter(locator) {
   await locator.evaluate(element => {
@@ -180,12 +110,11 @@ test('normal extraction handles a native select in a same-origin iframe', async 
     debugAllFrames: false,
   });
   await armExtension(worker, page, context);
-  await expect(frame.locator('.dropdown-extractor-toast', { hasText: 'Click a dropdown' })).toBeVisible();
   await select.click();
 
   await expect(select).toHaveClass(/dropdown-extractor-flash/);
   await expect.poll(() => clipboardText(page)).toBe('Jan\nFeb\nMar');
-  await expect(frame.locator('.dropdown-extractor-toast', {
+  await expect(page.locator('.dropdown-extractor-toast', {
     hasText: 'Extracted 3 items to clipboard:\n\n– Jan\n– Feb\n– Mar',
   })).toBeVisible();
   await expect(select).toHaveValue('02');
@@ -202,14 +131,10 @@ test('iframe extraction shows success feedback in the current top-level viewport
     debugAllFrames: false,
   });
   await armExtension(worker, page, context);
-  await expect(frame.locator('.dropdown-extractor-toast', { hasText: 'Click a dropdown' })).toBeVisible();
   await select.click();
 
   const expectedFeedback = 'Extracted 3 items to clipboard:\n\n– 1\n– 2\n– 3';
   await expect(select).toHaveClass(/dropdown-extractor-flash/);
-  const childSuccess = frame.locator('.dropdown-extractor-toast', { hasText: expectedFeedback });
-  await expect(childSuccess).toHaveCount(1);
-  await expect(childSuccess).not.toBeInViewport();
   const topSuccess = page.locator('.dropdown-extractor-toast', { hasText: expectedFeedback });
   await expect(topSuccess).toBeVisible();
   await expect(topSuccess).toBeInViewport();
@@ -233,9 +158,6 @@ test('iframe extraction error feedback is visible in the current top-level viewp
 
   const expectedFeedback = 'No extract option selected.';
   await expect.poll(() => clipboardText(page)).toBe('unchanged');
-  const childError = frame.locator('.dropdown-extractor-toast', { hasText: expectedFeedback });
-  await expect(childError).toHaveCount(1);
-  await expect(childError).not.toBeInViewport();
   const topError = page.locator('.dropdown-extractor-toast', { hasText: expectedFeedback });
   await expect(topError).toBeVisible();
   await expect(topError).toBeInViewport();
@@ -257,9 +179,6 @@ test('iframe supported-debug completion feedback is visible in the current top-l
 
   await expect.poll(() => clipboardText(page)).toContain('--- dropdown-extractor: supported dropdown ---');
   const expectedFeedback = 'Debug: copied dropdown HTML';
-  const childSuccess = frame.locator('.dropdown-extractor-toast', { hasText: expectedFeedback });
-  await expect(childSuccess).toHaveCount(1);
-  await expect(childSuccess).not.toBeInViewport();
   const topSuccess = page.locator('.dropdown-extractor-toast', { hasText: expectedFeedback });
   await expect(topSuccess).toBeVisible();
   await expect(topSuccess).toBeInViewport();
@@ -280,9 +199,6 @@ test('iframe Any-two 1/2 feedback is visible in the current top-level viewport',
   await frame.locator('.dropdown-select').click();
 
   const expectedFeedback = 'Debug: copied HTML (1/2, menu container)';
-  const childProgress = frame.locator('.dropdown-extractor-toast', { hasText: expectedFeedback });
-  await expect(childProgress).toHaveCount(1);
-  await expect(childProgress).not.toBeInViewport();
   const topProgress = page.locator('.dropdown-extractor-toast', { hasText: expectedFeedback });
   await expect(topProgress).toBeVisible();
   await expect(topProgress).toBeInViewport();
@@ -307,9 +223,6 @@ test('iframe Any-two 2/2 feedback is visible in the current top-level viewport',
   await expect.poll(() => clipboardText(page)).toContain('--- dropdown-extractor: 2. menu option ---');
   await expect.poll(() => clipboardText(page)).toContain('text: "Beta"');
   const expectedFeedback = 'Debug: copied HTML (2/2, option)';
-  const childSuccess = frame.locator('.dropdown-extractor-toast', { hasText: expectedFeedback });
-  await expect(childSuccess).toHaveCount(1);
-  await expect(childSuccess).not.toBeInViewport();
   const topSuccess = page.locator('.dropdown-extractor-toast', { hasText: expectedFeedback });
   await expect(topSuccess).toBeVisible();
   await expect(topSuccess).toBeInViewport();
@@ -736,7 +649,6 @@ for (const { label, optionCount } of [
       debugAllFrames: true,
     });
     await armExtension(worker, page, context);
-    await expect(frame.locator('.dropdown-extractor-toast', { hasText: 'Click a dropdown' })).toBeVisible();
     const trigger = frame.locator('.dropdown-select');
     await trigger.click();
     const firstFeedback = page.locator('.dropdown-extractor-toast', {

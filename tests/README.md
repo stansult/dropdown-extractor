@@ -200,14 +200,54 @@ child-to-top feedback message. The top frame writes that payload, so both native
 iframe regressions can assert the exact clipboard result end to end in bundled Chromium.
 
 The tall native iframe regression places its control more than 1,000 pixels below the iframe
-top and scrolls that control into the outer viewport. It proves that the child-frame success
-toast is outside the user's viewport, while the same exact message is forwarded to a visible
-top-frame toast. The native field retains its existing immediate highlight as a secondary cue;
+top and scrolls that control into the outer viewport. It requires the exact success message
+in the top-level viewport without requiring a duplicate child-frame notification to exist. The native field retains its existing immediate highlight as a secondary cue;
 the top-frame toast is the reliable confirmation when Chrome's native picker obscures it.
 
 ARIA and Dropbox are both required for Safe Capture because they use different interaction
 events. Debug modes use representative fixtures because the workflows are shared; add
 type-specific debug coverage only when a dropdown family has distinct debug behavior.
+
+## Pending iframe usability regressions
+
+`tests/iframe-regressions.spec.cjs` reproduces the screenshot observations on the actual
+configurable Playground, at a 1656 × 908 viewport. They cover the
+[iframe sizing defect](https://github.com/stansult/dropdown-extractor/issues/11) and
+[duplicated or obstructive feedback](https://github.com/stansult/dropdown-extractor/issues/12).
+These are intentionally failing regressions pending separately authorized implementation
+fixes; they are not skipped or marked as expected failures. Do not commit/push them as a
+passing baseline.
+
+The independent contract first checks accessible inherited same-origin documents, native
+option text/values and normal selection, and visible preview geometry without the extension.
+The regression acceptance criteria are:
+
+- A closed native control may use at most 64px of extra iframe height for padding/borders.
+  This is a generous compact-content budget, not a fixed iframe height for every type.
+- Switching only the rendering context must move the item editor by no more than 2px
+  (allowing browser rounding).
+- Activation, actual 10-second timeout, and successful extraction must each show exactly
+  one visible notification, in the top document, counting across both documents.
+- Notifications must not intersect the test dropdown or the preview heading, type/status,
+  context label, or Render button. Bounds from child documents are translated and clipped
+  into the outer viewport. Geometry is attached to each result for diagnosis.
+
+Each notification test uses independent soft assertions for duplication, dropdown overlap,
+and preview-control overlap so one failure cannot hide another. The success test verifies
+exact clipboard output, dispatching the real extraction `mousedown` event because the
+activation toast currently obstructs an ordinary click. That dispatch is setup for observing
+success feedback, not evidence that an unobstructed user click works. The separate geometry
+assertions still require the obstruction to be fixed.
+
+The shared real-extension harness is `tests/extension-harness.cjs`; the existing extension
+suite retains its serial execution. Older feedback tests require top-level outcome evidence
+without requiring the duplicate child notification that these regressions prohibit.
+
+Run the focused red phase with:
+
+```bash
+npx playwright test tests/iframe-regressions.spec.cjs
+```
 
 ## Adding coverage
 
@@ -250,7 +290,8 @@ test, or product changes continue to trigger the complete suites.
 - Ten implemented fixture families do not yet have extension end-to-end scenarios.
 - The Options page UI, persistence, and reset workflow are not exercised directly in a
   browser; extension tests set stored preferences and verify their runtime effects.
-- Expiration, explicit cancellation, and rearming while already active lack browser-level
-  coverage.
+- Explicit cancellation and rearming while already active lack browser-level coverage.
+  Expiration notification uniqueness/obstruction is exercised by the pending iframe
+  usability regressions above; it is not yet passing coverage.
 - Canvas-rendered, virtualized, Shadow DOM, and cross-origin iframe limitations are not
   represented as successful extraction fixtures.

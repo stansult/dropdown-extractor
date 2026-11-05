@@ -119,6 +119,13 @@ for (const fixture of supportedTypes) {
       await activateFixture(trigger, fixture.triggerEvent);
     }
     await expect(openContent).toBeHidden();
+    await expect.poll(async () => {
+      const [frameBox, rootBox] = await Promise.all([
+        frameElement.boundingBox(),
+        root.boundingBox(),
+      ]);
+      return frameBox.height - rootBox.height;
+    }, `${fixture.type}: iframe settles after close`).toBeLessThanOrEqual(64);
     const closedFrame = await frameElement.boundingBox();
     const closedRoot = await root.boundingBox();
     const closedItems = await page.locator('#items').boundingBox();

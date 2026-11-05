@@ -951,12 +951,17 @@ function applyMuiValueTarget(element, item) {
   }
 }
 
-function installFixtureFrameAutosize(frame, frameDocument, root) {
+function installFixtureFrameAutosize(frame, frameDocument, root, stylesheet) {
   let frameRequest = null;
+  let stylesReady = false;
   const syncHeight = () => {
     frameRequest = null;
-    if (!frame.isConnected) return;
+    if (!frame.isConnected || !stylesReady) return;
     const borderHeight = frame.offsetHeight - frame.clientHeight;
+    // scrollHeight cannot be smaller than the current viewport. Collapse the
+    // viewport for this synchronous measurement so a prior open state cannot
+    // become the next minimum height.
+    frame.style.height = '1px';
     const contentHeight = Math.max(
       frameDocument.body.scrollHeight,
       frameDocument.documentElement.scrollHeight
@@ -978,7 +983,14 @@ function installFixtureFrameAutosize(frame, frameDocument, root) {
   resizeObserver.observe(frameDocument.body);
   resizeObserver.observe(root);
   frameDocument.fonts?.ready.then(scheduleHeightSync);
-  scheduleHeightSync();
+  stylesheet.addEventListener('load', () => {
+    stylesReady = true;
+    scheduleHeightSync();
+  }, { once: true });
+  if (stylesheet.sheet) {
+    stylesReady = true;
+    scheduleHeightSync();
+  }
 }
 
 function prepareFixtureTarget(useIframe) {
@@ -998,12 +1010,12 @@ function prepareFixtureTarget(useIframe) {
   const stylesheet = frameDocument.createElement('link');
   stylesheet.rel = 'stylesheet';
   stylesheet.href = new URL('styles.css?v=3', window.location.href).href;
-  frameDocument.head.appendChild(stylesheet);
   frameDocument.body.className = 'fixture-frame-body';
   const root = frameDocument.createElement('div');
   root.id = 'fixture-root';
   frameDocument.body.appendChild(root);
-  installFixtureFrameAutosize(frame, frameDocument, root);
+  installFixtureFrameAutosize(frame, frameDocument, root, stylesheet);
+  frameDocument.head.appendChild(stylesheet);
   fixtureDocument = frameDocument;
   return root;
 }

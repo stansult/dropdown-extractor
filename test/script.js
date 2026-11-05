@@ -43,7 +43,7 @@ const typeStatuses = new Map([
   ['native', 'supported'],
   ['aria', 'supported'],
   ['aria-searchable', 'supported'],
-  ['aria-grid', 'coming'],
+  ['aria-grid', 'supported'],
   ['selectize', 'supported'],
   ['react', 'supported'],
   ['react-atlassian', 'supported'],

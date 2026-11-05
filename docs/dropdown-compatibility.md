@@ -8,7 +8,7 @@ by Dropdown Extractor. **Supported** means available in the current Chrome Web S
 |--------------|:------:|
 | Native `<select>` | Supported |
 | ARIA listbox (`role="listbox"`) | Supported |
-| ARIA grid dropdown (`role="grid"`) | Coming in next release |
+| ARIA grid dropdown (`role="grid"`) | Supported |
 | Selectize | Supported |
 | React Select | Supported |
 | React Select (Atlassian) | Supported |

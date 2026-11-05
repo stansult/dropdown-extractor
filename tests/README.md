@@ -121,10 +121,13 @@ not only an internal step that can also occur when that outcome is broken. Apply
 ## Playground publication status
 
 The Playground distinguishes types available in the current Chrome Web Store release from
-types implemented on `main` for the next release. A contract verifies that a published type
-is labeled **Supported** and that an implemented but unpublished type is labeled **Coming in
-next release** in the picker, configuration state, and rendered fixture. Publication status
-does not change the fixture contract or development-extension behavior.
+types implemented on `main` for the next release. The publication-status contract verifies
+that native and ARIA-grid dropdowns are labeled **Supported** in the picker, configuration
+state, and rendered fixture, with the pending-release note hidden. ARIA-grid support was
+verified against the Web Store installation of version 1.0.17 before this status changed.
+Future implemented but unpublished types must use **Coming in next release** and add a
+corresponding publication-status assertion. Publication status does not change the fixture
+contract or development-extension behavior.
 
 ## Fixture coverage
 

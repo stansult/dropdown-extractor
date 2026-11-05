@@ -170,26 +170,26 @@ test('tall native select iframe fixture places the control below the iframe top'
   await expect(select).toHaveValue('3');
 });
 
-test('playground distinguishes published and next-release dropdown types', async ({ page }) => {
+test('playground marks native and ARIA grid dropdowns as published', async ({ page }) => {
   const comingNote = page.locator('#note-coming');
   await expect(comingNote).toBeHidden();
   await page.locator('#type-trigger').click();
   const nativeType = page.locator('.type-option[data-value="native"]');
   const ariaGridType = page.locator('.type-option[data-value="aria-grid"]');
 
-  await expect(ariaGridType.locator('.type-pill')).toHaveText('Coming in next release');
-  await expect(ariaGridType).toHaveClass(/coming/);
+  await expect(ariaGridType.locator('.type-pill')).toHaveText('Supported');
+  await expect(ariaGridType).toHaveClass(/supported/);
   await expect(nativeType.locator('.type-pill')).toHaveText('Supported');
   await expect(nativeType).toHaveClass(/supported/);
 
   await ariaGridType.click();
-  await expect(page.locator('#type-support-config')).toHaveText('Coming in next release');
-  await expect(page.locator('#type-support-config')).toHaveClass(/coming/);
-  await expect(comingNote).toBeVisible();
+  await expect(page.locator('#type-support-config')).toHaveText('Supported');
+  await expect(page.locator('#type-support-config')).toHaveClass(/supported/);
+  await expect(comingNote).toBeHidden();
 
   await page.locator('#render').click();
-  await expect(page.locator('#dropdown-type .type-support')).toHaveText('Coming in next release');
-  await expect(page.locator('#dropdown-type .type-support')).toHaveClass(/coming/);
+  await expect(page.locator('#dropdown-type .type-support')).toHaveText('Supported');
+  await expect(page.locator('#dropdown-type .type-support')).toHaveClass(/supported/);
   await page.locator('#dropdown .dropdown-trigger').click();
   await expect(page.locator('#dropdown [role="grid"]')).toBeVisible();
 });

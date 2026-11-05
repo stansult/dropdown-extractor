@@ -89,4 +89,5 @@ must not claim more than the assertions prove. See the automated testing guide's
 
 Runtime bugs committed to `main` remain open as `status: fixed-unreleased` until their Web
 Store version is live and verified. GitHub Issues is the source of truth for active bug
-status; `CHANGELOG.md` is the user-visible release history.
+status; `release: verify-live` marks bugs and enhancements that need a Web Store retest after
+publication; and `CHANGELOG.md` is the user-visible release history.

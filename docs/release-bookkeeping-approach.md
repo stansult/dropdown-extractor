@@ -18,25 +18,28 @@ publication tag identifies which submitted version was later confirmed live.
 
 ## Core rule
 
-Create the submission tag immediately after uploading. Create the publication tag only
-after the Chrome Developer Dashboard confirms that version is live. Neither building nor
-submitting a ZIP is publication.
+Create the submission tag immediately after uploading. Create the publication tag only after
+the scheduled check or Chrome Developer Dashboard confirms that version is live. Neither
+building nor submitting a ZIP is publication.
 
 ## Commands
 
-Three npm commands wrap the bookkeeping:
+Four npm commands wrap the bookkeeping:
 
 ```bash
 npm run release:status
 npm run release:submit
 npm run release:record -- <version>
+npm run release:check-live
 ```
 
 `release:status` finds the highest `webstore-v*` tag and compares it with `HEAD`. It reports separately whether extension runtime files and store-listing source files have changed since the recorded release.
 
 `release:submit` records the submitted commit and ZIP checksum. `release:record` resolves
 the requested version's submission tag, creates the publication tag at that preserved
-commit, and pushes it to `origin`.
+commit, and pushes it to `origin`. `release:check-live` finds the newest submitted version
+without a publication tag and compares it with the package version served by Google's live
+extension-update service.
 
 ## Safety checks
 
@@ -66,16 +69,21 @@ git push origin refs/tags/webstore-v<version>
 5. Upload the package, update any listing metadata, and submit it for review.
 6. Run `npm run release:submit` to tag the submitted commit and record the ZIP checksum.
 7. Continue normal development while review is pending.
-8. Wait until the new version is shown as published/live.
+8. The scheduled publication workflow waits until the live update service reaches the submitted
+   version, then notifies every open issue labeled `release: verify-live` once.
 9. Run `npm run release:record -- <version>`; it tags the previously submitted commit.
-10. Run `npm run release:status`; it now reports any post-submission work relative to the
+10. Verify the release behavior, record the evidence, remove the verification labels, and close
+    or update the applicable issues.
+11. Run `npm run release:status`; it now reports any post-submission work relative to the
     newly recorded live release.
 
 ## Files used in Dropdown Extractor
 
 - `scripts/release-bookkeeping.cjs`: status, submission, and publication implementation
 - `scripts/release-bookkeeping.test.cjs`: version, comparison, tagging, and safety-check tests
-- `package.json`: `release:status`, `release:submit`, and `release:record` commands
+- `scripts/webstore-publication-check.cjs`: live package check and pending-submission discovery
+- `.github/workflows/webstore-publication.yml`: six-hour publication polling and issue notices
+- `package.json`: release status, submission, live-check, and publication commands
 - `docs/chrome-web-store-release.md`: project-specific operational release workflow
 - `manifest.json`: authoritative Chrome extension version
 - `docs/description.txt`: source for the Web Store description
@@ -84,8 +92,10 @@ To adopt this in another extension, copy the bookkeeping script and tests, add t
 
 ## Limitations
 
-- The tag records a human-confirmed publication; it does not query the Chrome Web Store API.
+- The automated check detects that Google's update service offers the submitted package. It
+  does not verify extension behavior, close issues, or create the publication tag.
 - The `origin/main` containment check uses the local remote-tracking reference. Fetch before
   recording a submission or publication if it may be stale.
 - The submission tag records the uploaded ZIP's SHA-256, but the workflow still relies on
   the maintainer to upload that exact file and confirm publication in the Web Store.
+- GitHub scheduled runs may be delayed and may be disabled after prolonged repository inactivity.

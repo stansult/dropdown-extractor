@@ -1,0 +1,64 @@
+name: Web Store publication
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 */6 * * *'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Check live Web Store package
+        id: publication
+        run: node scripts/webstore-publication-check.cjs
+      - name: Summarize publication state
+        if: steps.publication.outputs.pending == 'true'
+        env:
+          EXPECTED_VERSION: ${{ steps.publication.outputs.expected_version }}
+          LIVE_VERSION: ${{ steps.publication.outputs.live_version }}
+          PUBLISHED: ${{ steps.publication.outputs.published }}
+        run: |
+          {
+            echo '## Chrome Web Store publication'
+            echo
+            echo "Submitted version: $EXPECTED_VERSION"
+            echo "Live update-service version: $LIVE_VERSION"
+            echo "Publication detected: $PUBLISHED"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Notify issues awaiting live verification
+        if: steps.publication.outputs.published == 'true'
+        uses: actions/github-script@v9
+        env:
+          VERSION: ${{ steps.publication.outputs.expected_version }}
+        with:
+          script: |
+            const marker = `<!-- webstore-live:${process.env.VERSION} -->`;
+            const { data: issues } = await github.rest.issues.listForRepo({
+              ...context.repo,
+              state: 'open',
+              labels: 'release: verify-live',
+              per_page: 100,
+            });
+            for (const issue of issues) {
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                ...context.repo,
+                issue_number: issue.number,
+                per_page: 100,
+              });
+              if (comments.some(comment => comment.body?.includes(marker))) continue;
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: issue.number,
+                body: `${marker}\nChrome Web Store version ${process.env.VERSION} is now being served by Google's live extension-update service.\n\nThis issue is ready for live verification. Retest the released extension, record the result here, and close or update the issue only after the documented behavior is verified.\n\nWorkflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              });
+            }
+            core.info(`Found ${issues.length} open issue(s) labeled release: verify-live.`);

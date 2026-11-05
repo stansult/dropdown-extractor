@@ -18,12 +18,23 @@ Use this workflow for an update to the existing Dropdown Extractor listing.
 9. From a clean working tree, run `npm run release:submit`. This calculates the ZIP's
    SHA-256 and creates and pushes `webstore-submitted-v<version>` at the uploaded commit.
    Record this marker before allowing `main` to advance.
-10. Submit the update for review. Normal development may continue on `main` while review
-    is pending because the submission tag preserves the uploaded commit.
-11. After that version is live, run `npm run release:record -- <version>`. This creates and
+10. Apply `release: verify-live` to every open bug or enhancement that requires verification
+    against the published package. Submit the update for review. Normal development may
+    continue on `main` while review is pending because the submission tag preserves the
+    uploaded commit.
+11. The **Web Store publication** workflow checks Google's live extension-update service every
+    six hours. When the submitted version is available, it adds one notification comment to
+    each open issue marked `release: verify-live`. The workflow can also be dispatched manually
+    when the Dashboard first reports the version live. Confirm that this notification run
+    completed before recording the publication tag; otherwise the submission will no longer be
+    considered pending by later checks.
+12. Run `npm run release:record -- <version>`. This creates and
     pushes `webstore-v<version>` at the commit recorded by the latest submission or
     resubmission tag, regardless of the current `main` tip.
-12. Run `npm run release:status`. If `main` has not changed since submission, runtime and
+13. Retest every marked issue against the Web Store installation. Record the version, release
+    tag, date, and result; remove `release: verify-live`; and close or update the issue according
+    to its lifecycle. Publication detection never closes issues automatically.
+14. Run `npm run release:status`. If `main` has not changed since submission, runtime and
     listing files should report `unchanged`; otherwise its results describe legitimate
     post-submission work relative to the newly recorded live baseline.
 
@@ -66,6 +77,23 @@ checksum.
 not run it while the package is awaiting review. If its tag push fails after the local tag
 is created, push that tag with
 `git push origin refs/tags/webstore-v<version>`.
+
+## Publication monitoring
+
+`.github/workflows/webstore-publication.yml` is a permanent, mostly dormant scheduled check.
+It derives the newest submitted version lacking a `webstore-v<version>` publication tag, so a
+new schedule does not need to be created for each upload. `npm run release:check-live` runs the
+same package-version check locally.
+
+The check uses Google's extension-update service because it reports the package Chrome can
+install; the public Store listing may be cached and show an older version. A successful check
+is publication evidence, not behavior verification. Issue comments are idempotent per version,
+and the workflow never removes labels, closes issues, creates the publication tag, or replaces
+the required live retest.
+
+GitHub schedules are approximate rather than exact. The workflow is set to minute 23 every six
+hours to avoid the busiest start-of-hour window. GitHub may disable scheduled workflows after a
+long period without repository activity; manual dispatch remains available.
 
 ## Changelog and Store description
 

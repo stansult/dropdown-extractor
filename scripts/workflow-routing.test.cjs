@@ -24,3 +24,16 @@ test('documentation workflow covers Markdown and issue-template changes', () => 
   const steps = workflow.jobs.validate.steps;
   assert.equal(steps.some(step => step.run === 'npm run test:issue-templates'), true);
 });
+
+test('Web Store publication workflow polls every six hours and notifies marked issues', () => {
+  const workflow = readWorkflow('webstore-publication.yml');
+  assert.deepEqual(workflow.on.schedule, [{ cron: '23 */6 * * *' }]);
+  assert.equal(workflow.permissions.contents, 'read');
+  assert.equal(workflow.permissions.issues, 'write');
+  const steps = workflow.jobs.check.steps;
+  assert.equal(steps.some(step => step.run === 'node scripts/webstore-publication-check.cjs'), true);
+  const notification = steps.find(step => step.name === 'Notify issues awaiting live verification');
+  assert.equal(notification.if, "steps.publication.outputs.published == 'true'");
+  assert.match(notification.with.script, /release: verify-live/);
+  assert.match(notification.with.script, /webstore-live:/);
+});

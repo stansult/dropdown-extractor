@@ -65,6 +65,11 @@ Severity is independent of lifecycle status. Priority is intentionally not label
 with the current backlog size, scheduling decisions can be recorded directly on issues
 without maintaining a second classification system.
 
+Apply `release: verify-live` to any bug or enhancement that must be retested against the Web
+Store package before closure or final release verification. This release marker is independent
+of the bug's single lifecycle status label, so it can also cover supported-type enhancements.
+Remove it only after the issue records the live verification result.
+
 ## Evidence required for a fix
 
 Before applying `status: fixed-unreleased`, record:
@@ -98,3 +103,5 @@ Verified live: YYYY-MM-DD — <verification result>
 ```
 
 Remove the status label and close the issue only after that evidence is recorded.
+The scheduled publication workflow comments when the submitted package first becomes live;
+that comment is the signal to begin retesting, not evidence that the issue itself is fixed.

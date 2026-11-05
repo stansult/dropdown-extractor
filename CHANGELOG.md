@@ -5,6 +5,12 @@ documentation, and internal refactoring changes are omitted unless they affect u
 
 ## Unreleased
 
+### Fixed
+
+- Same-origin iframe extraction now shows one unobstructed top-level notification instead of
+  duplicating feedback inside the child frame.
+  ([#12](https://github.com/stansult/dropdown-extractor/issues/12))
+
 ## 1.0.17 — 2026-11-04
 
 ### Added

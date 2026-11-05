@@ -115,15 +115,7 @@ for (const phase of ['activation', 'timeout', 'success']) {
     const text = phase === 'activation' ? 'Click a dropdown'
       : phase === 'timeout' ? 'Dropdown extractor stopped (timeout)' : 'Extracted 3 items to clipboard:';
     if (phase === 'success') {
-      // The activation toast currently intercepts real clicks on this control.
-      // Dispatch the actual extraction event so that defect cannot mask success
-      // notification defects; obstruction is independently asserted below.
-      await select.evaluate(element => {
-        const rect = element.getBoundingClientRect();
-        element.dispatchEvent(new MouseEvent('mousedown', {
-          bubbles: true, clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2,
-        }));
-      });
+      await select.click();
       await expect.poll(() => clipboardText(page)).toBe('Alpha\nBeta\nGamma');
     }
     await expect.poll(async () => (await notifications(page, text))

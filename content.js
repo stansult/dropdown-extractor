@@ -18,6 +18,7 @@
   const TOAST_SUCCESS_BG = 'rgba(20, 70, 40, 0.75)';
   const TOAST_EXPIRED_BG = 'rgba(60, 60, 60, 0.75)';
   const TOAST_ERROR_BG = 'rgba(120, 30, 30, 0.85)';
+  const IS_TOP_FRAME = window === window.top;
   var deferCleanup = false;
   var pendingSafeCleanup = false;
   var extractionPending = false;
@@ -64,6 +65,7 @@
   const TOAST_CLASS = 'dropdown-extractor-toast';
 
   function showToast(message, options = {}) {
+    if (!IS_TOP_FRAME) return null;
     const {
       duration = 2000,
       position = 'bottom-right',
@@ -196,7 +198,7 @@
     const suffix = reason ? ` (${reason})` : '';
     replaceActiveToast(showToast(`${STOPPED_TOAST_TEXT}${suffix}`, {
       duration: 2000,
-      position: 'top-right',
+      position: 'bottom-right',
       background: TOAST_EXPIRED_BG
     }));
   }
@@ -211,7 +213,7 @@
   function showArmedToast() {
     clearArmedToast();
     window.__dropdownExtractorArmedToast = replaceActiveToast(showToast(ARMED_TOAST_TEXT, {
-      position: 'top-right',
+      position: 'bottom-right',
       duration: ARM_DURATION_MS,
       background: TOAST_INFO_BG,
       allowMove: true
@@ -238,6 +240,7 @@
   }
 
   function registerTopLevelFeedbackHandler() {
+    if (!IS_TOP_FRAME) return;
     if (!chrome?.runtime?.onMessage?.addListener) return;
     if (
       window.__dropdownExtractorFeedbackMessageHandler
@@ -257,7 +260,7 @@
         ? TOAST_ERROR_BG
         : TOAST_SUCCESS_BG;
       replaceActiveToast(showToast(message.message, {
-        position: 'top-right',
+        position: 'bottom-right',
         duration: EXTRACTED_TOAST_MS,
         background
       }));
@@ -383,7 +386,7 @@
   function showErrorToast(message) {
     clearArmedToast();
     replaceActiveToast(showToast(message, {
-      position: 'top-right',
+      position: 'bottom-right',
       duration: 2000,
       background: TOAST_ERROR_BG
     }));
@@ -484,7 +487,7 @@
 
   function showDebugFeedback(message, complete = false, clipboardText = null) {
     replaceActiveToast(showToast(message, {
-      position: 'top-right',
+      position: 'bottom-right',
       duration: EXTRACTED_TOAST_MS,
       background: TOAST_SUCCESS_BG
     }));
@@ -1424,7 +1427,7 @@
         window.__dropdownExtractorCancelTimer = null;
       }
       replaceActiveToast(showToast(feedbackMessage, {
-        position: 'top-right',
+        position: 'bottom-right',
         duration: EXTRACTED_TOAST_MS,
         background: TOAST_SUCCESS_BG
       }));

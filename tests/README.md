@@ -208,15 +208,13 @@ ARIA and Dropbox are both required for Safe Capture because they use different i
 events. Debug modes use representative fixtures because the workflows are shared; add
 type-specific debug coverage only when a dropdown family has distinct debug behavior.
 
-## Pending iframe usability regressions
+## Iframe usability coverage
 
 `tests/iframe-regressions.spec.cjs` reproduces the screenshot observations on the actual
 configurable Playground, at a 1656 × 908 viewport. They cover the
 [iframe sizing defect](https://github.com/stansult/dropdown-extractor/issues/11) and
 [duplicated or obstructive feedback](https://github.com/stansult/dropdown-extractor/issues/12).
-These are intentionally failing regressions pending separately authorized implementation
-fixes; they are not skipped or marked as expected failures. Do not commit/push them as a
-passing baseline.
+They remain as permanent regression coverage for the corrected layout and feedback behavior.
 
 The independent contract first checks accessible inherited same-origin documents, native
 option text/values and normal selection, and visible preview geometry without the extension.
@@ -234,16 +232,14 @@ The regression acceptance criteria are:
 
 Each notification test uses independent soft assertions for duplication, dropdown overlap,
 and preview-control overlap so one failure cannot hide another. The success test verifies
-exact clipboard output, dispatching the real extraction `mousedown` event because the
-activation toast currently obstructs an ordinary click. That dispatch is setup for observing
-success feedback, not evidence that an unobstructed user click works. The separate geometry
-assertions still require the obstruction to be fixed.
+exact clipboard output through an ordinary Playwright click, proving that the activation
+notification does not intercept the dropdown interaction.
 
 The shared real-extension harness is `tests/extension-harness.cjs`; the existing extension
 suite retains its serial execution. Older feedback tests require top-level outcome evidence
 without requiring the duplicate child notification that these regressions prohibit.
 
-Run the focused red phase with:
+Run the focused coverage with:
 
 ```bash
 npx playwright test tests/iframe-regressions.spec.cjs
@@ -291,7 +287,7 @@ test, or product changes continue to trigger the complete suites.
 - The Options page UI, persistence, and reset workflow are not exercised directly in a
   browser; extension tests set stored preferences and verify their runtime effects.
 - Explicit cancellation and rearming while already active lack browser-level coverage.
-  Expiration notification uniqueness/obstruction is exercised by the pending iframe
-  usability regressions above; it is not yet passing coverage.
+  Expiration notification uniqueness and obstruction are covered by the iframe usability
+  regressions above.
 - Canvas-rendered, virtualized, Shadow DOM, and cross-origin iframe limitations are not
   represented as successful extraction fixtures.

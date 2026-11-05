@@ -951,6 +951,36 @@ function applyMuiValueTarget(element, item) {
   }
 }
 
+function installFixtureFrameAutosize(frame, frameDocument, root) {
+  let frameRequest = null;
+  const syncHeight = () => {
+    frameRequest = null;
+    if (!frame.isConnected) return;
+    const borderHeight = frame.offsetHeight - frame.clientHeight;
+    const contentHeight = Math.max(
+      frameDocument.body.scrollHeight,
+      frameDocument.documentElement.scrollHeight
+    );
+    frame.style.height = `${Math.ceil(contentHeight + borderHeight)}px`;
+  };
+  const scheduleHeightSync = () => {
+    if (frameRequest !== null) return;
+    frameRequest = frame.contentWindow.requestAnimationFrame(syncHeight);
+  };
+  const mutationObserver = new frame.contentWindow.MutationObserver(scheduleHeightSync);
+  mutationObserver.observe(frameDocument.body, {
+    attributes: true,
+    childList: true,
+    characterData: true,
+    subtree: true
+  });
+  const resizeObserver = new frame.contentWindow.ResizeObserver(scheduleHeightSync);
+  resizeObserver.observe(frameDocument.body);
+  resizeObserver.observe(root);
+  frameDocument.fonts?.ready.then(scheduleHeightSync);
+  scheduleHeightSync();
+}
+
 function prepareFixtureTarget(useIframe) {
   dropdownContainer.replaceChildren();
   if (!useIframe) {
@@ -973,6 +1003,7 @@ function prepareFixtureTarget(useIframe) {
   const root = frameDocument.createElement('div');
   root.id = 'fixture-root';
   frameDocument.body.appendChild(root);
+  installFixtureFrameAutosize(frame, frameDocument, root);
   fixtureDocument = frameDocument;
   return root;
 }

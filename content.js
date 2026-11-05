@@ -68,10 +68,10 @@
     if (!IS_TOP_FRAME) return null;
     const {
       duration = 2000,
-      position = 'bottom-right',
+      position = 'top-right',
       event = null,
       background = TOAST_INFO_BG,
-      allowMove = false
+      allowMove = true
     } = options;
     const toast = document.createElement('div');
     toast.className = TOAST_CLASS;
@@ -198,7 +198,6 @@
     const suffix = reason ? ` (${reason})` : '';
     replaceActiveToast(showToast(`${STOPPED_TOAST_TEXT}${suffix}`, {
       duration: 2000,
-      position: 'bottom-right',
       background: TOAST_EXPIRED_BG
     }));
   }
@@ -210,13 +209,50 @@
     }
   }
 
+  async function waitForNativeSelectReady(selectEl, timeout = ARM_DURATION_MS) {
+    // Let the mousedown default action open Chrome's native picker. While it
+    // is open, pointer events remain with browser UI even though hasFocus()
+    // can still report true, so page feedback must wait for :open to clear.
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    const startedAt = Date.now();
+    if (CSS.supports('selector(:open)')) {
+      while (selectEl.matches(':open')) {
+        if (Date.now() - startedAt >= timeout) return false;
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+    }
+
+    if (document.hasFocus()) return true;
+
+    return new Promise(resolve => {
+      let timeoutId = null;
+      const finish = focused => {
+        if (timeoutId) clearTimeout(timeoutId);
+        window.removeEventListener('focus', checkFocus, true);
+        resolve(focused);
+      };
+      const checkFocus = () => {
+        if (document.hasFocus()) {
+          finish(true);
+          return;
+        }
+        if (Date.now() - startedAt >= timeout) {
+          finish(false);
+          return;
+        }
+        timeoutId = setTimeout(checkFocus, 50);
+      };
+      window.addEventListener('focus', checkFocus, true);
+      checkFocus();
+    });
+  }
+
   function showArmedToast() {
     clearArmedToast();
     window.__dropdownExtractorArmedToast = replaceActiveToast(showToast(ARMED_TOAST_TEXT, {
-      position: 'bottom-right',
       duration: ARM_DURATION_MS,
-      background: TOAST_INFO_BG,
-      allowMove: true
+      background: TOAST_INFO_BG
     }));
   }
 
@@ -252,7 +288,7 @@
       if (message?.action !== 'show-feedback') return;
       if (typeof message.message !== 'string' || !message.message.trim()) return;
       if (typeof message.clipboardText === 'string') {
-        navigator.clipboard.writeText(message.clipboardText);
+        navigator.clipboard.writeText(message.clipboardText).catch(() => {});
       }
       clearArmedToast();
       if (message.complete) cleanup(true);
@@ -260,7 +296,6 @@
         ? TOAST_ERROR_BG
         : TOAST_SUCCESS_BG;
       replaceActiveToast(showToast(message.message, {
-        position: 'bottom-right',
         duration: EXTRACTED_TOAST_MS,
         background
       }));
@@ -386,7 +421,6 @@
   function showErrorToast(message) {
     clearArmedToast();
     replaceActiveToast(showToast(message, {
-      position: 'bottom-right',
       duration: 2000,
       background: TOAST_ERROR_BG
     }));
@@ -487,7 +521,6 @@
 
   function showDebugFeedback(message, complete = false, clipboardText = null) {
     replaceActiveToast(showToast(message, {
-      position: 'bottom-right',
       duration: EXTRACTED_TOAST_MS,
       background: TOAST_SUCCESS_BG
     }));
@@ -1413,27 +1446,36 @@
     }
   }
 
-  function completeExtraction(items, note, flashTarget, prefs) {
+  function completeExtraction(items, note, flashTarget, prefs, options = {}) {
     if (!items.length || extractionPending) return;
     extractionPending = true;
     if (flashTarget) flashElement(flashTarget);
 
-    const finish = () => {
+    const finish = async () => {
       const feedbackMessage = buildExtractedMessage(items, note);
-      navigator.clipboard.writeText(items.join('\n'));
+      const clipboardText = items.join('\n');
       clearArmedToast();
       if (window.__dropdownExtractorCancelTimer) {
         clearTimeout(window.__dropdownExtractorCancelTimer);
         window.__dropdownExtractorCancelTimer = null;
       }
+      try {
+        if (options.nativeSelect && !(await waitForNativeSelectReady(options.nativeSelect))) {
+          throw new Error('Native select did not release its picker before clipboard timeout.');
+        }
+        await navigator.clipboard.writeText(clipboardText);
+      } catch (error) {
+        showErrorToast('Could not copy dropdown items to clipboard.');
+        cleanup();
+        return;
+      }
       replaceActiveToast(showToast(feedbackMessage, {
-        position: 'bottom-right',
         duration: EXTRACTED_TOAST_MS,
         background: TOAST_SUCCESS_BG
       }));
       notifyBackground('done', {
         feedbackMessage,
-        clipboardText: items.join('\n')
+        clipboardText
       });
       cleanup();
     };
@@ -1487,7 +1529,7 @@
       const { items, note, error } = buildOutput(fields, prefs);
 
       if (items.length) {
-        completeExtraction(items, note, selectEl, prefs);
+        completeExtraction(items, note, selectEl, prefs, { nativeSelect: selectEl });
         return;
       }
 

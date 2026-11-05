@@ -239,7 +239,7 @@ function createSearchableAriaDropdown(items, document = fixtureDocument) {
   const menuItems = items.map(item => ({ ...item }));
   for (let index = menuItems.length; index < 26; index += 1) {
     menuItems.push({
-      text: `Additional searchable category ${index}`,
+      text: `Additional searchable category ${index + 1}`,
       value: String(1000 + index)
     });
   }

@@ -19,7 +19,7 @@ for (let index = 3; index < requestedOptionCount; index += 1) {
   option.className = 'dropdown-result result-selectable';
   option.setAttribute('role', 'option');
   option.setAttribute('dropdown-index', String(index));
-  option.title = `Additional searchable category ${index}`;
+  option.title = `Additional searchable category ${index + 1}`;
   option.setAttribute('aria-label', option.title);
   option.textContent = option.title;
   listbox.append(option);

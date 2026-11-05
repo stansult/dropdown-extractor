@@ -83,9 +83,10 @@ test('configurable iframe preserves searchable ARIA interaction behavior', async
   const search = frame.locator('.dropdown-search');
   const options = frame.locator('[role="listbox"] [role="option"]');
 
+  await expect(options.nth(3)).toHaveText('Additional searchable category 4');
   await trigger.click();
   await expect(container).not.toHaveClass(/dropdown-invisible/);
-  await search.fill('category 25');
+  await search.fill('category 26');
   await expect(options.nth(0)).toBeHidden();
   await expect(options.nth(25)).toBeVisible();
   await frame.locator('#fixture-root').click({ position: { x: 2, y: 2 } });
@@ -226,10 +227,11 @@ test('long searchable ARIA fixture is public, supported, searchable, and selecta
   await expect(options).toHaveCount(26);
   await expect(options.nth(0)).toHaveText('Alpha');
   await expect(options.nth(1)).toHaveText('Beta');
+  await expect(options.nth(3)).toHaveText('Additional searchable category 4');
 
   await trigger.click();
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-  await search.fill('category 25');
+  await search.fill('category 26');
   await expect(options.nth(0)).toBeHidden();
   await expect(options.nth(25)).toBeVisible();
   await search.fill('Beta');
@@ -264,6 +266,9 @@ for (const { label, optionCount } of [
     await expect(options.nth(0)).toHaveText('Alpha');
     await expect(options.nth(1)).toHaveText('Beta');
     await expect(options.nth(2)).toHaveText('Gamma');
+    if (optionCount > 3) {
+      await expect(options.nth(3)).toHaveText('Additional searchable category 4');
+    }
     await trigger.click();
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await search.fill('Be');

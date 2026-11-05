@@ -179,9 +179,27 @@ async function notifications(page, text) {
   return matches;
 }
 
+async function expectToastMovesFromTopRight(page, toast) {
+  await expect(toast).toBeVisible();
+  const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+  const before = await toast.boundingBox();
+  expect.soft(before.y, 'notification starts at the top edge').toBeLessThanOrEqual(24);
+  expect.soft(clientWidth - (before.x + before.width), 'notification starts at the right edge')
+    .toBeLessThanOrEqual(24);
+
+  await page.mouse.move(before.x + (before.width / 2), before.y + (before.height / 2));
+  await expect(toast).toHaveAttribute('data-corner', 'top-left', { timeout: 1_500 });
+  await expect.poll(async () => (await toast.boundingBox()).x, {
+    message: 'hovered notification finishes moving to the left edge',
+    timeout: 1_500,
+  }).toBeLessThanOrEqual(24);
+  const after = await toast.boundingBox();
+  expect.soft(after.y, 'moved notification remains at the top edge').toBeLessThanOrEqual(24);
+}
+
 for (const phase of ['activation', 'timeout', 'success']) {
   // Independent tests: an expected failure in activation must not skip timeout/success.
-  extensionTest(`iframe feedback regression: ${phase} is unique and does not obscure controls`, async ({
+  extensionTest(`iframe feedback regression: ${phase} is unique and movable`, async ({
     extensionContext: context, extensionPage: page, extensionWorker: worker,
   }, testInfo) => {
     if (phase === 'timeout') testInfo.setTimeout(30_000);
@@ -204,22 +222,11 @@ for (const phase of ['activation', 'timeout', 'success']) {
       timeout: phase === 'timeout' ? 12_000 : 5_000,
     }).toBe(true);
     const visible = await notifications(page, text);
-    const selectBox = await select.boundingBox();
-    const previewControls = [];
-    for (const selector of ['.dropdown-panel h2', '#dropdown-type', '#dropdown-context', '#render']) {
-      previewControls.push({ selector, box: await page.locator(selector).boundingBox() });
-    }
-    const dropdownOverlaps = visible.filter(n => intersects(n, selectBox));
-    const previewOverlaps = visible.filter(n => n.document === 'top').flatMap(n => (
-      previewControls.filter(control => intersects(n, control.box)).map(control => control.selector)
-    ));
     await testInfo.attach('notification-geometry', {
-      body: JSON.stringify({ phase, visible, selectBox, previewControls, dropdownOverlaps, previewOverlaps }, null, 2),
+      body: JSON.stringify({ phase, visible }, null, 2),
       contentType: 'application/json',
     });
-    // Soft assertions expose all three independent defects even when duplication fails first.
     expect.soft(visible.map(n => n.document), 'one notification across the top page and iframe').toEqual(['top']);
-    expect.soft(dropdownOverlaps, 'notifications must not cover the test dropdown').toEqual([]);
-    expect.soft(previewOverlaps, 'top notification must not cover preview heading/status/Render').toEqual([]);
+    await expectToastMovesFromTopRight(page, page.locator('.dropdown-extractor-toast', { hasText: text }));
   });
 }

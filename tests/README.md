@@ -231,14 +231,19 @@ closed → open → closed lifecycle. The regression acceptance criteria are:
   (allowing browser rounding).
 - Activation, actual 10-second timeout, and successful extraction must each show exactly
   one visible notification, in the top document, counting across both documents.
-- Notifications must not intersect the test dropdown or the preview heading, type/status,
-  context label, or Render button. Bounds from child documents are translated and clipped
-  into the outer viewport. Geometry is attached to each result for diagnosis.
+- Activation, timeout, and successful extraction feedback must start at the top-right near
+  the extension button and move to the top-left after the pointer hovers over it. Bounds from
+  child documents are translated and clipped into the outer viewport. Geometry is attached
+  to each result for diagnosis.
+- In-progress Any-two feedback follows the same movement contract while capture remains active.
+- Native-select extraction in both the top page and a same-origin iframe must defer clipboard
+  success until Chrome's native picker closes, then confirm the owning document has focus.
+- Clipboard rejection must produce explicit error feedback and must never be reported as a
+  successful extraction.
 
-Each notification test uses independent soft assertions for duplication, dropdown overlap,
-and preview-control overlap so one failure cannot hide another. The success test verifies
-exact clipboard output through an ordinary Playwright click, proving that the activation
-notification does not intercept the dropdown interaction.
+Each notification test verifies uniqueness across documents independently from initial and
+moved geometry. The success test verifies exact clipboard output through an ordinary
+Playwright click.
 
 The shared real-extension harness is `tests/extension-harness.cjs`; the existing extension
 suite retains its serial execution. Older feedback tests require top-level outcome evidence

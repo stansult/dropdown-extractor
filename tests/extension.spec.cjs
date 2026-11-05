@@ -14,6 +14,78 @@ async function dispatchMouseDownAtCenter(locator) {
   });
 }
 
+async function expectToastMovesFromTopRight(page, toast) {
+  await expect(toast).toBeVisible();
+  const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+  const before = await toast.boundingBox();
+  expect.soft(before.y, 'notification starts at the top edge').toBeLessThanOrEqual(24);
+  expect.soft(clientWidth - (before.x + before.width), 'notification starts at the right edge')
+    .toBeLessThanOrEqual(24);
+
+  await page.mouse.move(before.x + (before.width / 2), before.y + (before.height / 2));
+  await expect(toast).toHaveAttribute('data-corner', 'top-left', { timeout: 1_500 });
+  await expect.poll(async () => (await toast.boundingBox()).x, {
+    message: 'hovered notification finishes moving to the left edge',
+    timeout: 1_500,
+  }).toBeLessThanOrEqual(24);
+  const after = await toast.boundingBox();
+  expect.soft(after.y, 'moved notification remains at the top edge').toBeLessThanOrEqual(24);
+}
+
+async function setExtensionWorldNativePickerOpen(worker, open) {
+  return worker.evaluate(async nextOpen => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) throw new Error('Active test tab unavailable.');
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id, allFrames: true },
+      world: 'ISOLATED',
+      func: value => {
+        window.__dropdownExtractorTestNativePickerOpen = value;
+        if (!window.__dropdownExtractorTestFocusOverrideInstalled) {
+          Object.defineProperty(document, 'hasFocus', {
+            configurable: true,
+            value: () => true,
+          });
+          window.__dropdownExtractorTestFocusOverrideInstalled = true;
+        }
+        if (!window.__dropdownExtractorTestMatchesOverrideInstalled) {
+          const originalMatches = Element.prototype.matches;
+          Element.prototype.matches = function (selector) {
+            if (selector === ':open' && this instanceof HTMLSelectElement) {
+              return window.__dropdownExtractorTestNativePickerOpen ?? originalMatches.call(this, selector);
+            }
+            return originalMatches.call(this, selector);
+          };
+          window.__dropdownExtractorTestMatchesOverrideInstalled = true;
+        }
+        return window.__dropdownExtractorTestNativePickerOpen;
+      },
+      args: [nextOpen],
+    });
+    return results.map(result => result.result);
+  }, open);
+}
+
+async function setExtensionWorldClipboardFailure(worker, shouldFail) {
+  return worker.evaluate(async fail => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) throw new Error('Active test tab unavailable.');
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      world: 'ISOLATED',
+      func: value => {
+        if (!window.__dropdownExtractorOriginalClipboardWrite) {
+          window.__dropdownExtractorOriginalClipboardWrite = navigator.clipboard.writeText.bind(navigator.clipboard);
+        }
+        navigator.clipboard.writeText = value
+          ? () => Promise.reject(new DOMException('Document is not focused.', 'NotAllowedError'))
+          : window.__dropdownExtractorOriginalClipboardWrite;
+      },
+      args: [fail],
+    });
+  }, shouldFail);
+}
+
 async function renderSearchableAriaFrame(page, optionCount) {
   await page.evaluate(count => {
     const frame = document.createElement('iframe');
@@ -118,6 +190,69 @@ test('normal extraction handles a native select in a same-origin iframe', async 
     hasText: 'Extracted 3 items to clipboard:\n\n– Jan\n– Feb\n– Mar',
   })).toBeVisible();
   await expect(select).toHaveValue('02');
+});
+
+for (const iframe of [false, true]) {
+  test(`native select ${iframe ? 'iframe' : 'top-page'} extraction waits for the native picker to close`, async ({
+    extensionContext: context, extensionPage: page, extensionWorker: worker,
+  }) => {
+    await renderFixture(page, { type: 'native', items, iframe });
+    const select = iframe
+      ? page.frameLocator('#playground-fixture-frame').locator('select')
+      : page.locator('#dropdown select');
+    await page.evaluate(() => navigator.clipboard.writeText('unchanged'));
+    await setPrefs(worker, {
+      extractText: true,
+      extractValue: false,
+      safeCapture: true,
+      debugMode: false,
+      debugAllFrames: false,
+    });
+    await armExtension(worker, page, context);
+
+    const openFrames = await setExtensionWorldNativePickerOpen(worker, true);
+    expect(openFrames.length).toBeGreaterThanOrEqual(iframe ? 2 : 1);
+    expect(openFrames.every(open => open === true)).toBe(true);
+    await select.dispatchEvent('mousedown');
+    await page.waitForTimeout(250);
+
+    const success = page.locator('.dropdown-extractor-toast', {
+      hasText: 'Extracted 3 items to clipboard:',
+    });
+    expect(await success.count(), 'success waits until Chrome releases the native picker')
+      .toBe(0);
+
+    await select.focus();
+    const closedFrames = await setExtensionWorldNativePickerOpen(worker, false);
+    expect(closedFrames.every(open => open === false)).toBe(true);
+    await expect.poll(() => clipboardText(page)).toBe('Alpha\nBeta\nGamma');
+    await expect(success).toBeVisible();
+  });
+}
+
+test('native select reports clipboard rejection instead of false success', async ({
+  extensionContext: context, extensionPage: page, extensionWorker: worker,
+}) => {
+  await renderFixture(page, { type: 'native', items });
+  await page.evaluate(() => navigator.clipboard.writeText('unchanged'));
+  await setPrefs(worker, {
+    extractText: true,
+    extractValue: false,
+    safeCapture: true,
+    debugMode: false,
+  });
+  await armExtension(worker, page, context);
+  await setExtensionWorldClipboardFailure(worker, true);
+  await page.locator('#dropdown select').dispatchEvent('mousedown');
+
+  const error = page.locator('.dropdown-extractor-toast', {
+    hasText: 'Could not copy dropdown items to clipboard.',
+  });
+  await expect(error).toBeVisible();
+  expect(await page.locator('.dropdown-extractor-toast', {
+    hasText: 'Extracted 3 items to clipboard:',
+  }).count()).toBe(0);
+  await expect.poll(() => clipboardText(page)).toBe('unchanged');
 });
 
 test('iframe extraction shows success feedback in the current top-level viewport', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {
@@ -532,6 +667,27 @@ test('Any two debug captures a native select and changed option with Safe Captur
   await expect(secondFeedback).toBeVisible();
   await expect(secondFeedback).toBeInViewport();
   await expect(select).toHaveValue('202');
+});
+
+test('Any two progress feedback moves away from the pointer while capture remains active', async ({
+  extensionContext: context, extensionPage: page, extensionWorker: worker,
+}) => {
+  await renderFixture(page, { type: 'native', items });
+  await setPrefs(worker, {
+    extractText: true,
+    extractValue: false,
+    safeCapture: true,
+    debugMode: true,
+    debugModeTarget: 'any-two',
+    debugAllFrames: false,
+  });
+  await armExtension(worker, page, context);
+  await dispatchMouseDownAtCenter(page.locator('#dropdown select'));
+
+  const progress = page.locator('.dropdown-extractor-toast', {
+    hasText: 'Debug: copied HTML (1/2, menu container)',
+  });
+  await expectToastMovesFromTopRight(page, progress);
 });
 
 test('Any two debug captures a native select and changed option in a same-origin iframe', async ({ extensionContext: context, extensionPage: page, extensionWorker: worker }) => {

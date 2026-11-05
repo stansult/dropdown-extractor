@@ -5,10 +5,13 @@ documentation, and internal refactoring changes are omitted unless they affect u
 
 ## Unreleased
 
+## 1.0.18 — 2026-11-05
+
 ### Fixed
 
-- Same-origin iframe extraction now shows one unobstructed top-level notification instead of
-  duplicating feedback inside the child frame.
+- Extension feedback now appears once in the top-level page instead of being duplicated inside
+  a same-origin iframe, starts near the extension button, and moves away when hovered. Native
+  select success waits until Chrome's picker closes so the confirmation remains usable.
   ([#12](https://github.com/stansult/dropdown-extractor/issues/12))
 
 ## 1.0.17 — 2026-11-04

@@ -8,6 +8,29 @@ const items = [
   { text: 'Beta', value: '202' },
   { text: 'Gamma', value: '303' },
 ];
+const supportedTypes = [
+  { type: 'native' },
+  { type: 'aria', trigger: '.dropdown-trigger', open: '.dropdown-menu.open' },
+  {
+    type: 'aria-searchable', trigger: '.dropdown-select', open: '.dropdown-container:not(.dropdown-invisible)',
+    triggerEvent: 'mousedown', scrollable: '[role="listbox"]',
+  },
+  { type: 'aria-grid', trigger: '.dropdown-trigger', open: '.dropdown-menu.open' },
+  { type: 'selectize', trigger: '.dropdown-trigger', open: '.dropdown-menu.open' },
+  { type: 'react', trigger: '.dropdown-trigger', open: '.dropdown-menu.open' },
+  { type: 'react-atlassian', trigger: '.dropdown-trigger', open: '.dropdown-menu.open' },
+  { type: 'downshift', trigger: '.dropdown-trigger', open: '.dropdown-menu.open' },
+  { type: 'mui', trigger: '.dropdown-trigger', open: '.dropdown-menu.open' },
+  { type: 'radix-menu', trigger: '.dropdown-trigger', open: '.dropdown-menu.open' },
+  { type: 'dropbox-menu', trigger: '.dropdown-trigger', open: '.dropdown-menu.open' },
+  { type: 'antd', trigger: '.dropdown-trigger', open: '.dropdown-menu.open' },
+  { type: 'select2', trigger: '.dropdown-trigger', open: '.dropdown-menu.open' },
+  { type: 'chosen', trigger: '.dropdown-trigger', open: '.dropdown-menu.open' },
+  { type: 'slm-modal', trigger: '.slm-show-modal', open: '.slm-dropdown-modal.show', closeOutside: true },
+  { type: 'github-selectmenu', trigger: '.gh-selectmenu-summary', open: '.gh-selectmenu.open .SelectMenu' },
+  { type: 'aliexpress', trigger: '.ali-shell input', open: '.ali-suggestions.open', closeOutside: true },
+  { type: 'expedia', trigger: '.dropdown-trigger', open: '.dropdown-menu.open' },
+];
 
 plainTest.use({ viewport });
 
@@ -36,28 +59,79 @@ plainTest('compact iframe contract preserves same-origin controls and visible pr
   }
 });
 
-plainTest('iframe layout regression: compact native content does not reserve a tall empty frame', async ({ page }) => {
-  await page.goto('/');
-  await renderFixture(page, { type: 'native', items, iframe: true });
-  const frameBox = await page.locator('#playground-fixture-frame').boundingBox();
-  const selectBox = await page.frameLocator('#playground-fixture-frame').locator('select').boundingBox();
-  // Compact native content allows a generous 64px total for padding/borders,
-  // rather than reserving hundreds of blank pixels for an unopened native picker.
-  expect(frameBox.height - selectBox.height, 'unused vertical space around the native control')
-    .toBeLessThanOrEqual(64);
-});
+async function activateFixture(locator, eventName) {
+  if (eventName) {
+    await locator.dispatchEvent(eventName);
+  } else {
+    await locator.click();
+  }
+}
 
-plainTest('iframe layout regression: enabling iframe mode does not push the item editor down', async ({ page }) => {
-  await page.goto('/');
-  await renderFixture(page, { type: 'native', items });
-  const before = await page.locator('#items').boundingBox();
-  await page.locator('#render-in-iframe').check();
-  await page.locator('#render').click();
-  await expect(page.frameLocator('#playground-fixture-frame').locator('select')).toBeVisible();
-  const after = await page.locator('#items').boundingBox();
-  expect(Math.abs(after.y - before.y), 'item editor movement when only rendering context changes')
-    .toBeLessThanOrEqual(2);
-});
+for (const fixture of supportedTypes) {
+  plainTest(`iframe sizing follows ${fixture.type} through its closed and open lifecycle`, async ({ page }) => {
+    await page.goto('/');
+    await renderFixture(page, { type: fixture.type, items });
+    await expect(page.locator('#dropdown-type')).toContainText('Supported');
+    const topItems = await page.locator('#items').boundingBox();
+
+    await page.locator('#render-in-iframe').check();
+    await page.locator('#render').click();
+    const frameElement = page.locator('#playground-fixture-frame');
+    const frame = page.frameLocator('#playground-fixture-frame');
+    const root = frame.locator('#fixture-root');
+    await expect(root.locator(':scope > *')).toHaveCount(1);
+
+    const initialFrame = await frameElement.boundingBox();
+    const initialRoot = await root.boundingBox();
+    const iframeItems = await page.locator('#items').boundingBox();
+    expect.soft(
+      initialFrame.height - initialRoot.height,
+      `${fixture.type}: initial unused iframe height`
+    ).toBeLessThanOrEqual(64);
+    expect.soft(
+      Math.abs(iframeItems.y - topItems.y),
+      `${fixture.type}: item editor movement when only rendering context changes`
+    ).toBeLessThanOrEqual(2);
+
+    if (!fixture.trigger) return;
+    const trigger = frame.locator(fixture.trigger);
+    const openContent = frame.locator(fixture.open);
+    await activateFixture(trigger, fixture.triggerEvent);
+    await expect(openContent).toBeVisible();
+    const openFrame = await frameElement.boundingBox();
+    const openBox = await openContent.boundingBox();
+    expect.soft(
+      openBox.y + openBox.height - (openFrame.y + openFrame.height),
+      `${fixture.type}: open content outside iframe`
+    ).toBeLessThanOrEqual(1);
+    if (fixture.scrollable) {
+      const scroll = await frame.locator(fixture.scrollable).evaluate(element => ({
+        clientHeight: element.clientHeight,
+        scrollHeight: element.scrollHeight,
+      }));
+      expect(scroll.scrollHeight, `${fixture.type}: long menu retains intentional internal scrolling`)
+        .toBeGreaterThan(scroll.clientHeight);
+    }
+
+    if (fixture.closeOutside) {
+      await frame.locator('body').click({ position: { x: 2, y: 2 } });
+    } else {
+      await activateFixture(trigger, fixture.triggerEvent);
+    }
+    await expect(openContent).toBeHidden();
+    const closedFrame = await frameElement.boundingBox();
+    const closedRoot = await root.boundingBox();
+    const closedItems = await page.locator('#items').boundingBox();
+    expect.soft(
+      closedFrame.height - closedRoot.height,
+      `${fixture.type}: unused iframe height after close`
+    ).toBeLessThanOrEqual(64);
+    expect.soft(
+      Math.abs(closedItems.y - topItems.y),
+      `${fixture.type}: item editor movement after close`
+    ).toBeLessThanOrEqual(2);
+  });
+}
 
 function intersects(a, b) {
   return a.x < b.x + b.width && a.x + a.width > b.x

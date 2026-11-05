@@ -218,10 +218,15 @@ They remain as permanent regression coverage for the corrected layout and feedba
 
 The independent contract first checks accessible inherited same-origin documents, native
 option text/values and normal selection, and visible preview geometry without the extension.
-The regression acceptance criteria are:
+The sizing matrix then exercises every type marked **Supported** through its applicable
+closed → open → closed lifecycle. The regression acceptance criteria are:
 
-- A closed native control may use at most 64px of extra iframe height for padding/borders.
-  This is a generous compact-content budget, not a fixed iframe height for every type.
+- Every closed fixture may use at most 64px of extra iframe height for padding/borders.
+  This is a generous compact-content budget, not a fixed iframe height for open content.
+- Every open fixture must fit its visible menu inside the iframe, and every openable fixture
+  must return to the compact budget after closing.
+- The long searchable ARIA list must retain intentional internal scrolling rather than
+  expanding the iframe to expose every option row.
 - Switching only the rendering context must move the item editor by no more than 2px
   (allowing browser rounding).
 - Activation, actual 10-second timeout, and successful extraction must each show exactly

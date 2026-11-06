@@ -68,7 +68,10 @@ it should not duplicate extraction logic.
 The public Playground can render any offered fixture either on the top page (the default)
 or directly inside a same-origin iframe. Its contracts verify the context control and status,
 preserve the existing top-page behavior, exercise native and searchable ARIA interactions in
-the iframe, and smoke-test every offered fixture family there without page errors. Extension
+the iframe, keep open iframe overlays from reflowing the item editor, preserve intentional
+internal list scrolling without unintended horizontal frame overflow, and smoke-test every
+offered fixture family there without page errors
+([#13](https://github.com/stansult/dropdown-extractor/issues/13)). Extension
 coverage remains focused on representative native and ARIA iframe paths rather than repeating
 every fixture permutation.
 

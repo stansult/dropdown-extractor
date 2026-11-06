@@ -98,13 +98,27 @@ for (const fixture of supportedTypes) {
     const openContent = frame.locator(fixture.open);
     await activateFixture(trigger, fixture.triggerEvent);
     await expect(openContent).toBeVisible();
-    const openFrame = await frameElement.boundingBox();
-    const openBox = await openContent.boundingBox();
-    expect.soft(
-      openBox.y + openBox.height - (openFrame.y + openFrame.height),
-      `${fixture.type}: open content outside iframe`
-    ).toBeLessThanOrEqual(1);
+    await expect.poll(async () => {
+      const [openFrame, openBox] = await Promise.all([
+        frameElement.boundingBox(),
+        openContent.boundingBox(),
+      ]);
+      return openBox.y + openBox.height - (openFrame.y + openFrame.height);
+    }, `${fixture.type}: iframe settles around open content`).toBeLessThanOrEqual(1);
+    const openItems = await page.locator('#items').boundingBox();
     if (fixture.scrollable) {
+      expect.soft(
+        Math.abs(openItems.y - iframeItems.y),
+        `${fixture.type}: item editor movement while the dropdown is open`
+      ).toBeLessThanOrEqual(2);
+      const viewportOverflow = await frame.locator('html').evaluate(element => ({
+        clientWidth: element.clientWidth,
+        scrollWidth: element.scrollWidth,
+      }));
+      expect.soft(
+        viewportOverflow.scrollWidth - viewportOverflow.clientWidth,
+        `${fixture.type}: unintended horizontal iframe overflow`
+      ).toBeLessThanOrEqual(0);
       const scroll = await frame.locator(fixture.scrollable).evaluate(element => ({
         clientHeight: element.clientHeight,
         scrollHeight: element.scrollHeight,

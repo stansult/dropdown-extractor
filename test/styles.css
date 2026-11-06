@@ -170,6 +170,18 @@ p {
   background: #fff;
 }
 
+.dropdown-panel #dropdown.iframe-preview {
+  position: relative;
+  z-index: 6;
+}
+
+.dropdown-panel #dropdown.iframe-preview > .playground-fixture-frame {
+  left: 0;
+  position: absolute;
+  top: 0;
+  z-index: 1;
+}
+
 .fixture-frame-body {
   box-sizing: border-box;
   margin: 0;
@@ -833,6 +845,7 @@ button.changed:focus-visible {
   background: #fff;
   border: 1px solid #bbb;
   border-radius: 6px;
+  box-sizing: border-box;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
   margin-top: 4px;
   padding: 6px;

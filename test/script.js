@@ -951,7 +951,7 @@ function applyMuiValueTarget(element, item) {
   }
 }
 
-function installFixtureFrameAutosize(frame, frameDocument, root, stylesheet) {
+function installFixtureFrameAutosize(frame, frameDocument, root, stylesheet, layoutHost) {
   let frameRequest = null;
   let stylesReady = false;
   const syncHeight = () => {
@@ -966,6 +966,10 @@ function installFixtureFrameAutosize(frame, frameDocument, root, stylesheet) {
       frameDocument.body.scrollHeight,
       frameDocument.documentElement.scrollHeight
     );
+    const bodyStyle = frame.contentWindow.getComputedStyle(frameDocument.body);
+    const layoutHeight = root.getBoundingClientRect().bottom
+      + Number.parseFloat(bodyStyle.paddingBottom || '0');
+    layoutHost.style.height = `${Math.ceil(layoutHeight + borderHeight)}px`;
     frame.style.height = `${Math.ceil(contentHeight + borderHeight)}px`;
   };
   const scheduleHeightSync = () => {
@@ -995,6 +999,8 @@ function installFixtureFrameAutosize(frame, frameDocument, root, stylesheet) {
 
 function prepareFixtureTarget(useIframe) {
   dropdownContainer.replaceChildren();
+  dropdownContainer.classList.toggle('iframe-preview', useIframe);
+  dropdownContainer.style.height = '';
   if (!useIframe) {
     fixtureDocument = window.document;
     return dropdownContainer;
@@ -1014,7 +1020,7 @@ function prepareFixtureTarget(useIframe) {
   const root = frameDocument.createElement('div');
   root.id = 'fixture-root';
   frameDocument.body.appendChild(root);
-  installFixtureFrameAutosize(frame, frameDocument, root, stylesheet);
+  installFixtureFrameAutosize(frame, frameDocument, root, stylesheet, dropdownContainer);
   frameDocument.head.appendChild(stylesheet);
   fixtureDocument = frameDocument;
   return root;

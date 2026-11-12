@@ -96,7 +96,10 @@ product-behavior checks.
 
 The activation helper marks any existing armed toast before triggering the toolbar action
 and waits for a newly created armed toast. This prevents a fading toast from a previous
-activation from making repeated-activation tests continue before reinjection is ready.
+activation from making repeated-activation tests continue before reinjection is ready. Chrome's
+CDP command can occasionally return without creating the extension popup target; the helper
+retries the toolbar command once only in that transport-failure case. If the popup target exists
+but the armed toast does not appear, the user-outcome assertion still fails.
 
 ## Test-oracle requirements
 

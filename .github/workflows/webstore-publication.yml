@@ -6,6 +6,7 @@ on:
     - cron: '23 */6 * * *'
 
 permissions:
+  actions: write
   contents: read
   issues: write
 
@@ -62,3 +63,8 @@ jobs:
               });
             }
             core.info(`Found ${issues.length} open issue(s) labeled release: verify-live.`);
+      - name: Disable publication polling
+        if: steps.publication.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow disable webstore-publication.yml --repo "$GITHUB_REPOSITORY"

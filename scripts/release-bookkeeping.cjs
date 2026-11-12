@@ -4,6 +4,8 @@ const { spawnSync } = require('node:child_process');
 
 const tagPrefix = 'webstore-v';
 const submissionTagPrefix = 'webstore-submitted-v';
+const publicationWorkflow = 'webstore-publication.yml';
+const repository = 'stansult/dropdown-extractor';
 const runtimeFiles = [
   'manifest.json',
   'background.js',
@@ -106,7 +108,24 @@ function commitVersion(git, commit) {
   return manifest.version;
 }
 
-function recordSubmission({ git, version, commit, checksum }) {
+function startPublicationPolling({ github, submission }) {
+  const commands = [
+    ['workflow', 'enable', publicationWorkflow, '--repo', repository],
+    ['workflow', 'run', publicationWorkflow, '--repo', repository],
+  ];
+  try {
+    for (const command of commands) github.run(command);
+  } catch (error) {
+    throw new Error(
+      `${submission} was pushed, but Web Store publication polling could not be started: ${error.message}\n`
+      + 'Recovery:\n'
+      + `  gh workflow enable ${publicationWorkflow} --repo ${repository}\n`
+      + `  gh workflow run ${publicationWorkflow} --repo ${repository}`
+    );
+  }
+}
+
+function recordSubmission({ git, github, version, commit, checksum }) {
   parseVersion(version);
   if (git.output(['status', '--porcelain'])) throw new Error('Working tree must be clean.');
   if (!/^[a-f0-9]{64}$/.test(checksum)) throw new Error('ZIP checksum must be a SHA-256 hash.');
@@ -125,10 +144,11 @@ function recordSubmission({ git, version, commit, checksum }) {
   const message = `Chrome Web Store submission ${version}\n\nZIP SHA-256: ${checksum}`;
   git.run(['tag', '-a', tag, commit, '-m', message]);
   git.run(['push', 'origin', `refs/tags/${tag}`]);
+  if (github) startPublicationPolling({ github, submission: tag });
   return { version, tag, commit, checksum };
 }
 
-function recordResubmission({ git, version, commit, checksum }) {
+function recordResubmission({ git, github, version, commit, checksum }) {
   parseVersion(version);
   if (git.output(['status', '--porcelain'])) throw new Error('Working tree must be clean.');
   if (!/^[a-f0-9]{64}$/.test(checksum)) throw new Error('ZIP checksum must be a SHA-256 hash.');
@@ -164,6 +184,7 @@ function recordResubmission({ git, version, commit, checksum }) {
     + `Original submission: ${original}\nZIP SHA-256: ${checksum}`;
   git.run(['tag', '-a', tag, commit, '-m', message]);
   git.run(['push', 'origin', `refs/tags/${tag}`]);
+  if (github) startPublicationPolling({ github, submission: tag });
   return { version, tag, commit, checksum, attempt, original };
 }
 
@@ -225,6 +246,16 @@ function createGit() {
   };
 }
 
+function createGithub() {
+  return {
+    run(args) {
+      const result = spawnSync('gh', args, { encoding: 'utf8' });
+      if (result.error) throw result.error;
+      if (result.status !== 0) throw new Error(result.stderr.trim() || `gh ${args[0]} failed`);
+    },
+  };
+}
+
 function manifestVersion() {
   return JSON.parse(readFileSync('manifest.json', 'utf8')).version;
 }
@@ -247,13 +278,17 @@ if (require.main === module) {
     } else if (command === 'submit') {
       const commit = process.argv[4] || git.output(['rev-parse', 'HEAD']);
       const archive = process.argv[5] || `dist/dropdown-extractor-${version}.zip`;
-      const result = recordSubmission({ git, version, commit, checksum: sha256(archive) });
+      const result = recordSubmission({
+        git, github: createGithub(), version, commit, checksum: sha256(archive),
+      });
       console.log(`Recorded ${result.tag} at ${result.commit} and pushed it to origin.`);
       console.log(`ZIP SHA-256: ${result.checksum}`);
     } else if (command === 'resubmit') {
       const commit = process.argv[4] || git.output(['rev-parse', 'HEAD']);
       const archive = process.argv[5] || `dist/dropdown-extractor-${version}.zip`;
-      const result = recordResubmission({ git, version, commit, checksum: sha256(archive) });
+      const result = recordResubmission({
+        git, github: createGithub(), version, commit, checksum: sha256(archive),
+      });
       console.log(`Recorded ${result.tag} at ${result.commit} and pushed it to origin.`);
       console.log(`ZIP SHA-256: ${result.checksum}`);
     } else if (command === 'record') {
@@ -276,5 +311,6 @@ module.exports = {
   recordResubmission,
   recordSubmission,
   releaseStatus,
+  startPublicationPolling,
   submittedTag,
 };

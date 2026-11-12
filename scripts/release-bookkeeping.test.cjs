@@ -70,6 +70,17 @@ function fakeGit({
   };
 }
 
+function fakeGithub({ failOn = null } = {}) {
+  const runs = [];
+  return {
+    runs,
+    run(args) {
+      runs.push(args);
+      if (args[1] === failOn) throw new Error(`gh workflow ${failOn} failed`);
+    },
+  };
+}
+
 test('Chrome versions compare numerically and accept one to four parts', () => {
   assert.equal(compareVersions('1.0.15', '1.0.14') > 0, true);
   assert.equal(compareVersions('1.0', '1.0.0'), 0);
@@ -162,8 +173,9 @@ test('a failed push leaves an explicit local tag command in the attempted operat
 
 test('submit records the commit and ZIP checksum in an annotated tag', () => {
   const git = fakeGit({ submissionExists: false });
+  const github = fakeGithub();
   const checksum = 'a'.repeat(64);
-  assert.deepEqual(recordSubmission({ git, version: '1.0.15', commit: 'abc', checksum }), {
+  assert.deepEqual(recordSubmission({ git, github, version: '1.0.15', commit: 'abc', checksum }), {
     version: '1.0.15', tag: 'webstore-submitted-v1.0.15', commit: 'abc', checksum,
   });
   assert.deepEqual(git.runs, [
@@ -171,12 +183,17 @@ test('submit records the commit and ZIP checksum in an annotated tag', () => {
       `Chrome Web Store submission 1.0.15\n\nZIP SHA-256: ${checksum}`],
     ['push', 'origin', 'refs/tags/webstore-submitted-v1.0.15'],
   ]);
+  assert.deepEqual(github.runs, [
+    ['workflow', 'enable', 'webstore-publication.yml', '--repo', 'stansult/dropdown-extractor'],
+    ['workflow', 'run', 'webstore-publication.yml', '--repo', 'stansult/dropdown-extractor'],
+  ]);
 });
 
 test('resubmit preserves the original package checksum in a numbered marker', () => {
   const git = fakeGit();
+  const github = fakeGithub();
   const checksum = 'a'.repeat(64);
-  assert.deepEqual(recordResubmission({ git, version: '1.0.15', commit: 'abc', checksum }), {
+  assert.deepEqual(recordResubmission({ git, github, version: '1.0.15', commit: 'abc', checksum }), {
     version: '1.0.15',
     tag: 'webstore-submitted-v1.0.15-r2',
     commit: 'abc',
@@ -188,6 +205,33 @@ test('resubmit preserves the original package checksum in a numbered marker', ()
     ['tag', '-a', 'webstore-submitted-v1.0.15-r2', 'abc', '-m',
       `Chrome Web Store resubmission 1.0.15 (attempt 2)\n\nOriginal submission: webstore-submitted-v1.0.15\nZIP SHA-256: ${checksum}`],
     ['push', 'origin', 'refs/tags/webstore-submitted-v1.0.15-r2'],
+  ]);
+  assert.deepEqual(github.runs, [
+    ['workflow', 'enable', 'webstore-publication.yml', '--repo', 'stansult/dropdown-extractor'],
+    ['workflow', 'run', 'webstore-publication.yml', '--repo', 'stansult/dropdown-extractor'],
+  ]);
+});
+
+test('submit reports recovery commands when polling activation fails after the tag push', () => {
+  const git = fakeGit({ submissionExists: false });
+  const github = fakeGithub({ failOn: 'run' });
+  assert.throws(
+    () => recordSubmission({
+      git,
+      github,
+      version: '1.0.15',
+      commit: 'abc',
+      checksum: 'a'.repeat(64),
+    }),
+    error => {
+      assert.match(error.message, /webstore-submitted-v1\.0\.15 was pushed/);
+      assert.match(error.message, /gh workflow enable webstore-publication\.yml/);
+      assert.match(error.message, /gh workflow run webstore-publication\.yml/);
+      return true;
+    }
+  );
+  assert.deepEqual(git.runs.at(-1), [
+    'push', 'origin', 'refs/tags/webstore-submitted-v1.0.15',
   ]);
 });
 

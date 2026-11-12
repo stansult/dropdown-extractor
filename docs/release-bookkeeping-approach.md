@@ -24,22 +24,24 @@ building nor submitting a ZIP is publication.
 
 ## Commands
 
-Four npm commands wrap the bookkeeping:
+Five npm commands wrap the bookkeeping:
 
 ```bash
 npm run release:status
 npm run release:submit
+npm run release:resubmit -- <version> <corrected-commit> <archive>
 npm run release:record -- <version>
 npm run release:check-live
 ```
 
 `release:status` finds the highest `webstore-v*` tag and compares it with `HEAD`. It reports separately whether extension runtime files and store-listing source files have changed since the recorded release.
 
-`release:submit` records the submitted commit and ZIP checksum. `release:record` resolves
-the requested version's submission tag, creates the publication tag at that preserved
-commit, and pushes it to `origin`. `release:check-live` finds the newest submitted version
-without a publication tag and compares it with the package version served by Google's live
-extension-update service.
+`release:submit` records the submitted commit and ZIP checksum, enables the publication
+workflow, and dispatches its first check. `release:resubmit` does the same after recording a
+same-package Store-metadata retry. `release:record` resolves the requested version's submission
+tag, creates the publication tag at that preserved commit, and pushes it to `origin`.
+`release:check-live` finds the newest submitted version without a publication tag and compares
+it with the package version served by Google's live extension-update service.
 
 ## Safety checks
 
@@ -53,11 +55,20 @@ Submission and publication checks require:
 - An annotated submission tag before publication can be recorded
 - No existing submission or publication tag for that version
 - A version newer than every previously recorded Web Store version
+- GitHub CLI (`gh`) installed and authenticated with permission to manage Actions workflows
 
 If the tag is created locally but its push fails, retry only the tag push:
 
 ```bash
 git push origin refs/tags/webstore-v<version>
+```
+
+If a submission tag is pushed but publication polling cannot be activated, do not rerun the
+submission command. Run the recovery commands printed by the failure:
+
+```bash
+gh workflow enable webstore-publication.yml --repo stansult/dropdown-extractor
+gh workflow run webstore-publication.yml --repo stansult/dropdown-extractor
 ```
 
 ## Release sequence
@@ -67,10 +78,12 @@ git push origin refs/tags/webstore-v<version>
 3. Confirm CI passes on the versioned release commit.
 4. Generate and verify the upload package from that commit.
 5. Upload the package, update any listing metadata, and submit it for review.
-6. Run `npm run release:submit` to tag the submitted commit and record the ZIP checksum.
+6. Run `npm run release:submit` to tag the submitted commit, record the ZIP checksum, enable
+   publication polling, and dispatch an immediate check.
 7. Continue normal development while review is pending.
 8. The scheduled publication workflow waits until the live update service reaches the submitted
-   version, then notifies every open issue labeled `release: verify-live` once.
+   version, notifies every open issue labeled `release: verify-live` once, then disables its
+   schedule until the next submission or resubmission.
 9. Run `npm run release:record -- <version>`; it tags the previously submitted commit.
 10. Verify the release behavior, record the evidence, remove the verification labels, and close
     or update the applicable issues.
@@ -82,7 +95,8 @@ git push origin refs/tags/webstore-v<version>
 - `scripts/release-bookkeeping.cjs`: status, submission, and publication implementation
 - `scripts/release-bookkeeping.test.cjs`: version, comparison, tagging, and safety-check tests
 - `scripts/webstore-publication-check.cjs`: live package check and pending-submission discovery
-- `.github/workflows/webstore-publication.yml`: six-hour publication polling and issue notices
+- `.github/workflows/webstore-publication.yml`: submission-scoped six-hour publication polling,
+  issue notices, and automatic self-disable
 - `package.json`: release status, submission, live-check, and publication commands
 - `docs/chrome-web-store-release.md`: project-specific operational release workflow
 - `manifest.json`: authoritative Chrome extension version

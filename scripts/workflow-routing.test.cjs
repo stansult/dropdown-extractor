@@ -28,6 +28,7 @@ test('documentation workflow covers Markdown and issue-template changes', () => 
 test('Web Store publication workflow polls every six hours and notifies marked issues', () => {
   const workflow = readWorkflow('webstore-publication.yml');
   assert.deepEqual(workflow.on.schedule, [{ cron: '23 */6 * * *' }]);
+  assert.equal(workflow.permissions.actions, 'write');
   assert.equal(workflow.permissions.contents, 'read');
   assert.equal(workflow.permissions.issues, 'write');
   const steps = workflow.jobs.check.steps;
@@ -36,4 +37,8 @@ test('Web Store publication workflow polls every six hours and notifies marked i
   assert.equal(notification.if, "steps.publication.outputs.published == 'true'");
   assert.match(notification.with.script, /release: verify-live/);
   assert.match(notification.with.script, /webstore-live:/);
+  const disable = steps.find(step => step.name === 'Disable publication polling');
+  assert.equal(disable.if, "steps.publication.outputs.published == 'true'");
+  assert.equal(disable.env.GH_TOKEN, '${{ github.token }}');
+  assert.match(disable.run, /gh workflow disable webstore-publication\.yml/);
 });

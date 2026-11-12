@@ -16,18 +16,19 @@ Use this workflow for an update to the existing Dropdown Extractor listing.
 8. In the Chrome Developer Dashboard, upload the ZIP from `dist/`. If present, copy the
    updated listing text from `dist/description-to-upload.txt`.
 9. From a clean working tree, run `npm run release:submit`. This calculates the ZIP's
-   SHA-256 and creates and pushes `webstore-submitted-v<version>` at the uploaded commit.
-   Record this marker before allowing `main` to advance.
+   SHA-256, creates and pushes `webstore-submitted-v<version>` at the uploaded commit, enables
+   publication polling, and dispatches an immediate check. Record this marker before allowing
+   `main` to advance. This command requires authenticated GitHub CLI access.
 10. Apply `release: verify-live` to every open bug or enhancement that requires verification
     against the published package. Submit the update for review. Normal development may
     continue on `main` while review is pending because the submission tag preserves the
     uploaded commit.
 11. The **Web Store publication** workflow checks Google's live extension-update service every
     six hours. When the submitted version is available, it adds one notification comment to
-    each open issue marked `release: verify-live`. The workflow can also be dispatched manually
-    when the Dashboard first reports the version live. Confirm that this notification run
-    completed before recording the publication tag; otherwise the submission will no longer be
-    considered pending by later checks.
+    each open issue marked `release: verify-live`, then disables itself until the next submission
+    or resubmission. The workflow can also be dispatched manually when the Dashboard first
+    reports the version live. Confirm that this notification run completed before recording the
+    publication tag; otherwise the submission will no longer be considered pending by later checks.
 12. Run `npm run release:record -- <version>`. This creates and
     pushes `webstore-v<version>` at the commit recorded by the latest submission or
     resubmission tag, regardless of the current `main` tip.
@@ -47,6 +48,8 @@ after the Chrome Web Store version is live. See the
 annotated tag contains the ZIP SHA-256 and must point to a commit contained in `origin/main`
 whose manifest has the submitted version. By default it uses the current manifest, `HEAD`,
 and `dist/dropdown-extractor-<version>.zip`; optional arguments are version, commit, and ZIP.
+If the submission tag is pushed but polling activation fails, do not rerun `release:submit`;
+run the two `gh workflow` recovery commands printed by the failure.
 
 ## Rejected submissions
 
@@ -80,10 +83,12 @@ is created, push that tag with
 
 ## Publication monitoring
 
-`.github/workflows/webstore-publication.yml` is a permanent, mostly dormant scheduled check.
-It derives the newest submitted version lacking a `webstore-v<version>` publication tag, so a
-new schedule does not need to be created for each upload. `npm run release:check-live` runs the
-same package-version check locally.
+`.github/workflows/webstore-publication.yml` contains a permanent six-hour schedule but remains
+disabled between releases. `release:submit` and `release:resubmit` enable it and dispatch an
+immediate check. It derives the newest submitted version lacking a `webstore-v<version>`
+publication tag. After detecting publication and successfully notifying marked issues, its final
+step disables the workflow again. `npm run release:check-live` runs the same package-version
+check locally without changing workflow state.
 
 The check uses Google's extension-update service because it reports the package Chrome can
 install; the public Store listing may be cached and show an older version. A successful check
@@ -91,9 +96,10 @@ is publication evidence, not behavior verification. Issue comments are idempoten
 and the workflow never removes labels, closes issues, creates the publication tag, or replaces
 the required live retest.
 
-GitHub schedules are approximate rather than exact. The workflow is set to minute 23 every six
-hours to avoid the busiest start-of-hour window. GitHub may disable scheduled workflows after a
-long period without repository activity; manual dispatch remains available.
+GitHub schedules are approximate rather than exact. While enabled, the workflow is set to minute
+23 every six hours to avoid the busiest start-of-hour window. A failed notification or disable
+step leaves the workflow enabled so a maintainer can inspect and retry it; manual dispatch remains
+available.
 
 ## Changelog and Store description
 

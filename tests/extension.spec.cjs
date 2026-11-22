@@ -184,12 +184,39 @@ test('normal extraction handles a native select in a same-origin iframe', async 
   await armExtension(worker, page, context);
   await clickNativeSelectAndClosePicker(page, select);
 
-  await expect(select).toHaveClass(/dropdown-extractor-flash/);
   await expect.poll(() => clipboardText(page)).toBe('Jan\nFeb\nMar');
+  await expect(select).toHaveClass(/dropdown-extractor-flash/);
   await expect(page.locator('.dropdown-extractor-toast', {
     hasText: 'Extracted 3 items to clipboard:\n\n– Jan\n– Feb\n– Mar',
   })).toBeVisible();
   await expect(select).toHaveValue('02');
+});
+
+test('supported debug captures an ARIA-decorated native select in a same-origin iframe', async ({
+  extensionContext: context, extensionPage: page, extensionWorker: worker,
+}) => {
+  const frame = await renderNativeSelectFrame(page);
+  const select = frame.locator('#education-start-month');
+  await page.evaluate(() => navigator.clipboard.writeText('unchanged'));
+  await setPrefs(worker, {
+    extractText: true,
+    extractValue: false,
+    safeCapture: true,
+    debugMode: true,
+    debugModeTarget: 'supported',
+    debugAllFrames: true,
+  });
+  await armExtension(worker, page, context);
+  await clickNativeSelectAndClosePicker(page, select);
+
+  await expect.poll(() => clipboardText(page)).toContain('--- dropdown-extractor: supported dropdown ---');
+  await expect.poll(() => clipboardText(page)).toContain('tag: SELECT');
+  await expect.poll(() => clipboardText(page)).toContain('id: education-start-month');
+  await expect.poll(() => clipboardText(page)).toContain('role: combobox');
+  await expect.poll(() => clipboardText(page)).toContain('"expanded":"false"');
+  await expect(page.locator('.dropdown-extractor-toast', {
+    hasText: 'Debug: copied dropdown HTML',
+  })).toBeVisible();
 });
 
 for (const iframe of [false, true]) {

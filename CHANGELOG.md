@@ -5,6 +5,12 @@ documentation, and internal refactoring changes are omitted unless they affect u
 
 ## Unreleased
 
+### Fixed
+
+- Native selects decorated as ARIA comboboxes are no longer mistaken for custom dropdown
+  triggers, restoring normal extraction and both Debug capture modes on affected iCIMS forms.
+  ([#14](https://github.com/stansult/dropdown-extractor/issues/14))
+
 ## 1.0.18 — 2026-11-05
 
 ### Fixed

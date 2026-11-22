@@ -1958,10 +1958,11 @@
     const prefs = window.__dropdownExtractorPrefs;
     if (prefs) {
       e._dropdownExtractorTarget = target;
-      if (isMenuTriggerLike(target) && !shouldDebugAnyTwo(prefs)) {
+      const isNativeSelect = !!target?.closest?.('select');
+      if (!isNativeSelect && isMenuTriggerLike(target) && !shouldDebugAnyTwo(prefs)) {
         return;
       }
-      if (shouldDebugAnyTwo(prefs) && isMenuTriggerLike(target)) {
+      if (!isNativeSelect && shouldDebugAnyTwo(prefs) && isMenuTriggerLike(target)) {
         window.__dropdownExtractorDebugTrigger = target;
         return;
       }

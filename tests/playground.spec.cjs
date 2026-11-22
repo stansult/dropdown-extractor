@@ -136,6 +136,12 @@ test('native select iframe fixture preserves option data and normal selection', 
   const options = select.locator('option');
 
   await expect(select).toHaveAttribute('aria-labelledby', 'education-start-month-label');
+  await expect(select).toHaveAttribute('role', 'combobox');
+  await expect(select).toHaveAttribute('aria-expanded', 'false');
+  await expect(select).toHaveAttribute('aria-controls', 'education-start-month-listbox');
+  await expect(select).toHaveAttribute('icimsdropdown-enabled', '0');
+  await expect(select).toHaveAttribute('icimsdropdown-ajax', '1');
+  await expect(select).toHaveAttribute('icimsdropdown-search', '0');
   await expect(options).toHaveText(['', 'Jan', 'Feb', 'Mar']);
   expect(await options.evaluateAll(elements => elements.map(element => element.value)))
     .toEqual(['0', '01', '02', '03']);

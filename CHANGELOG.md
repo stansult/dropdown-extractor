@@ -5,6 +5,8 @@ documentation, and internal refactoring changes are omitted unless they affect u
 
 ## Unreleased
 
+## 1.0.19 — 2026-11-22
+
 ### Fixed
 
 - Native selects decorated as ARIA comboboxes are no longer mistaken for custom dropdown

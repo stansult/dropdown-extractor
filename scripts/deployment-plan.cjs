@@ -29,7 +29,13 @@ async function planDeployment({ github, context, git = execFileSync }) {
     return { needed: true, reason: 'Deploying to establish the first successful workflow baseline.' };
   }
   try {
-    git('git', ['diff', '--quiet', baseline, context.sha, '--', 'test/', 'netlify.toml']);
+    git('git', [
+      'diff', '--quiet', baseline, context.sha, '--',
+      'test/',
+      'netlify.toml',
+      'scripts/write-playground-build-info.cjs',
+      '.github/workflows/playwright.yml',
+    ]);
     return { needed: false, reason: `Skipped: playground unchanged since successful deployment ${baseline}.` };
   } catch (error) {
     if (error.status === 1) {

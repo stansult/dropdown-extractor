@@ -65,6 +65,11 @@ Every fixture-dependent extension test must have an independent playground contr
 contract should validate only the assumptions that make the extension result meaningful;
 it should not duplicate extraction logic.
 
+The Playground build indicator has independent contracts for its local label, deployed commit
+link and date, and invalid-metadata fallback. GitHub Actions generates deployed metadata only
+after tests pass and immediately before the Netlify upload; local Playwright runs retain the
+committed **Local build** marker.
+
 The public Playground can render any offered fixture either on the top page (the default)
 or directly inside a same-origin iframe. Its contracts verify the context control and status,
 preserve the existing top-page behavior, exercise native and searchable ARIA interactions in

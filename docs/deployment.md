@@ -22,6 +22,17 @@ package or publish the Chrome extension. A successful upload is followed by a
 GitHub deployment record. The Netlify deploy title uses the tested commit's
 subject so the dashboard identifies the change instead of showing only a raw SHA.
 
+Immediately before Netlify uploads the tested Playground, the workflow replaces the local
+`test/build-info.json` marker with the exact tested commit and a UTC deployment timestamp.
+The Playground displays that short commit as a link and shows the deployment date in small
+text. This identifies the currently published Playground, not the Chrome Web Store extension
+version. Local Playground sessions, including Playwright's local server, display **Local build**.
+Missing or invalid metadata also falls back to **Local build** without affecting fixtures.
+
+The deployment comparison includes the Playground directory, Netlify configuration, build-info
+generator, and deployment workflow. Therefore a change to the metadata generation or publication
+workflow triggers a deployment after tests pass even when the fixture files are otherwise unchanged.
+
 The public Playground may include a fixture for extension behavior implemented on
 `main` but not yet published in the Chrome Web Store. Such a type must be labeled
 **Coming in next release** throughout the Playground and public
@@ -42,6 +53,8 @@ uses `scripts/deployment-plan.cjs` instead.
 ## Verification and Recovery
 
 - Read the Actions summary for the deployment or skip reason.
+- On a successful deployment, confirm the live build indicator links to the deployed commit and
+  shows the deployment date.
 - A documentation-only change should test successfully and skip deployment after the initial baseline.
 - A playground change should publish only after tests pass.
 - Retry a failed workflow or use manual dispatch on `main` after correcting secrets or service availability.

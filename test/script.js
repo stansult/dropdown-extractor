@@ -29,6 +29,7 @@ const noteGh = document.getElementById('note-gh');
 const noteAli = document.getElementById('note-ali');
 const noteExpedia = document.getElementById('note-expedia');
 const notesTitle = document.getElementById('notes-title');
+const playgroundBuild = document.getElementById('playground-build');
 
 let lastRenderSnapshot = null;
 let fixtureDocument = document;
@@ -59,6 +60,51 @@ const typeStatuses = new Map([
   ['aliexpress', 'supported'],
   ['expedia', 'supported']
 ]);
+
+function showLocalBuild() {
+  if (!playgroundBuild) return;
+  playgroundBuild.textContent = 'Playground build: Local build';
+  playgroundBuild.removeAttribute('title');
+}
+
+function showDeployedBuild({ commit, deployedAt }) {
+  if (!playgroundBuild || !/^[0-9a-f]{40}$/i.test(commit)) return false;
+  const timestamp = new Date(deployedAt);
+  if (Number.isNaN(timestamp.getTime())) return false;
+
+  const deployedDate = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(timestamp);
+  const commitLink = document.createElement('a');
+  commitLink.href = `https://github.com/stansult/dropdown-extractor/commit/${commit}`;
+  commitLink.target = '_blank';
+  commitLink.rel = 'noopener noreferrer';
+  commitLink.textContent = commit.slice(0, 7);
+
+  playgroundBuild.textContent = 'Playground build: ';
+  playgroundBuild.append(commitLink, ` · deployed ${deployedDate}`);
+  playgroundBuild.title = `Deployed ${timestamp.toISOString()}`;
+  return true;
+}
+
+async function loadBuildInfo() {
+  try {
+    const response = await fetch('build-info.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Build information request failed: ${response.status}`);
+    const buildInfo = await response.json();
+    if (buildInfo.local === true) {
+      showLocalBuild();
+      return;
+    }
+    if (showDeployedBuild(buildInfo)) return;
+  } catch (_error) {
+    // The build label is informational; local fallback must not affect the Playground.
+  }
+  showLocalBuild();
+}
 
 function getTypeStatus(type) {
   return TYPE_STATUS[typeStatuses.get(type)] || TYPE_STATUS.unsupported;
@@ -1447,6 +1493,7 @@ updateTypeDisplay();
 updateNotesVisibility();
 renderDropdown();
 enablePressedState();
+loadBuildInfo();
 
 if (typeTrigger && typeMenu) {
   typeTrigger.addEventListener('click', () => {

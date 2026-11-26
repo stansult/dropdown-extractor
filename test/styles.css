@@ -49,6 +49,16 @@ p {
   list-style-position: inside;
 }
 
+.playground-build {
+  margin: 8px 0 0;
+  color: #777;
+  font-size: 11px;
+}
+
+.playground-build a {
+  color: #5b6f82;
+}
+
 .configure-section {
   margin-top: 12px;
 }

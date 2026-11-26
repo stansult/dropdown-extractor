@@ -46,7 +46,13 @@ for (const [name, diffStatus, needed] of [
     });
     assert.equal((await planDeployment(input)).needed, needed);
     assert.deepEqual(input.comparisons, [
-      ['diff', '--quiet', 'published', 'current', '--', 'test/', 'netlify.toml'],
+      [
+        'diff', '--quiet', 'published', 'current', '--',
+        'test/',
+        'netlify.toml',
+        'scripts/write-playground-build-info.cjs',
+        '.github/workflows/playwright.yml',
+      ],
     ]);
   });
 }

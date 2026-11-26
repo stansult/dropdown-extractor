@@ -11,6 +11,40 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
 });
 
+test('local playground identifies itself as a local build', async ({ page }) => {
+  await expect(page.locator('#playground-build'))
+    .toHaveText('Playground build: Local build');
+});
+
+test('deployed playground identifies its tested commit and deployment date', async ({ page }) => {
+  await page.route('**/build-info.json', route => route.fulfill({
+    json: {
+      commit: 'c269461c9c07c47c8cf3229b9863c78d20907581',
+      deployedAt: '2026-11-23T12:34:56.000Z',
+    },
+  }));
+  await page.reload();
+
+  const build = page.locator('#playground-build');
+  const commit = build.getByRole('link', { name: 'c269461' });
+  await expect(build).toContainText('deployed Nov 23, 2026');
+  await expect(commit).toHaveAttribute(
+    'href',
+    'https://github.com/stansult/dropdown-extractor/commit/c269461c9c07c47c8cf3229b9863c78d20907581',
+  );
+  await expect(build).toHaveAttribute('title', 'Deployed 2026-11-23T12:34:56.000Z');
+});
+
+test('invalid deployment metadata falls back to the local-build label', async ({ page }) => {
+  await page.route('**/build-info.json', route => route.fulfill({
+    json: { commit: 'not-a-commit', deployedAt: 'not-a-date' },
+  }));
+  await page.reload();
+
+  await expect(page.locator('#playground-build'))
+    .toHaveText('Playground build: Local build');
+});
+
 test('native fixture renders options and supports normal selection', async ({ page }) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));

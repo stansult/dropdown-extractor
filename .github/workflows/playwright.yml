@@ -90,6 +90,9 @@ jobs:
           script: |
             const { data } = await github.rest.repos.getBranch({ ...context.repo, branch: 'main' });
             core.setOutput('ready', String(data.commit.sha === context.sha));
+      - name: Write Playground build information
+        if: steps.current.outputs.ready == 'true'
+        run: node scripts/write-playground-build-info.cjs
       - name: Publish tested playground
         if: steps.current.outputs.ready == 'true'
         env:
